@@ -1,0 +1,8 @@
+From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
+Purge, once, expired
+Object DB, -, -, -, -, -, x, -, -
+Object Fix, -, -, -, -, -, Delete (check), -, -
+
+Purge, once, expired, if, archive, enabled
+Object DB, -, -, x, -, -, -, -, -
+Object Fix, -, -, Archive (Move to another Bucket), -, -, -, -, -

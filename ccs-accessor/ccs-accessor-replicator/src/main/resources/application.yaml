@@ -1,0 +1,15 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+
+mp:
+  messaging:
+    incoming:
+      replicator-action-in:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_ACTION:request-action}
+        retry-attempts: 10
+        auto:
+          offset:
+            reset: earliest

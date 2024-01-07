@@ -1,0 +1,136 @@
+openapi: 3.0.3
+info:
+  title: ccs-topology-server API
+  version: 0.6.0-SNAPSHOT
+tags:
+  - name: 'Administration API / Topologies'
+paths:
+  /replicator/topologies:
+    get:
+      tags:
+        - 'Administration API / Topologies'
+      summary: Get list of replicators
+      description: Get list of replicators in the  topology
+      parameters:
+        - name: status
+          in: query
+          schema:
+            enum:
+              - UP
+              - DOWN
+              - DELETED
+              - UNKNOWN
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved list of topology
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Topology'
+        "500":
+          description: Internal server error
+    put:
+      tags:
+        - 'Administration API / Topologies'
+      summary: Update a replicator in the topology
+      description: Update a replicator in the topology
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Topology'
+      responses:
+        "202":
+          description: Successfully added topology
+        "400":
+          description: Topology not valid
+        "404":
+          description: Topology not found
+        "500":
+          description: Internal server error
+    post:
+      tags:
+        - 'Administration API / Topologies'
+      summary: Add a replicator to topology
+      description: Add a replicator to topology
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Topology'
+      responses:
+        "201":
+          description: Successfully added topology
+        "400":
+          description: Topology not valid
+        "500":
+          description: Internal server error
+  /replicator/topologies/{site}:
+    get:
+      tags:
+        - 'Administration API / Topologies'
+      summary: Get a replicator from topology
+      description: Get a replicator full details from topology based on its site
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved topology
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Topology'
+        "400":
+          description: Topology id not valid
+        "404":
+          description: Topology not found
+        "500":
+          description: Internal server error
+    delete:
+      tags:
+        - 'Administration API / Topologies'
+      summary: Delete a replicator from topology
+      description: Delete a replicator from topology
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successfully deleted topology
+        "400":
+          description: Topology id not valid
+        "404":
+          description: Topology not found
+        "500":
+          description: Internal server error
+components:
+  schemas:
+    Topology:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        uri:
+          type: string
+        status:
+          $ref: '#/components/schemas/TopologyStatus'
+    TopologyStatus:
+      enum:
+        - UP
+        - DOWN
+        - DELETED
+        - UNKNOWN
+      type: string
+

@@ -1,0 +1,553 @@
+---
+- - :restrict
+  - GPL
+  - :who: Frederic BREGIER
+    :why: GPL without ClassPathException is not usable in commercial software
+    :versions: []
+    :when: 2016-04-22 09:02:08.268342351 Z
+- - :permit
+  - Apache Software Licenses
+  - :who: Frederic BREGIER
+    :why: Apache licenses are compatible for commercial products
+    :versions: []
+    :when: 2016-11-16 09:28:52.164639094 Z
+- - :permit
+  - Apache
+  - :who: Frederic BREGIER
+    :why: Apache 1.x is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 09:40:13.956655245 Z
+- - :permit
+  - Apache 2.0
+  - :who: Frederic BREGIER
+    :why: Apache 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 07:36:30.630987701 Z
+- - :permit
+  - Apache License, Version 2.0
+  - :who: Frederic BREGIER
+    :why: Apache 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 09:35:49.136622944 Z
+- - :permit
+  - Apache Software License - Version 2.0
+  - :who: Frederic BREGIER
+    :why: Apache 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:41:51.114322314 Z
+- - :permit
+  - Eclipse Public License 1.0
+  - :who: Frederic BREGIER
+    :why: Eclipse license is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 09:27:57.824516151 Z
+- - :permit
+  - Eclipse Public License - Version 1.0
+  - :who: Frederic BREGIER
+    :why: Eclipse license is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:43:52.612759038 Z
+- - :permit
+  - Eclipse Public License - v 1.0
+  - :who: Frederic BREGIER
+    :why: Eclipse license is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 10:44:57.680284665 Z
+- - :permit
+  - Eclipse Public License v2.0
+  - :who: Frederic BREGIER
+    :why: Eclipse license is a compatible license for commercial products
+    :versions: []
+    :when: 2021-08-25 11:39:55:973842156 Z
+- - :permit
+  - GNU Lesser General Public License
+  - :who: Frederic BREGIER
+    :why: LGPL license is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 10:58:42.117148117 Z
+- - :permit
+  - The MIT License
+  - :who: Frederic BREGIER
+    :why: MIT is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 07:37:33.328122231 Z
+- - :permit
+  - MIT
+  - :who: Frederic BREGIER
+    :why: MIT is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 07:37:44.187789191 Z
+- - :permit
+  - Public Domain
+  - :who: Frederic BREGIER
+    :why: Public Domain is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 07:37:52.647825887 Z
+- - :permit
+  - The BSD License
+  - :who: Frederic BREGIER
+    :why: BSD is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:19:44.593900600 Z
+- - :permit
+  - BSD
+  - :who: Frederic BREGIER
+    :why: BSD is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:34:21.426858918 Z
+- - :permit
+  - New BSD License
+  - :who: Frederic BREGIER
+    :why: BSD is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 10:57:11.897048117 Z
+- - :permit
+  - BSD License 3
+  - :who: Frederic BREGIER
+    :why: BSD is a compatible license for commercial products
+    :versions: []
+    :when: 2021-08-25 11:39:55:973842156 Z
+- - :permit
+  - Common Public License Version 1.0
+  - :who: Frederic BREGIER
+    :why: Public Domain is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:42:07.253361325 Z
+- - :permit
+  - CPL
+  - :who: Frederic BREGIER
+    :why: Public Domain is a compatible license for commercial products
+    :versions: []
+    :when: 2016-04-22 09:45:38.230716804 Z
+- - :permit
+  - GPL2 w/ CPE
+  - :who: Frederic BREGIER
+    :why: GPL2 with ClassPathException is a compatible license for commercial products
+      if used as libraries
+    :versions: []
+    :when: 2016-04-22 10:05:30.160157900 Z
+- - :permit
+  - CDDL + GPLv2 with classpath exception
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License and GPL2 with ClassPathException
+      are compatible license for commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 08:52:38.809434047 Z
+- - :permit
+  - CDDL or GPLv2 with exceptions
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License and GPL2 with ClassPathException
+      are compatible license for commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 09:22:29.454132459 Z
+- - :permit
+  - CDDL 1.0
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License 1.0 is a compatible license
+      for commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 08:53:52.746956837 Z
+- - :permit
+  - CDDL 1.1
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License 1.1 is a compatible license
+      for commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 08:53:52.746956837 Z
+- - :permit
+  - Common Development and Distribution License
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License is a compatible license for
+      commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 10:58:19.223703460 Z
+- - :permit
+  - GNU General Public License, Version 2 with the Classpath Exception
+  - :who: Frederic BREGIER
+    :why: GNU General Public License, Version 2 with the Classpath Exception is a
+      compatible license for commercial products if used as libraries
+    :versions: []
+    :when: 2016-11-16 10:58:19.223703460 Z
+- - :permit
+  - The JSON License
+  - :who: Frederic BREGIER
+    :why: The JSON License is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 09:22:53.281685112 Z
+- - :permit
+  - The PostgreSQL License
+  - :who: Frederic BREGIER
+    :why: The PostgreSQL license is a compatible license for commercial products
+    :versions: []
+    :when: 2016-11-16 09:30:16.713019567 Z
+- - :permit
+  - ISC
+  - :who: Frederic BREGIER
+    :why: ISC is also known as OpenBSD which is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2017-08-14 12:53:29.016655510 Z
+- - :permit
+  - NEW BSD
+  - :who: Frederic BREGIER
+    :why: NEW BSD license is a compatible license for commercial products
+    :versions: []
+    :when: 2017-08-14 12:54:30.985973262 Z
+- - :permit
+  - Simplified BSD
+  - :who: Frederic BREGIER
+    :why: Simplified BSD is a compatible license for commercial products
+    :versions: []
+    :when: 2017-08-14 12:54:48.444384257 Z
+- - :ignore_group
+  - devDependencies
+  - :who: Frederic BREGIER
+    :why: Development dependencies are not part of the final package
+    :versions: []
+    :when: 2017-09-11 11:50:18.532027177 Z
+- - :permit
+  - Unlicense
+  - :who: Frederic BREGIER
+    :why: Unlicense is compatible with a commercial usage
+    :versions: []
+    :when: 2017-10-03 15:40:50.064093687 Z
+- - :permit
+  - Apache License V2
+  - :who: Frederic BREGIER
+    :why: Apache License V2 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:32:18.203099000 Z
+- - :permit
+  - ASF 2.0
+  - :who: Frederic BREGIER
+    :why: ASF 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:33:35.077867000 Z
+- - :permit
+  - Atomikos multiple licensing scheme
+  - :who: Frederic BREGIER
+    :why: Atomikos multiple licensing scheme is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2017-11-06 08:33:49.318947000 Z
+- - :permit
+  - BSD style
+  - :who: Frederic BREGIER
+    :why: BSD style is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:34:25.223510000 Z
+- - :permit
+  - BSD-2-Clause, BSD-3-Clause, BSD-3-Clause-Clear
+  - :who: Frederic BREGIER
+    :why: BSD-2-Clause, BSD-3-Clause, BSD-3-Clause-Clear is a compatible license for
+      commercial products
+    :versions: []
+    :when: 2017-11-06 08:36:20.223213000 Z
+- - :permit
+  - BSD-like
+  - :who: Frederic BREGIER
+    :why: BSD-like is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:36:45.348001000 Z
+- - :permit
+  - CC-BY-3.0
+  - :who: Frederic BREGIER
+    :why: CC-BY-3.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:37:34.435887000 Z
+- - :permit
+  - CC-BY-4.0
+  - :who: Frederic BREGIER
+    :why: CC-BY-4.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:37:44.626568000 Z
+- - :permit
+  - EDL 1.0
+  - :who: Frederic BREGIER
+    :why: EDL is a compatible license for commercial products
+    :versions: []
+    :when: 2021-08-25 11:39:55:973842156 Z
+- - :permit
+  - Eclipse Distribution License - v 1.0
+  - :who: Frederic BREGIER
+    :why: EDL (Eclipse Distribution License) is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2021-08-25 11:39:55:973842156 Z
+- - :permit
+  - Unlicensed
+  - :who: Frederic BREGIER
+    :why: Unlicensed is compatible for commercial products
+    :versions: []
+    :when: 2017-11-06 08:40:15.240886000 Z
+- - :permit
+  - UNLICENSED
+  - :who: Frederic BREGIER
+    :why: UNLICENSED is compatible for commercial products
+    :versions: []
+    :when: 2017-11-06 08:40:43.156879000 Z
+- - :permit
+  - WTFPL
+  - :who: Frederic BREGIER
+    :why: WTFPL is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:41:16.977615000 Z
+- - :permit
+  - X11, Expat, MIT/X11
+  - :who: Frederic BREGIER
+    :why: X11, Expat, MIT/X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:42:28.476339000 Z
+- - :permit
+  - CDDL/GPLv2+CE
+  - :who: Frederic BREGIER
+    :why: CDDL/GPLv2+CE is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:43:07.023188000 Z
+- - :permit
+  - Apache 2.0 License
+  - :who: Frederic BREGIER
+    :why: Apache 2.0 License is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:47:25.186026000 Z
+- - :unpermit
+  - X11, Expat, MIT/X11
+  - :who: Frederic BREGIER
+    :why: X11, Expat, MIT/X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:48:48.448110000 Z
+- - :permit
+  - X11
+  - :who: Frederic BREGIER
+    :why: X11, Expat, MIT/X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:49:02.102970000 Z
+- - :permit
+  - Expat
+  - :who: Frederic BREGIER
+    :why: Expat is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:49:31.650968000 Z
+- - :unpermit
+  - X11
+  - :who: Frederic BREGIER
+    :why: X11, Expat, MIT/X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:49:42.571039000 Z
+- - :permit
+  - X11
+  - :who: Frederic BREGIER
+    :why: X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:49:52.740237000 Z
+- - :permit
+  - MIT/X11
+  - :who: Frederic BREGIER
+    :why: MIT/X11 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:50:13.259304000 Z
+- - :unpermit
+  - BSD-2-Clause, BSD-3-Clause, BSD-3-Clause-Clear
+  - :who: Frederic BREGIER
+    :why: BSD-2-Clause, BSD-3-Clause, BSD-3-Clause-Clear is a compatible license for
+      commercial products
+    :versions: []
+    :when: 2017-11-06 08:50:38.342187000 Z
+- - :permit
+  - BSD-2-Clause
+  - :who: Frederic BREGIER
+    :why: BSD-2-Clause is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:51:01.375195000 Z
+- - :permit
+  - BSD-3-Clause
+  - :who: Frederic BREGIER
+    :why: BSD-3-Clause is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:51:24.301927000 Z
+- - :permit
+  - BSD-3-Clause-Clear
+  - :who: Frederic BREGIER
+    :why: BSD-3-Clause-Clear is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:51:42.460140000 Z
+- - :permit
+  - BSD 3-Clause
+  - :who: Frederic BREGIER
+    :why: BSD 3-Clause is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:52:18.108365000 Z
+- - :permit
+  - The Apache License, Version 2.0
+  - :who: Frederic BREGIER
+    :why: The Apache License, Version 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:54:13.485645000 Z
+- - :permit
+  - The New BSD License
+  - :who: Frederic BREGIER
+    :why: The New BSD License is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:57:20.613659000 Z
+- - :permit
+  - CDDL License
+  - :who: Frederic BREGIER
+    :why: CDDL License is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-06 08:59:15.501110000 Z
+- - :permit
+  - Common Development and Distribution License (CDDL) v1.0
+  - :who: Frederic BREGIER
+    :why: Common Development and Distribution License (CDDL) v1.0 is a compatible
+      license for commercial products
+    :versions: []
+    :when: 2017-11-06 09:01:22.329574000 Z
+- - :permit
+  - Public Domain, per Creative Commons CC0
+  - :who: Frederic BREGIER
+    :why: Public Domain, per Creative Commons CC0 is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2017-11-06 09:04:29.667133000 Z
+- - :permit
+  - BSD 3-clause
+  - :who: Frederic BREGIER
+    :why: BSD 3-clause is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-13 07:53:42.617980000 Z
+- - :permit
+  - BSD licence
+  - :who: Frederic BREGIER
+    :why: BSD licence is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-13 08:10:51.662439000 Z
+- - :license
+  - dom4j
+  - Public domain
+  - :who: Frederic BREGIER
+    :why: dom4j's licence is Public Domain
+    :versions: []
+    :when: 2017-11-13 08:32:45.139457000 Z
+- - :permit
+  - Public domain
+  - :who: Frederic BREGIER
+    :why: Public domain is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-13 09:18:36.471068000 Z
+- - :permit
+  - Mozilla Public License Version 2.0
+  - :who: Frederic BREGIER
+    :why: Mozilla Public License Version 2.0 is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2017-11-15 07:39:38.802224000 Z
+- - :permit
+  - MPL 2.0 or EPL 1.0
+  - :who: Frederic BREGIER
+    :why: MPL 2.0 or EPL 1.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-15 07:42:27.129535000 Z
+- - :permit
+  - AL 2.0
+  - :who: Frederic BREGIER
+    :why: AL 2.0 is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-15 07:42:51.086520000 Z
+- - :permit
+  - GNU General Public Library
+  - :who: Frederic BREGIER
+    :why: GNU General Public Library is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-15 08:37:07.587168000 Z
+- - :permit
+  - COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0
+  - :who: Frederic BREGIER
+    :why: COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.0 is a compatible
+      license for commercial products
+    :versions: []
+    :when: 2017-11-15 08:37:47.618869000 Z
+- - :permit
+  - Eclipse Public License (EPL), Version 1.0
+  - :who: Frederic BREGIER
+    :why: Eclipse Public License (EPL), Version 1.0 is a compatible license for commercial
+      products
+    :versions: []
+    :when: 2017-11-15 08:39:02.459966000 Z
+- - :permit
+  - Gatling Highcharts License
+  - :who: Frederic BREGIER
+    :why: Gatling Highcharts License is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-17 11:09:23.282612000 Z
+- - :permit
+  - Bouncy Castle Licence
+  - :who: Frederic BREGIER
+    :why: Bouncy Castle Licence is a compatible license for commercial products
+    :versions: []
+    :when: 2017-11-17 11:09:58.807952000 Z
+- - :permit
+  - Eclipse Public License 2.0
+  - :who: Frederic BREGIER
+    :why: other naming of Eclipse Public License v2.0
+    :versions: []
+    :when: 2022-11-08 09:20:18.748989300 Z
+- - :permit
+  - Eclipse Public License, Version 1.0
+  - :who: Frederic BREGIER
+    :why: other naming of Eclipse Distribution License 1.0 license
+    :versions: []
+    :when: 2022-11-08 09:20:57.094862500 Z
+- - :permit
+  - GNU Lesser General Public License version 2.1
+  - :who: Frederic BREGIER
+    :why: other naming of Lesser GPL v2.1 license
+    :versions: []
+    :when: 2022-11-08 09:21:30.467874800 Z
+- - :permit
+  - GNU Library General Public License v2.1 or later
+  - :who: Frederic BREGIER
+    :why: other naming of Lesser GPL v2.1 license
+    :versions: []
+    :when: 2022-11-08 09:21:47.629266300 Z
+- - :permit
+  - Universal Permissive License, Version 1.0
+  - :who: Frederic BREGIER
+    :why:
+    :versions: []
+    :when: 2022-11-08 09:22:27.443684700 Z
+- - :permit
+  - Eclipse Distribution License v. 1.0
+  - :who: Frederic BREGIER
+    :why: other naming of Eclipse Distribution License 1.0 license
+    :versions: []
+    :when: 2022-11-08 09:23:09.880124700 Z
+- - :permit
+  - Indiana University Extreme! Lab Software License
+  - :who: Frederic BREGIER
+    :why: University license with redistribution without restriction
+    :versions: []
+    :when: 2022-11-08 09:24:55.320563000 Z
+- - :permit
+  - CC0
+  - :who: Frederic BREGIER
+    :why: Creative Commons Zero is Public Domain
+    :versions: []
+    :when: 2022-11-08 09:25:56.908187100 Z
+- - :permit
+  - LGPL, version 2.1
+  - :who: Frederic BREGIER
+    :why: other naming of Lesser GPL v2.1 license
+    :versions: []
+    :when: 2022-11-08 09:32:52.985253800 Z
+- - :permit
+  - BSD 2-Clause License
+  - :who: Frederic BREGIER
+    :why: BSD 2-clause is a compatible license for commercial products
+    :versions: []
+    :when: 2022-11-08 09:49:04.905589100 Z
+- - :ignore_group
+  - test
+  - :who: Frederic BREGIER
+    :why: Test gems are not distributed with final product and are therefore exempt
+    :version: []
+    :when: 2023-09-23 10:00:00.000000000 Z

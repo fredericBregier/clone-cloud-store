@@ -1,0 +1,12 @@
+From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
+Actions type 1, -, -, X, -, -, -, -, -
+Object DB, x, x, -, x, x, x, x, x
+Object Fix, -, -, X (S if Driver not exists + M else M if 1/7), -, -, -, -, -
+
+Actions type 2, -, -, X, -, -, -, -, -
+Object DB, -, -, x, -, -, -, -, -
+No Object Fix, -, -, -, -, -, -, -, -
+
+Actions type 3, -, -, -, -, -, X, -, -
+Object DB, x, x, x, x, x, x, x, x
+Object Fix, -, -, -, -, -, X (no error on Driver), -, -

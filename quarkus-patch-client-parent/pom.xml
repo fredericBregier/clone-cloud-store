@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2024. Clone Cloud Store (CCS), Contributors and Frederic Bregier
+  ~
+  ~  Licensed under the Apache License, Version 2.0 (the "License");
+  ~  you may not use this file except in compliance with the License.
+  ~  You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software distributed
+  ~  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+  ~  OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <name>Quarkus-Reactive-Post-Patch - Parent</name>
+  <packaging>pom</packaging>
+  <groupId>io.clonecloudstore</groupId>
+  <artifactId>quarkus-patch-client-parent</artifactId>
+  <version>0.7.0-SNAPSHOT</version>
+  <!-- For Maven site -->
+  <url>https://fredericBregier.github.io/clone-cloud-store/site</url>
+  <distributionManagement>
+    <site>
+      <id>Clone-Cloud-Store</id>
+      <name>Clone-Cloud-Store Github Gh-Pages Maven Site</name>
+      <url>https://fredericBregier.github.io/clone-cloud-store/site</url>
+    </site>
+  </distributionManagement>
+  <properties>
+    <revision>${project.version}</revision>
+    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <propertiesEncoding>UTF-8</propertiesEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+    <quarkus.platform.version>3.6.4</quarkus.platform.version>
+    <root.directory>${maven.multiModuleProjectDirectory}</root.directory>
+    <!-- Plugins -->
+    <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
+    <compiler-plugin.version>3.12.1</compiler-plugin.version>
+    <surefire-plugin.version>3.2.3</surefire-plugin.version>
+    <maven-resources.version>3.3.1</maven-resources.version>
+    <maven-clean.version>3.3.2</maven-clean.version>
+  </properties>
+  <modules>
+    <module>deployment</module>
+    <module>runtime</module>
+  </modules>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${quarkus.platform.version}</version>
+          <inherited>false</inherited>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire-plugin.version}</version>
+          <inherited>false</inherited>
+          <configuration>
+            <systemPropertyVariables>
+              <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+              <maven.home>${maven.home}</maven.home>
+              <maven.repo>${settings.localRepository}</maven.repo>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>${surefire-plugin.version}</version>
+          <inherited>false</inherited>
+          <configuration>
+            <systemPropertyVariables>
+              <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+              <maven.home>${maven.home}</maven.home>
+              <maven.repo>${settings.localRepository}</maven.repo>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${compiler-plugin.version}</version>
+          <inherited>false</inherited>
+          <configuration>
+            <compilerArgs>
+              <arg>-parameters</arg>
+            </compilerArgs>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>

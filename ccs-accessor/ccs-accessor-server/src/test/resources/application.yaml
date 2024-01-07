@@ -1,0 +1,94 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+  http:
+    test-timeout: 3S
+  vertx:
+    warning-exception-time: 10S
+    max-event-loop-execute-time: 10S
+    eventbus:
+      connect-timeout: 1S
+      idle-timeout: 1S
+  devservices:
+    enabled: false
+  s3:
+    devservices:
+      enabled: false
+  mongodb:
+    database: objreplicator
+    connect-timeout: PT0.200S
+    read-timeout: PT0.500S
+    server-selection-timeout: PT0.200S
+  rest-client:
+    "io.clonecloudstore.accessor.client.api.AccessorBucketApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.accessor.client.api.AccessorObjectApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.accessor.client.internal.api.AccessorBucketInternalApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.accessor.client.internal.api.AccessorObjectInternalApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.replicator.client.api.LocalReplicatorApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.topology.client.api.TopologyApi":
+      url: http://localhost:8081
+      verify-host: false
+    connect-timeout: 1000
+    read-timeout: 1000
+  hibernate-orm:
+    enabled: false
+
+ccs:
+  driverMaxChunkSize: 134217728
+  driver:
+    s3:
+      maxPartSizeForUnknownLength: 10000000
+  maxWaitMs: 1000
+  client:
+    response:
+      timeout: 30000
+  server:
+    computeSha256: true
+  accessor:
+    site: Pékin
+    remote:
+      read: true
+      fixOnAbsent: true
+  db:
+    type: mongo
+
+mp:
+  messaging:
+    incoming:
+      replicator-request-in:
+        connector: smallrye-kafka
+        topic: request-replication
+        retry-attempts: 10
+        auto:
+          offset:
+            reset: earliest
+      replicator-action-in:
+        connector: smallrye-kafka
+        topic: request-action
+        retry-attempts: 10
+        auto:
+          offset:
+            reset: earliest
+    outgoing:
+      replicator-request-out:
+        connector: smallrye-kafka
+        topic: request-replication
+        retries: 10
+      replicator-action-out:
+        connector: smallrye-kafka
+        topic: request-action
+        retries: 10

@@ -1,0 +1,31 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+  mongodb:
+    database: objreplicator
+  http:
+    so-reuse-port: true
+    tcp-cork: true
+    tcp-quick-ack: true
+    tcp-fast-open: true
+  vertx:
+    prefer-native-transport: true
+    warning-exception-time: 30S
+    max-event-loop-execute-time: 30S
+
+ccs:
+  server:
+    computeSha256: true
+
+mp:
+  messaging:
+    outgoing:
+      replicator-request-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_REPLICATION:request-replication}
+        retries: 10
+      replicator-action-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_ACTION:request-action}
+        retries: 10

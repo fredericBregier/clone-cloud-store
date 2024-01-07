@@ -1,0 +1,9 @@
+This file contains a list of people who have made large contributions
+to Cloud Cloud Store software.
+
+- Jean-Francois BIANCO
+- Frederic BREGIER
+- Alexandre DALLEU
+- Renaud FLEURY
+- Brahim MACHKOUR
+- Maxime SIMON

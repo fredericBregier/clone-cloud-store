@@ -1,0 +1,8 @@
+mp:
+  messaging:
+    outgoing:
+      replicator-request-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_REPLICATION:request-replication}
+        retries: 10
+

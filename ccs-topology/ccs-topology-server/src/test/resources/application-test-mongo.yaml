@@ -1,0 +1,24 @@
+quarkus:
+  devservices:
+    enabled: false
+  log:
+    console:
+      #format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+      format: "[%l] (%t) %s%e%n"
+    category:
+      "io.clonecloudstore.replicator":
+        level: DEBUG
+      "io.clonecloudstore":
+        level: INFO
+      "org.mon":
+        level: ERROR
+      "io.quarkus":
+        level: ERROR
+    level: INFO
+
+  hibernate-orm:
+    enabled: false
+
+ccs:
+  db:
+    type: mongo

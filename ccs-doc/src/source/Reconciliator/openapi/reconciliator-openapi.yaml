@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: ccs-reconciliator-server API
+  version: 0.6.0-SNAPSHOT
+paths:
+  /reconciliator:
+    head:
+      responses:
+        "204":
+          description: OK
