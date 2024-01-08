@@ -1,0 +1,1063 @@
+openapi: 3.0.3
+info:
+  title: ccs-accessor-server API
+  version: 0.6.0-SNAPSHOT
+tags:
+  - name: Internal API / Bucket
+  - name: Internal API / Directory or Object
+  - name: Public API / Bucket
+  - name: Public API / Directory or Object
+paths:
+  /ccs/internal:
+    get:
+      tags:
+        - Internal API / Bucket
+      summary: List all buckets in repository
+      description: List all buckets in repository
+      parameters:
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorBucket'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Error
+  /ccs/internal/{bucketName}:
+    get:
+      tags:
+        - Internal API / Bucket
+      summary: Get bucket metadata
+      description: Get bucket metadata
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorBucket'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "410":
+          description: Bucket deleted
+        "500":
+          description: Internal Error
+    put:
+      tags:
+        - Internal API / Directory or Object
+      summary: List objects from filter
+      description: List objects from filter as a Stream of Json lines
+      parameters:
+        - name: Accept-Encoding
+          in: header
+          description: May contain ZSTD for compression
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-namePrefix
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-statuses
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-creationBefore
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-creationAfter
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-expiresBefore
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-expiresAfter
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-sizeLT
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: 0
+            type: integer
+        - name: x-clonecloudstore-sizeGT
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: 0
+            type: integer
+        - name: x-clonecloudstore-metadataEq
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/octet-stream: { }
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "500":
+          description: Internal Error
+    head:
+      tags:
+        - Internal API / Bucket
+      summary: Check if bucket exist
+      description: Check if bucket exist (fullcheck true implies check down to Storage)
+        and return BUCKET/NONE in header
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fullCheck
+          in: query
+          description: If True implies Storage checking
+          required: false
+          schema:
+            default: false
+            type: boolean
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "204":
+          description: OK
+          headers:
+            x-clonecloudstore-type:
+              description: Type as StorageType
+              style: simple
+              schema:
+                enum:
+                  - NONE
+                  - BUCKET
+                  - DIRECTORY
+                  - OBJECT
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "500":
+          description: Internal Error
+  /ccs/internal/{bucketName}/{objectName}:
+    get:
+      tags:
+        - Internal API / Directory or Object
+      summary: Get object
+      description: Get object binary with type application/octet-stream and get object
+        metadata with type application/json
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: objectName
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          description: May contain ZSTD for compression
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          headers:
+            x-clonecloudstore-id:
+              description: Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-site:
+              description: Site
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-bucket:
+              description: Bucket Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-name:
+              description: Object Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-creation:
+              description: Creation Date
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-size:
+              description: Object Size
+              style: simple
+              schema:
+                type: integer
+            x-clonecloudstore-hash:
+              description: Object Hash SHA-256
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-metadata:
+              description: Object Metadata
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-status:
+              description: Object Status
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-expires:
+              description: Expiration Date
+              style: simple
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorObject'
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Object not found
+        "500":
+          description: Internal Error
+  /ccs/internal/{bucketName}/{pathDirectoryOrObject}:
+    head:
+      tags:
+        - Internal API / Directory or Object
+      summary: Check if object or directory exist
+      description: 'Check if object or directory exist (fullcheck true implies check
+        down to Storage) '
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: pathDirectoryOrObject
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: fullCheck
+          in: query
+          description: If True implies Storage checking
+          required: false
+          schema:
+            default: false
+            type: boolean
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+      responses:
+        "204":
+          description: OK
+          headers:
+            x-clonecloudstore-type:
+              description: Type as StorageType
+              style: simple
+              schema:
+                enum:
+                  - NONE
+                  - BUCKET
+                  - DIRECTORY
+                  - OBJECT
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Error
+  /cloudclonestore:
+    get:
+      tags:
+        - Public API / Bucket
+      summary: List all buckets in repository
+      description: List all buckets in repository
+      parameters:
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorBucket'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Error
+  /cloudclonestore/{bucketName}:
+    get:
+      tags:
+        - Public API / Bucket
+      summary: Get bucket metadata
+      description: Get bucket metadata
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorBucket'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "410":
+          description: Bucket deleted
+        "500":
+          description: Internal Error
+    put:
+      tags:
+        - Public API / Directory or Object
+      summary: List objects from filter
+      description: List objects from filter as a Stream of Json lines
+      parameters:
+        - name: x-clonecloudstore-namePrefix
+          in: header
+          description: Filter based on name prefix
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-statuses
+          in: header
+          description: Filter based on list of status
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-creationBefore
+          in: header
+          description: Filter based on creation before
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-creationAfter
+          in: header
+          description: Operation Filter based on creation after
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-expiresBefore
+          in: header
+          description: Operation Filter based on expires before
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-expiresAfter
+          in: header
+          description: Operation Filter based on expires after
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-sizeLT
+          in: header
+          description: Operation Filter based on size less than
+          required: false
+          schema:
+            default: 0
+            type: integer
+        - name: x-clonecloudstore-sizeGT
+          in: header
+          description: Operation Filter based on size greater than
+          required: false
+          schema:
+            default: 0
+            type: integer
+        - name: x-clonecloudstore-metadataEq
+          in: header
+          description: Filter based on metadatata containing
+          required: false
+          schema:
+            type: string
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/octet-stream: { }
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "500":
+          description: Internal Error
+    post:
+      tags:
+        - Public API / Bucket
+      summary: Create bucket
+      description: Create bucket in storage
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "201":
+          description: Bucket created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorBucket'
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "409":
+          description: Bucket already exist
+        "500":
+          description: Internal Error
+    delete:
+      tags:
+        - Public API / Bucket
+      summary: Delete bucket
+      description: Delete bucket in storage
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "204":
+          description: Bucket deleted
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "406":
+          description: Bucket found but not empty
+        "410":
+          description: Bucket deleted
+        "500":
+          description: Internal Error
+    head:
+      tags:
+        - Public API / Bucket
+      summary: Check if bucket exist
+      description: Check if bucket exist and return BUCKET/NONE in header
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            default: ""
+            type: string
+      responses:
+        "204":
+          description: OK
+          headers:
+            x-clonecloudstore-type:
+              description: Type as StorageType
+              style: simple
+              schema:
+                enum:
+                  - NONE
+                  - BUCKET
+                  - DIRECTORY
+                  - OBJECT
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Bucket not found
+        "500":
+          description: Internal Error
+  /cloudclonestore/{bucketName}/{objectName}:
+    get:
+      tags:
+        - Public API / Directory or Object
+      summary: Get object
+      description: Get object binary with type application/octet-stream and get object
+        metadata with type application/json
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: objectName
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: Accept-Encoding
+          in: header
+          description: May contain ZSTD for compression
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          headers:
+            x-clonecloudstore-id:
+              description: Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-site:
+              description: Site
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-bucket:
+              description: Bucket Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-name:
+              description: Object Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-creation:
+              description: Creation Date
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-size:
+              description: Object Size
+              style: simple
+              schema:
+                type: integer
+            x-clonecloudstore-hash:
+              description: Object Hash SHA-256
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-metadata:
+              description: Object Metadata
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-status:
+              description: Object Status
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-expires:
+              description: Expiration Date
+              style: simple
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorObject'
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Object not found
+        "500":
+          description: Internal Error
+    post:
+      tags:
+        - Public API / Directory or Object
+      summary: Create object
+      description: Create object
+      parameters:
+        - name: Content-Encoding
+          in: header
+          description: May contain ZSTD for compression
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-bucket
+          in: header
+          description: Bucket Name
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-name
+          in: header
+          description: Object Name
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-size
+          in: header
+          description: Object Size
+          required: false
+          schema:
+            default: 0
+            type: integer
+        - name: x-clonecloudstore-hash
+          in: header
+          description: Object Hash
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-metadata
+          in: header
+          description: "Object Metadata as Json from Map<String,String>"
+          required: false
+          schema:
+            type: string
+        - name: x-clonecloudstore-expires
+          in: header
+          description: Expiration Date
+          required: false
+          schema:
+            type: string
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: objectName
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: x-clonecloudstore-id
+          in: header
+          schema:
+            type: string
+        - name: x-clonecloudstore-site
+          in: header
+          schema:
+            type: string
+      requestBody:
+        description: InputStream as content
+        content:
+          application/octet-stream:
+            schema:
+              format: binary
+              type: string
+        required: true
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessorObject'
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "406":
+          description: Object already in creation
+        "409":
+          description: Conflict since Object already exist or invalid
+        "500":
+          description: Internal Error
+    delete:
+      tags:
+        - Public API / Directory or Object
+      summary: Delete object
+      description: Delete object
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: objectName
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+      responses:
+        "204":
+          description: OK
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Object not found
+        "406":
+          description: Bucket is not empty
+        "409":
+          description: Conflict since Object status not compatible with Operation
+        "410":
+          description: Object already deleted
+        "500":
+          description: Internal Error
+  /cloudclonestore/{bucketName}/{pathDirectoryOrObject}:
+    head:
+      tags:
+        - Public API / Directory or Object
+      summary: Check if object or directory exist
+      description: Check if object or directory exist
+      parameters:
+        - name: bucketName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: pathDirectoryOrObject
+          in: path
+          required: true
+          schema:
+            pattern: .+
+            type: string
+        - name: x-clonecloudstore-client-id
+          in: header
+          description: Client ID
+          required: true
+          schema:
+            type: string
+        - name: x-clonecloudstore-op-id
+          in: header
+          description: Operation ID
+          required: false
+          schema:
+            type: string
+      responses:
+        "204":
+          description: OK
+          headers:
+            x-clonecloudstore-type:
+              description: Type as StorageType
+              style: simple
+              schema:
+                enum:
+                  - NONE
+                  - BUCKET
+                  - DIRECTORY
+                  - OBJECT
+                type: string
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Error
+components:
+  schemas:
+    AccessorBucket:
+      type: object
+      properties:
+        id:
+          type: string
+        site:
+          type: string
+        name:
+          type: string
+        creation:
+          $ref: '#/components/schemas/Instant'
+        expires:
+          $ref: '#/components/schemas/Instant'
+        status:
+          $ref: '#/components/schemas/AccessorStatus'
+    AccessorObject:
+      type: object
+      properties:
+        id:
+          type: string
+        site:
+          type: string
+        bucket:
+          type: string
+        name:
+          type: string
+        hash:
+          type: string
+        status:
+          $ref: '#/components/schemas/AccessorStatus'
+        creation:
+          $ref: '#/components/schemas/Instant'
+        expires:
+          $ref: '#/components/schemas/Instant'
+        size:
+          format: int64
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    AccessorStatus:
+      enum:
+        - UNKNOWN
+        - UPLOAD
+        - READY
+        - ERR_UPL
+        - DELETING
+        - DELETED
+        - ERR_DEL
+      type: string
+    Instant:
+      format: date-time
+      type: string
+      example: 2022-03-10T16:15:50Z
+

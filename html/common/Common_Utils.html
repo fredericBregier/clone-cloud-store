@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.2. Common Standard &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.3. Common Quarkus" href="Common_Quarkus.html" />
+    <link rel="prev" title="2.1. Modules" href="Modules.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">2. Commons</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Modules.html">2.1. Modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.2. Common Standard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#guidlike-and-relative-guid">2.2.1. GuidLike and relative Guid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#basexx">2.2.2. BaseXx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#various-x-inputstream">2.2.3. Various X InputStream</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zstdcompressinputstream-and-zstddecompressinputstream">2.2.3.1. ZstdCompressInputStream and ZstdDecompressInputStream</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parameterschecker">2.2.4. ParametersChecker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#various-random">2.2.5. Various Random</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#singleton">2.2.6. Singleton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#syserrlogger">2.2.7. SysErrLogger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system-properties-and-quarkus-configuration">2.2.8. System Properties and Quarkus Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Common_Quarkus.html">2.3. Common Quarkus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_DB.html">2.4. Common DB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">2.5. Common Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html"><span class="section-number">2. </span>Commons</a><ul>
+      <li>Previous: <a href="Modules.html" title="previous chapter"><span class="section-number">2.1. </span>Modules</a></li>
+      <li>Next: <a href="Common_Quarkus.html" title="next chapter"><span class="section-number">2.3. </span>Common Quarkus</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="common-standard">
+<h1><span class="section-number">2.2. </span>Common Standard<a class="headerlink" href="#common-standard" title="Link to this heading">¶</a></h1>
+<p>Common Standard is meant for “non Quarkus” usage (does not implied Quarkus libraries), while Common Utils is meant for
+“Quarkus” context, relying on Common Standard too.</p>
+<section id="guidlike-and-relative-guid">
+<h2><span class="section-number">2.2.1. </span>GuidLike and relative Guid<a class="headerlink" href="#guidlike-and-relative-guid" title="Link to this heading">¶</a></h2>
+<p>Prefer to use GUID instead of UUID since UUID are not able to be allocated without collision between
+several independent instances.</p>
+<p>One proposed implementation is the <strong>GuidLike</strong>. It uses by default the MAC Address and the PID of the
+Java process, plus a tenant, the time and an internal counter.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>GuidLike</strong></span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// Create Guid simply</span>
+<span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">GuidLike</span><span class="p">().</span><span class="na">getId</span><span class="p">();</span>
+<span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GuidLike</span><span class="p">.</span><span class="na">getGuid</span><span class="p">();</span><span class="w"> </span><span class="c1">// Equivalent</span>
+</pre></div>
+</div>
+</div>
+<p>Those Guid could be used in particular when any unique Id is needed, for instance in database model.</p>
+<p>For simple Uuid (not Guid), there is also the LongUuid implementation (uniqueness cannot be ensure across several JVM,
+neither several regions).</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>LongUuid</strong></span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">LongUuid</span><span class="w"> </span><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LongUuid</span><span class="p">();</span>
+<span class="c1">// If hexa form is needed</span>
+<span class="n">String</span><span class="w"> </span><span class="n">hexa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uuid</span><span class="p">.</span><span class="na">getId</span><span class="p">();</span>
+<span class="c1">// If long form is needed</span>
+<span class="kt">long</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">uuid</span><span class="p">.</span><span class="na">getLong</span><span class="p">();</span>
+<span class="c1">// or quicker</span>
+<span class="kt">long</span><span class="w"> </span><span class="n">id2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LongUuid</span><span class="p">.</span><span class="na">getLongUuid</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="basexx">
+<h2><span class="section-number">2.2.2. </span>BaseXx<a class="headerlink" href="#basexx" title="Link to this heading">¶</a></h2>
+<p>This is simple encapsulation of other libraries to simplify usage:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>BaseXx</strong></span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">encoded64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getBase64</span><span class="p">(</span><span class="s">&quot;FBTest64P&quot;</span><span class="p">.</span><span class="na">getBytes</span><span class="p">());</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">bytes64</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getFromBase64</span><span class="p">(</span><span class="n">encoded64</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">encoded32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getBase32</span><span class="p">(</span><span class="s">&quot;FBTest32&quot;</span><span class="p">.</span><span class="na">getBytes</span><span class="p">());</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">bytes32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getFromBase32</span><span class="p">(</span><span class="n">encoded32</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">encoded16</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getBase16</span><span class="p">(</span><span class="s">&quot;FBTest16&quot;</span><span class="p">.</span><span class="na">getBytes</span><span class="p">());</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kt">byte</span><span class="o">[]</span><span class="w"> </span><span class="n">bytes16</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BaseXx</span><span class="p">.</span><span class="na">getFromBase16</span><span class="p">(</span><span class="n">encoded16</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="various-x-inputstream">
+<h2><span class="section-number">2.2.3. </span>Various X InputStream<a class="headerlink" href="#various-x-inputstream" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>ChunkInputStream</strong> : From one InputStream, cut into sub-InputStream with a fix length
+(useful for multipart support for Object Storage for InputStream greater than 5 GB)</p></li>
+<li><p><strong>MultipleActionsInputStream</strong>: Can compute one Digest from an InputStream, while reading it,
+and compress or decompress using ZSTD algorithm</p></li>
+<li><p><strong>FakeInputStream</strong>: Only usable in test, create a fake InputStream for a given
+length with no memory impact (except one buffer) (allows to create 2 TB InputStream
+for instance). This one is placed in <strong>ccs-test-stream</strong> module since test only related.</p></li>
+<li><p><strong>TeeInputStream</strong>: Used to consume twice (or more) one InputStream. Note that the overall speed will be the
+slowest consumer speed. If one consumer is closing its own InputStream, it will not affect the others.</p></li>
+</ul>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>TeeInputStream</strong></span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kt">int</span><span class="w"> </span><span class="n">nbTee</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="n">FakeInputStream</span><span class="w"> </span><span class="n">fakeInputStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">FakeInputStream</span><span class="p">(</span><span class="n">INPUTSTREAM_SIZE</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">byte</span><span class="p">)</span><span class="w"> </span><span class="sc">&#39;a&#39;</span><span class="p">);</span>
+<span class="w">     </span><span class="n">TeeInputStream</span><span class="w"> </span><span class="n">teeInputStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TeeInputStream</span><span class="p">(</span><span class="n">fakeInputStream</span><span class="p">,</span><span class="w"> </span><span class="n">nbTee</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">InputStream</span><span class="w"> </span><span class="n">is</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">Future</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;[]</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Future</span><span class="o">[</span><span class="n">nbTee</span><span class="o">]</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">ExecutorService</span><span class="w"> </span><span class="n">executor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Executors</span><span class="p">.</span><span class="na">newFixedThreadPool</span><span class="p">(</span><span class="n">nbTee</span><span class="p">);</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nbTee</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">is</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">teeInputStream</span><span class="p">.</span><span class="na">getInputStream</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">ThreadReader</span><span class="w"> </span><span class="n">threadReader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ThreadReader</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">is</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span>
+<span class="w">    </span><span class="n">total</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">executor</span><span class="p">.</span><span class="na">submit</span><span class="p">(</span><span class="n">threadReader</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">executor</span><span class="p">.</span><span class="na">shutdown</span><span class="p">();</span>
+<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">executor</span><span class="p">.</span><span class="na">awaitTermination</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="n">TimeUnit</span><span class="p">.</span><span class="na">MILLISECONDS</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Empty</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nbTee</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">assertEquals</span><span class="p">(</span><span class="n">INPUTSTREAM_SIZE</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="w"> </span><span class="n">total</span><span class="o">[</span><span class="n">i</span><span class="o">]</span><span class="p">.</span><span class="na">get</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="c1">// If one wants to know if any of the underlying threads raised an exception on their own InputStream</span>
+<span class="w">  </span><span class="n">teeInputStream</span><span class="p">.</span><span class="na">throwLastException</span><span class="p">();</span>
+<span class="w">  </span><span class="c1">// teeInputStream.close() implicit since in Try resource</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">InterruptedException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">ExecutionException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">IOException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">LOGGER</span><span class="p">.</span><span class="na">error</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+<span class="w">  </span><span class="n">fail</span><span class="p">(</span><span class="s">&quot;Should not raised an exception: &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="na">getMessage</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<section id="zstdcompressinputstream-and-zstddecompressinputstream">
+<h3><span class="section-number">2.2.3.1. </span>ZstdCompressInputStream and ZstdDecompressInputStream<a class="headerlink" href="#zstdcompressinputstream-and-zstddecompressinputstream" title="Link to this heading">¶</a></h3>
+<p>ZSTD (Zstandard) is a modern and efficient compression (both in time, memory and compression).</p>
+<p>Those InputStreams allows to compress or decompress on the flY.</p>
+<p>General usages should be that those compression / decompression</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>ZstdCompressInputStream and ZstdDecompressInputStream</strong></span><a class="headerlink" href="#id5" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">ZstdCompressInputStream</span><span class="w"> </span><span class="n">zstdCompressInputStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ZstdCompressInputStream</span><span class="p">(</span><span class="n">inputStream</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// Here TrafficShaping is applied once compression is done, and before decompression, as if there were a</span>
+<span class="w">  </span><span class="c1">// trafficShaping between sending InputStream and receiving InputStream (wire handling)</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">trafficShapingInputStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TrafficShapingInputStream</span><span class="p">(</span><span class="n">zstdCompressInputStream</span><span class="p">,</span><span class="w"> </span><span class="n">trafficShaping</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// Supposedly here: wire transfer</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">ZstdDecompressInputStream</span><span class="w"> </span><span class="n">zstdDecompressInputStream</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="k">new</span><span class="w"> </span><span class="n">ZstdDecompressInputStream</span><span class="p">(</span><span class="n">trafficShapingInputStream</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">read</span><span class="p">;</span>
+<span class="w">  </span><span class="k">while</span><span class="w"> </span><span class="p">((</span><span class="n">read</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">zstdDecompressInputStream</span><span class="p">.</span><span class="na">read</span><span class="p">(</span><span class="n">bytes</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">bytes</span><span class="p">.</span><span class="na">length</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Do something with the decompressed InpuStream</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">zstdCompressInputStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+<span class="w">  </span><span class="n">zstdDecompressInputStream</span><span class="p">.</span><span class="na">close</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="parameterschecker">
+<h2><span class="section-number">2.2.4. </span>ParametersChecker<a class="headerlink" href="#parameterschecker" title="Link to this heading">¶</a></h2>
+<p>Can be used for String (testing also emptiness) and for general Object.
+For null String only, use the special method.</p>
+<p>It allows also some general sanity check to prevent wrong data in entry (such as
+CDATA or ENTITY in xml, SCRIPTS in Javascript, <code class="docutils literal notranslate"><span class="pre">;</span></code> in sql parameters…).
+2 special methods <code class="docutils literal notranslate"><span class="pre">checkSanityBucketName(name)</span></code> and <code class="docutils literal notranslate"><span class="pre">checkSanityObjectName(name)</span></code> are intended to ensure
+correctness of such names when using Object Storage.</p>
+<p>This could be later on extended to use external library specialized in sanity check (such as the Owasp library).</p>
+<p>I also includes a special function to fix Instant to milliseconds, instead of 1000 nanoseconds, since most of
+the database cannot handle more than millisecond.</p>
+</section>
+<section id="various-random">
+<h2><span class="section-number">2.2.5. </span>Various Random<a class="headerlink" href="#various-random" title="Link to this heading">¶</a></h2>
+<p>It could be useful (and in particular for Guid) to get random values in an efficient
+way or in a secure way (a bit less efficient but still efficient).</p>
+<ul class="simple">
+<li><p><strong>RandomUtil</strong> helps to get efficient Random values</p></li>
+<li><p><strong>SystemRandomSecure</strong> helps to get efficient and secure Random values.</p></li>
+</ul>
+</section>
+<section id="singleton">
+<h2><span class="section-number">2.2.6. </span>Singleton<a class="headerlink" href="#singleton" title="Link to this heading">¶</a></h2>
+<p>Utility class to get standard Singleton (empty and unmodifiable object), such as:</p>
+<ul class="simple">
+<li><p>Empty byte array</p></li>
+<li><p>Empty List</p></li>
+<li><p>Empty Set</p></li>
+<li><p>Empty Map</p></li>
+<li><p>Empty InputStream</p></li>
+<li><p>Empty OutputStream (moved to <strong>ccs-test-stream</strong> module since test only related)</p></li>
+</ul>
+</section>
+<section id="syserrlogger">
+<h2><span class="section-number">2.2.7. </span>SysErrLogger<a class="headerlink" href="#syserrlogger" title="Link to this heading">¶</a></h2>
+<p>In some rare case, we cannot have a Logger due to the fact the initialization is not done.</p>
+<p>In some other case, for quality code reasons, while we do not need to log anything in a catched
+exception, it is useful to set a log (but we do not want an output).</p>
+<p>This is where the SysErrLogger comes.</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>SysErrLogger</strong></span><a class="headerlink" href="#id6" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">something</span><span class="w"> </span><span class="n">raising</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">exception</span>
+<span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">ignore</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// This exception shall be ignored</span>
+<span class="w">  </span><span class="n">SysErrLogger</span><span class="p">.</span><span class="na">FAKE_LOGGER</span><span class="p">.</span><span class="na">ignoreLog</span><span class="p">(</span><span class="n">ignore</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">// Output to SysErr without Logger</span>
+<span class="n">SysErrLogger</span><span class="p">.</span><span class="na">FAKE_LOGGER</span><span class="p">.</span><span class="na">syserr</span><span class="p">(</span><span class="n">NOT_EMPTY</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Exception</span><span class="p">(</span><span class="s">&quot;Fake exception&quot;</span><span class="p">));</span>
+<span class="c1">// Output to SysOut without Logger</span>
+<span class="n">SysErrLogger</span><span class="p">.</span><span class="na">FAKE_LOGGER</span><span class="p">.</span><span class="na">sysout</span><span class="p">(</span><span class="n">NOT_EMPTY</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="system-properties-and-quarkus-configuration">
+<h2><span class="section-number">2.2.8. </span>System Properties and Quarkus Configuration<a class="headerlink" href="#system-properties-and-quarkus-configuration" title="Link to this heading">¶</a></h2>
+<p>We need sometimes to get configuration (Quarkus) or System Properties statically
+and not through injection.</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>SystemPropertyUtil</strong></span><a class="headerlink" href="#id7" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">KEY</span><span class="p">,</span><span class="w"> </span><span class="n">defaultValue</span><span class="p">);</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">getAndSet</span><span class="p">(</span><span class="n">KEY</span><span class="p">,</span><span class="w"> </span><span class="n">defaultValue</span><span class="p">);</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">set</span><span class="p">(</span><span class="n">KEY</span><span class="p">,</span><span class="w"> </span><span class="n">defaultValue</span><span class="p">);</span>
+<span class="c1">// Quarkus Configuration</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">getBooleanConfig</span><span class="p">(</span><span class="n">KEY</span><span class="p">)</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">getStringConfig</span><span class="p">(</span><span class="n">KEY</span><span class="p">);</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">getLongConfig</span><span class="p">(</span><span class="n">KEY</span><span class="p">);</span>
+<span class="n">SystemPropertyUtil</span><span class="p">.</span><span class="na">getBooleanConfig</span><span class="p">(</span><span class="n">KEY</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2022, Frederic Bregier.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/common/Common_Utils.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

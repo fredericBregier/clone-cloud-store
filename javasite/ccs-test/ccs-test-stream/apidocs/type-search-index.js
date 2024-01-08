@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.clonecloudstore.test.stream","l":"FakeInputStream"},{"p":"io.clonecloudstore.test.stream","l":"FakeIterator"},{"p":"io.clonecloudstore.test.stream","l":"VoidOutputStream"}];updateSearchResults();

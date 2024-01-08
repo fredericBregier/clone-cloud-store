@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.clonecloudstore.test.driver.fake","l":"FakeDriver"},{"p":"io.clonecloudstore.test.driver.fake","l":"FakeDriverFactory"},{"p":"io.clonecloudstore.test.driver.fake","l":"FakeDriverRegister"}];updateSearchResults();

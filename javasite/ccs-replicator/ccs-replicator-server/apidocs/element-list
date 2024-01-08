@@ -1,0 +1,7 @@
+io.clonecloudstore.replicator.server
+io.clonecloudstore.replicator.server.local.application
+io.clonecloudstore.replicator.server.local.resource
+io.clonecloudstore.replicator.server.local.topic
+io.clonecloudstore.replicator.server.remote.client
+io.clonecloudstore.replicator.server.remote.client.api
+io.clonecloudstore.replicator.server.remote.resource

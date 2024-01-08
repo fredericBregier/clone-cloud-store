@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.4. Common DB &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.5. Common Configuration" href="Configuration.html" />
+    <link rel="prev" title="2.3. Common Quarkus" href="Common_Quarkus.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">2. Commons</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Modules.html">2.1. Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_Utils.html">2.2. Common Standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_Quarkus.html">2.3. Common Quarkus</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.4. Common DB</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#db-utils">2.4.1. DB Utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#restquery-dbquery-and-dbupdate">2.4.1.1. RestQuery, DbQuery and DbUpdate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#streamhelperabstract">2.4.1.2. StreamHelperAbstract</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#repositorybaseinterface">2.4.1.3. RepositoryBaseInterface</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#mongodb">2.4.2. MongoDb</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mongobulkinserthelper">2.4.2.1. MongoBulkInsertHelper</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#postgresql">2.4.3. PostgreSQL</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">2.5. Common Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html"><span class="section-number">2. </span>Commons</a><ul>
+      <li>Previous: <a href="Common_Quarkus.html" title="previous chapter"><span class="section-number">2.3. </span>Common Quarkus</a></li>
+      <li>Next: <a href="Configuration.html" title="next chapter"><span class="section-number">2.5. </span>Common Configuration</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="common-db">
+<h1><span class="section-number">2.4. </span>Common DB<a class="headerlink" href="#common-db" title="Link to this heading">¶</a></h1>
+<section id="db-utils">
+<h2><span class="section-number">2.4.1. </span>DB Utils<a class="headerlink" href="#db-utils" title="Link to this heading">¶</a></h2>
+<section id="restquery-dbquery-and-dbupdate">
+<h3><span class="section-number">2.4.1.1. </span>RestQuery, DbQuery and DbUpdate<a class="headerlink" href="#restquery-dbquery-and-dbupdate" title="Link to this heading">¶</a></h3>
+<p><strong>RestQuery</strong> allows to define “standard” query in a Object model, in order to be able to serialize into a Json.
+This Json can then be sent through REST API.</p>
+<p>It focuses on the “Where” condition only and therefore can be used for any SELECT, INSERT or UPDATE command.</p>
+<p><strong>DbQuery</strong> allows to generate a SQL (PostgreSQL) or NoSQL (MongoDB) query. It can be used to express a request
+and using the Repository model, it will be taken into account natively, for both model (SQL or NoSQL).</p>
+<p>It focuses on the “Where” condition only and therefore can be used for any SELECT, INSERT or UPDATE command.</p>
+<p><strong>DbUpdate</strong> alows to general e SQL (PostgreSQL) or NoSQL (MongoDB) Update part query. It can be used to express the
+Update part and using the Repository model, it will be taken into account natively, for both model (SQL or NoSQL).</p>
+<p>It focuses on the “Update” part (SET) condition only and therefore can be used for UPDATE command only, in conjunction
+of a <em>DbQuery</em>.</p>
+</section>
+<section id="streamhelperabstract">
+<h3><span class="section-number">2.4.1.2. </span>StreamHelperAbstract<a class="headerlink" href="#streamhelperabstract" title="Link to this heading">¶</a></h3>
+<p><strong>StreamHelperAbstract</strong> allows to handle easily Stream (real Stream) on SELECT.
+It allows to limit memory usage.</p>
+</section>
+<section id="repositorybaseinterface">
+<h3><span class="section-number">2.4.1.3. </span>RepositoryBaseInterface<a class="headerlink" href="#repositorybaseinterface" title="Link to this heading">¶</a></h3>
+<p><strong>RepositoryBaseInterface</strong> allows to specify common methods for all repositories, whatever Sql or NoSQL.</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>Global Model definition</strong></span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@MappedSuperclass</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DbDtoExample</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// No Id nor BsonId</span>
+<span class="w">  </span><span class="c1">// Here come other fields</span>
+
+<span class="w">  </span><span class="nd">@Transient</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">fromTransferRequest</span><span class="p">(</span><span class="n">DtoExample</span><span class="w"> </span><span class="n">dto</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">setGuid</span><span class="p">(</span><span class="n">dto</span><span class="p">.</span><span class="na">getGuid</span><span class="p">());</span><span class="w"> </span><span class="c1">// and other setters</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Transient</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">DtoExample</span><span class="w"> </span><span class="nf">getTransferRequest</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">DtoExample</span><span class="w"> </span><span class="n">transferRequest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">DtoExample</span><span class="p">();</span>
+<span class="w">    </span><span class="n">transferRequest</span><span class="p">.</span><span class="na">setGuid</span><span class="p">(</span><span class="n">getGuid</span><span class="p">());</span><span class="w"> </span><span class="c1">// and other setters</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">transferRequest</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getGuid</span><span class="p">();</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">DbDtoExample</span><span class="w"> </span><span class="nf">setGuid</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">interface</span> <span class="nc">DbDtoExampleRepository</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">RepositoryBaseInterface</span><span class="o">&lt;</span><span class="n">DbDtoExample</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">String</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;dto_example&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// Here other field names</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>Global DTO definition</strong></span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@RegisterForReflection</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">DtoExample</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">DbDtoExample</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getGuid</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">DtoExample</span><span class="w"> </span><span class="nf">setGuid</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="na">guid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="mongodb">
+<h2><span class="section-number">2.4.2. </span>MongoDb<a class="headerlink" href="#mongodb" title="Link to this heading">¶</a></h2>
+<p>It provides the implementations for all DB-Utils package for NoSQL MongoDB.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>MongoDB Model Implementation definition</strong></span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@MongoEntity</span><span class="p">(</span><span class="n">collection</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="p">)</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MgDbDtoExample</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">DbDtoExample</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nd">@BsonId</span>
+<span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">MgDbDtoExample</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Empty</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">MgDbDtoExample</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">DtoExample</span><span class="w"> </span><span class="n">dto</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">fromTransferRequest</span><span class="p">(</span><span class="n">dto</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getGuid</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="nf">setGuid</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="na">guid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nd">@ApplicationScoped</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MgDbDtoExampleRepository</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ExtendedPanacheMongoRepositoryBase</span><span class="o">&lt;</span><span class="n">DbDtoExample</span><span class="p">,</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="o">&gt;</span>
+<span class="w">    </span><span class="kd">implements</span><span class="w"> </span><span class="n">DbDtoExampleRepository</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getTable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>In addition, it provides <strong>MongoSqlHelper</strong> to help to build SQL request from DbQuery and DbUpdate.</p>
+<p>It provides also an abstraction <strong>AbstractCodec</strong> to make easier the declaration of Codec for DTO (see example).</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>AbstractCodec</strong></span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MgDbDtoExampleCodec</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">AbstractCodec</span><span class="o">&lt;</span><span class="n">MgDbDtoExample</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">MgDbDtoExampleCodec</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">super</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">setGuid</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">setGuid</span><span class="p">(</span><span class="n">guid</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getGuid</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">getGuid</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="nf">fromDocument</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Document</span><span class="w"> </span><span class="n">document</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="p">();</span>
+<span class="w">    </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">setField1</span><span class="p">(</span><span class="n">document</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="n">FIELD1</span><span class="p">));</span>
+<span class="w">    </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">setField2</span><span class="p">(</span><span class="n">document</span><span class="p">.</span><span class="na">getString</span><span class="p">(</span><span class="n">FIELD2</span><span class="p">));</span>
+<span class="w">    </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">setTimeField</span><span class="p">(</span><span class="n">document</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">TIME_FIELD</span><span class="p">,</span><span class="w"> </span><span class="n">Date</span><span class="p">.</span><span class="na">class</span><span class="p">).</span><span class="na">toInstant</span><span class="p">());</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">toDocument</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Document</span><span class="w"> </span><span class="n">document</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">document</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">FIELD1</span><span class="p">,</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">getField1</span><span class="p">());</span>
+<span class="w">    </span><span class="n">document</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">FIELD2</span><span class="p">,</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">getField2</span><span class="p">());</span>
+<span class="w">    </span><span class="n">document</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">TIME_FIELD</span><span class="p">,</span><span class="w"> </span><span class="n">mgDbDtoExample</span><span class="p">.</span><span class="na">getTimeField</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">Class</span><span class="o">&lt;</span><span class="n">MgDbDtoExample</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getEncoderClass</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">MgDbDtoExample</span><span class="p">.</span><span class="na">class</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<section id="mongobulkinserthelper">
+<h3><span class="section-number">2.4.2.1. </span>MongoBulkInsertHelper<a class="headerlink" href="#mongobulkinserthelper" title="Link to this heading">¶</a></h3>
+<p><strong>MongoBulkInsertHelper</strong> allows to handle easily bulk operation on INSERT or UPDATE for MongoDB.</p>
+</section>
+</section>
+<section id="postgresql">
+<h2><span class="section-number">2.4.3. </span>PostgreSQL<a class="headerlink" href="#postgresql" title="Link to this heading">¶</a></h2>
+<p>It provides the implementations for all DB-Utils package for SQL PostgreSQL.</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>PostgreSQL Model Implementation definition</strong></span><a class="headerlink" href="#id5" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Entity</span>
+<span class="nd">@Table</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="p">,</span>
+<span class="w">    </span><span class="n">indexes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="nd">@Index</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;_filter_idx&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">columnList</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FIELD1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">TIME_FIELD</span><span class="p">)})</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PgDbDtoExample</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">DbDtoExample</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nd">@Id</span>
+<span class="w">  </span><span class="nd">@Column</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ID</span><span class="p">,</span><span class="w"> </span><span class="n">nullable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">40</span><span class="p">)</span>
+<span class="w">  </span><span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">PgDbDtoExample</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Empty</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">PgDbDtoExample</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">DtoExample</span><span class="w"> </span><span class="n">dto</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">fromDto</span><span class="p">(</span><span class="n">dto</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getGuid</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">PgDbDtoExample</span><span class="w"> </span><span class="nf">setGuid</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">guid</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="na">guid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">guid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="nd">@ApplicationScoped</span>
+<span class="nd">@Transactional</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">PgDbDtoExampleRepository</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ExtendedPanacheRepositoryBase</span><span class="o">&lt;</span><span class="n">DbDtoExample</span><span class="p">,</span><span class="w"> </span><span class="n">PgDbDtoExample</span><span class="o">&gt;</span>
+<span class="w">    </span><span class="kd">implements</span><span class="w"> </span><span class="n">DbDtoExampleRepository</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">PgDbDtoExampleRepository</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">super</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">PgDbDtoExample</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="nd">@Override</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="nf">getTable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TABLE_NAME</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>In addition, it provides <strong>PostgreSqlHelper</strong> to help to build SQL request from DbQuery and DbUpdate.</p>
+<p>It provides also 2 extra Types supported by PostgreSQL:</p>
+<ul class="simple">
+<li><p>Set Type as an Array implementation (<strong>PostgreStringArrayType</strong>)</p>
+<ul>
+<li><p>Set to Array shall be implemented carefully within the DTO class (see example)</p></li>
+</ul>
+</li>
+<li><p>Map Type (String, String) as a Jsonb implementation (<strong>PostgreStringMapAsJsonbType</strong>)</p></li>
+</ul>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>PostgreStringArrayType</strong> and <strong>PostgreStringMapAsJsonbType</strong></span><a class="headerlink" href="#id6" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Column</span><span class="p">(</span><span class="n">columnDefinition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;text[]&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ARRAY1</span><span class="p">)</span>
+<span class="nd">@Type</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ARRAY_TYPE_CLASS</span><span class="p">)</span>
+<span class="kd">private</span><span class="w"> </span><span class="n">String</span><span class="o">[]</span><span class="w"> </span><span class="n">array1</span><span class="p">;</span>
+<span class="cm">/**</span>
+<span class="cm"> * To get a Set internally instead of an array</span>
+<span class="cm"> */</span>
+<span class="nd">@IgnoreProperty</span>
+<span class="nd">@Transient</span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Set</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">set1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HashSet</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="cm">/**</span>
+<span class="cm"> * To ensure array ans set are correctly initialized</span>
+<span class="cm"> */</span>
+<span class="nd">@IgnoreProperty</span>
+<span class="nd">@Transient</span>
+<span class="kd">private</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">checked</span><span class="p">;</span>
+<span class="nd">@Column</span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAP1</span><span class="p">,</span><span class="w"> </span><span class="n">columnDefinition</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JSON_TYPE</span><span class="p">)</span>
+<span class="nd">@Type</span><span class="p">(</span><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MAP_TYPE_CLASS</span><span class="p">)</span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">map1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2022, Frederic Bregier.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/common/Common_DB.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

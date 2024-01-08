@@ -1,0 +1,8 @@
+From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
+Purge
+Object DB, x, -, -, -, -, -, -, -
+Object Fix, Delete, -, -, -, -, -, -, -
+
+Purge, status, older, than, reference
+Object DB, -, x, -, x, x, -, x, -
+Object Fix, -, (check) > , X, < (check), (check) > , X, < (check), -

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.3. Common Quarkus &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
+    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="2.4. Common DB" href="Common_DB.html" />
+    <link rel="prev" title="2.2. Common Standard" href="Common_Utils.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  <div class="document">
+    
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<p class="logo">
+  <a href="../index.html">
+    <img class="logo" src="../_static/logo.png" alt="Logo"/>
+    
+  </a>
+</p>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">2. Commons</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Modules.html">2.1. Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_Utils.html">2.2. Common Standard</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">2.3. Common Quarkus</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#client-and-server-abstract-implementation-for-inputstream">2.3.1. Client and Server Abstract implementation for InputStream</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#client-sending-inputstream">2.3.1.1. Client sending InputStream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#client-receiving-inputstream">2.3.1.2. Client receiving InputStream</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#client-definition-of-service">2.3.1.3. Client definition of Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#server-definition-of-service">2.3.1.4. Server definition of Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#client-implementation">2.3.1.5. Client implementation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#client-implementation-using-quarkus-service">2.3.1.6. Client implementation using Quarkus Service</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#server-implementation">2.3.1.7. Server implementation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#priorityqueue">2.3.2. PriorityQueue</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#trafficshaping">2.3.3. TrafficShaping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jsonutil">2.3.4. JsonUtil</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#statemachine">2.3.5. StateMachine</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Common_DB.html">2.4. Common DB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">2.5. Common Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html"><span class="section-number">2. </span>Commons</a><ul>
+      <li>Previous: <a href="Common_Utils.html" title="previous chapter"><span class="section-number">2.2. </span>Common Standard</a></li>
+      <li>Next: <a href="Common_DB.html" title="next chapter"><span class="section-number">2.4. </span>Common DB</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="common-quarkus">
+<h1><span class="section-number">2.3. </span>Common Quarkus<a class="headerlink" href="#common-quarkus" title="Link to this heading">¶</a></h1>
+<p>This module contains some class to help handling InputStream within Quarkus efficiently.</p>
+<p>Using <em>Uni</em> was not possible for InputStream since Quarkus does not support yet correctly InputStream.
+A patch is submitted to enable this (see <a class="reference external" href="https://github.com/quarkusio/quarkus/pull/37308">https://github.com/quarkusio/quarkus/pull/37308</a>)
+“&#64;Blocking” mode must be declared imperatively, which means that a new thread is used.</p>
+<p>Two cases occur:</p>
+<ul class="simple">
+<li><p>Sending an InputStream to a remote REST API</p></li>
+<li><p>Receiving an InputStream from a remote REST API</p></li>
+</ul>
+<section id="client-and-server-abstract-implementation-for-inputstream">
+<h2><span class="section-number">2.3.1. </span>Client and Server Abstract implementation for InputStream<a class="headerlink" href="#client-and-server-abstract-implementation-for-inputstream" title="Link to this heading">¶</a></h2>
+<p>In order to make it easier to integrate the InputStream management with back-pressure in all APIs,
+an abstract implementation is provide both for Client ans Server.</p>
+<p>The full example is located in the test part of the <strong>ccs-common-quarkus-server</strong>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">io.clonecloudstore.common.quarkus.example.model</span></code> contains the definition of the model of data (In and Out).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">io.clonecloudstore.common.quarkus.example.client</span></code> contains the <strong>ApiClient</strong> and its factory and the extension of different abstract needed for the client.</p></li>
+</ul>
+<p>The abstract <strong>ClientAbstract</strong> defines some abstract methods that must be specified within the final client implementation,
+in order to include business implementation.</p>
+<section id="client-sending-inputstream">
+<h3><span class="section-number">2.3.1.1. </span>Client sending InputStream<a class="headerlink" href="#client-sending-inputstream" title="Link to this heading">¶</a></h3>
+<p>Note that if several API are intended for this client to send InputStream (various usages), one shall specialized the answer
+of those abstract methods through more general BusinessIn and BusinessOut types (for instance, using multiple sub elements or
+using instanceOf check).</p>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Zoom on <strong>ClientAbstract</strong> POST way (sending InputStream to server)</span><a class="headerlink" href="#id1" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * @param context 1 for sending InputStream, -1 for receiving InputStream, or anything else</span>
+<span class="cm">   * @return the headers map</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getHeadersFor</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">context</span><span class="p">);</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * @return the BusinessOut from the response content and/or headers</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">O</span><span class="w"> </span><span class="nf">getApiBusinessOutFromResponse</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="n">response</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="client-receiving-inputstream">
+<h3><span class="section-number">2.3.1.2. </span>Client receiving InputStream<a class="headerlink" href="#client-receiving-inputstream" title="Link to this heading">¶</a></h3>
+<p>Note that if several API are intended for this client to receive InputStream (various usages), one shall specialized the answer
+of those abstract methods through more general BusinessIn and BusinessOut types (for instance, using multiple sub elements or
+using instanceOf check).</p>
+<div class="literal-block-wrapper docutils container" id="id2">
+<div class="code-block-caption"><span class="caption-text">Zoom on <strong>ClientAbstract</strong> GET way (receiving InputStream from server)</span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * @param context 1 for sending InputStream, -1 for receiving InputStream, or anything else</span>
+<span class="cm">   * @return the headers map</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getHeadersFor</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">context</span><span class="p">);</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * @return the BusinessOut from the response content and/or headers</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">O</span><span class="w"> </span><span class="nf">getApiBusinessOutFromResponse</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="n">response</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="client-definition-of-service">
+<h3><span class="section-number">2.3.1.3. </span>Client definition of Service<a class="headerlink" href="#client-definition-of-service" title="Link to this heading">¶</a></h3>
+<p>Note that <strong>ApiServiceInterface</strong> is the API of the server, with specific attention on InputStream,
+using a different Java Interface than the server’s one. This is due to the need to access to low level
+injected values such as <code class="docutils literal notranslate"><span class="pre">HttpServerRequest</span></code> and <code class="docutils literal notranslate"><span class="pre">Closer</span></code>.</p>
+<p>Note: these declarations are not useful since the client service will never be used for those end points.</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ApiServiceInterface</strong> (client side)</span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Path</span><span class="p">(</span><span class="n">ApiConstants</span><span class="p">.</span><span class="na">API_COLLECTIONS</span><span class="p">)</span>
+<span class="nd">@POST</span>
+<span class="nd">@Consumes</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_OCTET_STREAM</span><span class="p">)</span>
+<span class="nd">@Produces</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_JSON</span><span class="p">)</span>
+<span class="n">Uni</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">createObject</span><span class="p">(</span><span class="n">InputStream</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">)</span><span class="w"> </span><span class="nd">@RestHeader</span><span class="p">(</span><span class="n">ApiConstants</span><span class="p">.</span><span class="na">X_NAME</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">)</span><span class="w"> </span><span class="nd">@RestHeader</span><span class="p">(</span><span class="n">ApiConstants</span><span class="p">.</span><span class="na">X_LEN</span><span class="p">)</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">len</span><span class="p">);</span>
+
+<span class="nd">@Path</span><span class="p">(</span><span class="n">ApiConstants</span><span class="p">.</span><span class="na">API_COLLECTIONS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;/{business}&quot;</span><span class="p">)</span>
+<span class="nd">@GET</span>
+<span class="nd">@Produces</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_OCTET_STREAM</span><span class="p">)</span>
+<span class="n">Uni</span><span class="o">&lt;</span><span class="n">InputStream</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">readObject</span><span class="p">(</span><span class="nd">@RestPath</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">business</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="server-definition-of-service">
+<h3><span class="section-number">2.3.1.4. </span>Server definition of Service<a class="headerlink" href="#server-definition-of-service" title="Link to this heading">¶</a></h3>
+<p>Be careful that API using InputStream (push or pull) are defined with the annotation <code class="docutils literal notranslate"><span class="pre">&#64;Blocking</span></code> on server side.</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ApiService</strong> (server side)</span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Path</span><span class="p">(</span><span class="n">API_COLLECTIONS</span><span class="p">)</span>
+<span class="nd">@POST</span>
+<span class="nd">@Consumes</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_OCTET_STREAM</span><span class="p">)</span>
+<span class="nd">@Produces</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_JSON</span><span class="p">)</span>
+<span class="nd">@Blocking</span>
+<span class="kd">public</span><span class="w"> </span><span class="n">Uni</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">createObject</span><span class="p">(</span><span class="n">HttpServerRequest</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="nd">@Context</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Closer</span><span class="w"> </span><span class="n">closer</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">InputStream</span><span class="w"> </span><span class="n">inputStream</span><span class="p">,</span>
+<span class="w">    </span><span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">&quot;name&quot;</span><span class="p">)</span><span class="w"> </span><span class="nd">@RestHeader</span><span class="p">(</span><span class="n">X_NAME</span><span class="p">)</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="nd">@DefaultValue</span><span class="p">(</span><span class="s">&quot;0&quot;</span><span class="p">)</span><span class="w"> </span><span class="nd">@RestHeader</span><span class="p">(</span><span class="n">X_LEN</span><span class="p">)</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">len</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ApiBusinessIn</span><span class="w"> </span><span class="n">businessIn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiBusinessIn</span><span class="p">();</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">len</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">createObject</span><span class="p">(</span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">closer</span><span class="p">,</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">businessIn</span><span class="p">.</span><span class="na">len</span><span class="p">,</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="n">keepCompressed</span><span class="p">,</span><span class="w"> </span><span class="n">inputStream</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="nd">@Path</span><span class="p">(</span><span class="n">API_COLLECTIONS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;/{business}&quot;</span><span class="p">)</span>
+<span class="nd">@GET</span>
+<span class="nd">@Produces</span><span class="p">(</span><span class="n">MediaType</span><span class="p">.</span><span class="na">APPLICATION_OCTET_STREAM</span><span class="p">)</span>
+<span class="nd">@Blocking</span>
+<span class="kd">public</span><span class="w"> </span><span class="n">Uni</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">readObject</span><span class="p">(</span><span class="nd">@RestPath</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">business</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">HttpServerRequest</span><span class="w"> </span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="nd">@Context</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Closer</span><span class="w"> </span><span class="n">closer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ApiBusinessIn</span><span class="w"> </span><span class="n">businessIn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiBusinessIn</span><span class="p">();</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">business</span><span class="p">;</span>
+<span class="w">  </span><span class="n">String</span><span class="w"> </span><span class="n">xlen</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">request</span><span class="p">.</span><span class="na">getHeader</span><span class="p">(</span><span class="n">X_LEN</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">long</span><span class="w"> </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LEN</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">ParametersChecker</span><span class="p">.</span><span class="na">isNotEmpty</span><span class="p">(</span><span class="n">xlen</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Long</span><span class="p">.</span><span class="na">parse</span><span class="p">(</span><span class="n">xlen</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">len</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">readObject</span><span class="p">(</span><span class="n">request</span><span class="p">,</span><span class="w"> </span><span class="n">closer</span><span class="p">,</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">futureAlreadyCompressed</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">keepInputStreamCompressed</span></code> specifies for each end point if the InputStream shall be kept
+compressed if already compressed, or uncompressed if compressed.</p></li>
+</ul>
+<p><strong>The Client Factory should be used as ``&#64;ApplicationScoped`` in order to ensure it is always the unique one.</strong></p>
+</section>
+<section id="client-implementation">
+<h3><span class="section-number">2.3.1.5. </span>Client implementation<a class="headerlink" href="#client-implementation" title="Link to this heading">¶</a></h3>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ApiClient</strong></span><a class="headerlink" href="#id5" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="n">ApiBusinessOut</span><span class="w"> </span><span class="nf">postInputStream</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">InputStream</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">shallCompress</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">alreadyCompressed</span><span class="p">)</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsWithStatusException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ApiBusinessIn</span><span class="w"> </span><span class="n">businessIn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiBusinessIn</span><span class="p">();</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">len</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">inputStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">prepareInputStreamToSend</span><span class="p">(</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">shallCompress</span><span class="p">,</span><span class="w"> </span><span class="n">alreadyCompressed</span><span class="p">,</span><span class="w"> </span><span class="n">businessIn</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getService</span><span class="p">().</span><span class="na">createObject</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">len</span><span class="p">,</span><span class="w"> </span><span class="n">inputStream</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">getResultFromPostInputStreamUni</span><span class="p">(</span><span class="n">uni</span><span class="p">,</span><span class="w"> </span><span class="n">inputStream</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kd">public</span><span class="w"> </span><span class="n">InputStreamBusinessOut</span><span class="o">&lt;</span><span class="n">ApiBusinessOut</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getInputStream</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">len</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">acceptCompressed</span><span class="p">,</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="n">shallDecompress</span><span class="p">)</span>
+<span class="w">    </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsWithStatusException</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ApiBusinessIn</span><span class="w"> </span><span class="n">businessIn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiBusinessIn</span><span class="p">();</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">  </span><span class="n">businessIn</span><span class="p">.</span><span class="na">len</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">len</span><span class="p">;</span>
+<span class="w">  </span><span class="n">prepareInputStreamToReceive</span><span class="p">(</span><span class="n">acceptCompressed</span><span class="p">,</span><span class="w"> </span><span class="n">businessIn</span><span class="p">);</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getService</span><span class="p">().</span><span class="na">readObject</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">getInputStreamBusinessOutFromUni</span><span class="p">(</span><span class="n">acceptCompressed</span><span class="p">,</span><span class="w"> </span><span class="n">shallDecompress</span><span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">shallCompress</span></code> and <code class="docutils literal notranslate"><span class="pre">acceptCompressed</span></code> specify if the InputStream must be compressed (either in POST or GET).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alreadyCompressed</span></code> specifies if the InputStream is already compressed or not in POST.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shallDecompress</span></code> specifies if the InputStream shall be decompressed if received compressed.</p></li>
+</ul>
+</section>
+<section id="client-implementation-using-quarkus-service">
+<h3><span class="section-number">2.3.1.6. </span>Client implementation using Quarkus Service<a class="headerlink" href="#client-implementation-using-quarkus-service" title="Link to this heading">¶</a></h3>
+<p>It is possible to use native Quarkus client. (service is the injected ApiService with correct
+URL from <code class="docutils literal notranslate"><span class="pre">quarkus.rest-client.&quot;org.acme.rest.client.ExtensionsService&quot;.url=yourUrl</span></code>).</p>
+<div class="literal-block-wrapper docutils container" id="id6">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ApiClient</strong> using service</span><a class="headerlink" href="#id6" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ApiClient</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">ClientAbstract</span><span class="o">&lt;</span><span class="n">ApiBusinessIn</span><span class="p">,</span><span class="w"> </span><span class="n">ApiBusinessOut</span><span class="p">,</span><span class="w"> </span><span class="n">ApiServiceInterface</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">checkName</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">final</span><span class="w"> </span><span class="n">Uni</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getService</span><span class="p">().</span><span class="na">checkName</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">    </span><span class="n">ApiBusinessIn</span><span class="w"> </span><span class="n">businessIn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiBusinessIn</span><span class="p">();</span>
+<span class="w">    </span><span class="n">businessIn</span><span class="p">.</span><span class="na">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">name</span><span class="p">;</span>
+<span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exceptionMapper</span><span class="p">.</span><span class="na">handleUniResponse</span><span class="p">(</span><span class="n">uni</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">name</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">response</span><span class="p">.</span><span class="na">getHeaderString</span><span class="p">(</span><span class="n">X_NAME</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CcsWithStatusException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="kc">false</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>Some helpers are created to make it easier to handle the return status.</p>
+<div class="literal-block-wrapper docutils container" id="id7">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ExceptionMapper</strong> helper</span><a class="headerlink" href="#id7" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="c1">// Response format</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="n">Uni</span><span class="o">&lt;</span><span class="n">Response</span><span class="o">&gt;</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getService</span><span class="p">().</span><span class="na">checkName</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">Response</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exceptionMapper</span><span class="p">.</span><span class="na">handleUniResponse</span><span class="p">(</span><span class="n">uni</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// OK</span>
+<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">CcsWithStatusException</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Handle exception</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// DTO format</span>
+<span class="w">  </span><span class="kd">final</span><span class="w"> </span><span class="kd">var</span><span class="w"> </span><span class="n">uni</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getService</span><span class="p">().</span><span class="na">getObjectMetadata</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="n">ApiBusinessOut</span><span class="p">)</span><span class="w"> </span><span class="n">exceptionMapper</span><span class="p">.</span><span class="na">handleUniObject</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">uni</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Note that if a Factory is going to be used for several targets, the factory is then not correctly initialized with the
+right URI. Therefore the following example shall be followed:</p>
+<div class="literal-block-wrapper docutils container" id="id8">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>ApiClientFactory and ApiClient</strong> with multiple targets</span><a class="headerlink" href="#id8" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="c1">// Still get the Factory using @Inject</span>
+<span class="w">  </span><span class="nd">@Inject</span>
+<span class="w">  </span><span class="n">ApiClientFactory</span><span class="w"> </span><span class="n">factory</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// Then in method where the client is needed for a particular URI</span>
+<span class="w">  </span><span class="k">try</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">ApiClient</span><span class="w"> </span><span class="n">apiClient</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">factory</span><span class="p">.</span><span class="na">newClient</span><span class="p">(</span><span class="n">uri</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// This method is synchronized on Factory to prevent wrong setup</span>
+<span class="w">    </span><span class="c1">// (getUri() will return the right URI at construction but not guaranteed later on)</span>
+<span class="w">  </span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="server-implementation">
+<h3><span class="section-number">2.3.1.7. </span>Server implementation<a class="headerlink" href="#server-implementation" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">io.clonecloudstore.common.quarkus.server</span></code> contains the NativeStreamHandlerAbstract, the StreamServiceAbstract and some filters implementations for the server.</p></li>
+</ul>
+<p>With those abstracts, the code needed is shortest and allow to be extended to any API and usages.</p>
+<p>The abstract <strong>StreamServiceAbstract</strong> defines abstract methods, as <strong>NativeStreamHandlerAbstract</strong>, that must be
+specified within the final client implementation, in order to include business implementation.</p>
+<div class="literal-block-wrapper docutils container" id="id9">
+<div class="code-block-caption"><span class="caption-text">Zoom on abstract methods in <strong>NativeStreamHandlerAbstract</strong> helper for InputStream received by the server</span><a class="headerlink" href="#id9" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * @return True if the digest is to be computed on the fly</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">checkDigestToCumpute</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">);</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Check if the request for POST is valid, and if so, adapt the given MultipleActionsInputStream that will</span>
+<span class="cm">   * be used to consume the original InputStream.</span>
+<span class="cm">   * The implementation shall use the business logic to check the validity for this InputStream reception</span>
+<span class="cm">   * (from client to server) and, if valid, use the MultipleActionsInputStream, either as is or as a standard InputStream.</span>
+<span class="cm">   * (example: check through Object Storage that object does not exist yet, and if so</span>
+<span class="cm">   * add the consumption of the stream for the Object Storage object creation).</span>
+<span class="cm">   * Note that the stream might be kept compressed if keepInputStreamCompressed was specified at construction.</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">checkPushAble</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">MultipleActionsInputStream</span><span class="w"> </span><span class="n">inputStream</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Returns a BusinessOut in case of POST (receiving InputStream on server side).</span>
+<span class="cm">   * The implementation shall use the business logic to get the right</span>
+<span class="cm">   * BusinessOut object to return.</span>
+<span class="cm">   * (example: getting the StorageObject object, including the computed or given Hash)</span>
+<span class="cm">   *</span>
+<span class="cm">   * @param businessIn businessIn as passed in constructor</span>
+<span class="cm">   * @param finalHash  the final Hash if computed on the fly, or the original given one</span>
+<span class="cm">   * @param size       the real size read (from received stream, could be compressed size if decompression is off at</span>
+<span class="cm">   *                   construction)</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">O</span><span class="w"> </span><span class="nf">getAnswerPushInputStream</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">finalHash</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Returns a Map for Headers response in case of POST (receiving InputStream on server side).</span>
+<span class="cm">   * (example: headers for object name, object size, ...)</span>
+<span class="cm">   *</span>
+<span class="cm">   * @param businessIn  businessIn as passed in constructor</span>
+<span class="cm">   * @param finalHash   the final Hash if computed on the fly, or the original given one</span>
+<span class="cm">   * @param size        the real size read</span>
+<span class="cm">   * @param businessOut previously constructed from getAnswerPushInputStream</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getHeaderPushInputStream</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">finalHash</span><span class="p">,</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">size</span><span class="p">,</span>
+<span class="w">                                                                  </span><span class="n">O</span><span class="w"> </span><span class="n">businessOut</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<figure class="align-default" id="id10">
+<div class="graphviz"><img src="../_images/graphviz-9a9fdb942d615f36cef424026434d51ced6b9f4f.png" alt="digraph dependencies {
+  &quot;servicePost&quot; -&gt; &quot;nativeStreamHandler&quot; [label=&quot;Creation&quot;];
+  &quot;nativeStreamHandler&quot; -&gt; &quot;headersCheck&quot; [label=&quot;Check compression&quot;];
+  &quot;headersCheck&quot; -&gt; &quot;checkPushAble&quot; [label=&quot;Check if push is allowed&quot;];
+  &quot;checkPushAble&quot; -&gt; &quot;asyncInputStreamConsumer&quot; [label=&quot;InputStream consumption through new thread and create a semaphore&quot;];
+  &quot;checkPushAble&quot; -&gt; &quot;asyncInputStreamProducer&quot; [label=&quot;InputStream producing from Network input&quot;];
+  &quot;asyncInputStreamConsumer&quot; -&gt; &quot;externalUsage&quot; [label=&quot;InputStream consumption through new thread&quot;];
+  &quot;externalUsage&quot; -&gt; &quot;semaphoreRelease&quot; [label=&quot;Release semaphore when consumption ending&quot;];
+  &quot;asyncInputStreamProducer&quot; -&gt; &quot;inputStreamReception&quot; [label=&quot;Feeding InputStream from Network&quot;];
+  &quot;inputStreamReception&quot; -&gt; &quot;endProducing&quot; [label=&quot;Finalize producing InputStream&quot;];
+  {&quot;semaphoreRelease&quot; &quot;endProducing&quot;} -&gt; &quot;getAnswerPushInputStream&quot; [label=&quot;Once production and consumption ending&quot;];
+  &quot;getAnswerPushInputStream&quot; -&gt; &quot;finalizeConsumer&quot; [label=&quot;Ending consumer once everything is done&quot;];
+  &quot;finalizeConsumer&quot; -&gt;  &quot;getHeaderPushInputStream&quot; [label=&quot;Get final headers for response&quot;];
+  &quot;getHeaderPushInputStream&quot; -&gt; &quot;finalAnswer&quot; [label=&quot;Final answer&quot;];
+}" class="graphviz" /></div>
+<figcaption>
+<p><span class="caption-text">Illustration of network steps in receiving InputStream within server</span><a class="headerlink" href="#id10" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<div class="literal-block-wrapper docutils container" id="id11">
+<div class="code-block-caption"><span class="caption-text">Zoom on abstract methods in <strong>NativeStreamHandler</strong> helper for InputStream sent by the server</span><a class="headerlink" href="#id11" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * The implementation must check using business object that get inputStream request (server sending InputStream as</span>
+<span class="cm">   * result) is valid according to the businessIn from te Rest API and the headers.</span>
+<span class="cm">   * (example: ObjectStorage check of existence of object)</span>
+<span class="cm">   *</span>
+<span class="cm">   * @return True if the read action is valid for this businessIn object and headers</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">checkPullAble</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="n">MultiMap</span><span class="w"> </span><span class="n">headers</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Returns the InputStream required for GET (server is sending the InputStream back to the client).</span>
+<span class="cm">   * The implementation shall use the business logic and controls to get the InputStream to return.</span>
+<span class="cm">   * (example: getting the Object Storage object stream)</span>
+<span class="cm">   *</span>
+<span class="cm">   * @param businessIn businessIn as passed in constructor</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">InputStream</span><span class="w"> </span><span class="nf">getPullInputStream</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Returns a Map for Headers response in case of GET, added to InputStream get above  (server is sending the</span>
+<span class="cm">   * InputStream back to the client)</span>
+<span class="cm">   * (example: headers for object name, object size...)</span>
+<span class="cm">   *</span>
+<span class="cm">   * @param businessIn businessIn as passed in constructor</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getHeaderPullInputStream</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">)</span>
+<span class="w">      </span><span class="kd">throws</span><span class="w"> </span><span class="n">CcsClientGenericException</span><span class="p">,</span><span class="w"> </span><span class="n">CcsServerGenericException</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+<figure class="align-default" id="id12">
+<div class="graphviz"><img src="../_images/graphviz-2bdd64211d16f16b0c841a2834b94c1d68d1a637.png" alt="digraph dependencies {
+  &quot;serviceGet&quot; -&gt; &quot;nativeStreamHandler&quot; [label=&quot;Creation&quot;];
+  &quot;nativeStreamHandler&quot; -&gt; &quot;headersCheck&quot; [label=&quot;Check if push is allowed&quot;];
+  &quot;headersCheck&quot; -&gt; &quot;checkPullAble&quot; [label=&quot;Check if pull is allowed&quot;];
+  &quot;checkPullAble&quot; -&gt; &quot;getPullInputStream&quot; [label=&quot;InputStream and Metadata creation using async operation for InputStream&quot;];
+  &quot;getPullInputStream&quot; -&gt; &quot;asyncInputStreamProducer&quot; [label=&quot;InputStream producing from external resource&quot;];
+  &quot;getPullInputStream&quot; -&gt; &quot;getHeaderPullInputStream&quot; [label=&quot;Get final headers for response from Metadata&quot;];
+  &quot;getHeaderPullInputStream&quot; -&gt; &quot;headerSend&quot; [label=&quot;Send headers as answer&quot;];
+  &quot;asyncInputStreamProducer&quot; -&gt; &quot;inputStreamEmission&quot; [label=&quot;Async emission as response from InputStream&quot;];
+  &quot;inputStreamEmission&quot; -&gt; &quot;endProducing&quot; [label=&quot;End of InputStream sending&quot;];
+  {&quot;headerSend&quot; &quot;endProducing&quot;} -&gt; &quot;finalAnswer&quot; [label=&quot;Final answer&quot;];
+}" class="graphviz" /></div>
+<figcaption>
+<p><span class="caption-text">Illustration of network steps in sending InputStream within server</span><a class="headerlink" href="#id12" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<div class="literal-block-wrapper docutils container" id="id13">
+<div class="code-block-caption"><span class="caption-text">Zoom on abstract methods in <strong>NativeStreamHandler</strong> helper for error message (in or out)</span><a class="headerlink" href="#id13" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="cm">/**</span>
+<span class="cm">   * Return headers for error message.</span>
+<span class="cm">   * (example: get headers in case of error as Object name, Bucket name...)</span>
+<span class="cm">   */</span>
+<span class="w">  </span><span class="kd">protected</span><span class="w"> </span><span class="kd">abstract</span><span class="w"> </span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">getHeaderError</span><span class="p">(</span><span class="n">I</span><span class="w"> </span><span class="n">businessIn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">status</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<p>Note that if several API are intended for this server to send or receive InputStream (various usages), one shall specialized the answer
+of those abstract methods through more general BusinessIn and BusinessOut types (for instance, using multiple sub elements or
+using instanceOf check).</p>
+<div class="literal-block-wrapper docutils container" id="id14">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>ApiService</strong> (Class definition and REST service definition)</span><a class="headerlink" href="#id14" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@ApplicationScoped</span>
+<span class="nd">@Path</span><span class="p">(</span><span class="n">API_ROOT</span><span class="p">)</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">ApiService</span>
+<span class="w">    </span><span class="kd">extends</span><span class="w"> </span><span class="n">StreamServiceAbstract</span><span class="o">&lt;</span><span class="n">ApiBusinessIn</span><span class="p">,</span><span class="w"> </span><span class="n">ApiBusinessOut</span><span class="p">,</span><span class="w"> </span><span class="n">NativeStreamHandler</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+</pre></div>
+</div>
+</div>
+<p>The interaction with a Driver is done through the extension of <strong>NativeStreamHandlerAbstract</strong>.</p>
+<div class="literal-block-wrapper docutils container" id="id15">
+<div class="code-block-caption"><span class="caption-text">Example test code for <strong>NativeStreamHandler</strong></span><a class="headerlink" href="#id15" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@RequestScoped</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">NativeStreamHandler</span>
+<span class="w">    </span><span class="kd">extends</span><span class="w"> </span><span class="n">NativeStreamHandlerAbstract</span><span class="o">&lt;</span><span class="n">ApiBusinessIn</span><span class="p">,</span><span class="w"> </span><span class="n">ApiBusinessOut</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="nf">NativeStreamHandler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="c1">// Implement abstract methods</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="priorityqueue">
+<h2><span class="section-number">2.3.2. </span>PriorityQueue<a class="headerlink" href="#priorityqueue" title="Link to this heading">¶</a></h2>
+<p>It might be necessary to handle a PriorityQueue locally with the ability to
+manage re-prioritization (as done in the Linux scheduler).</p>
+<p>Several functions (lambda) shall be passed at construction time:</p>
+<div class="literal-block-wrapper docutils container" id="id16">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>PriorityQueue</strong> creation</span><a class="headerlink" href="#id16" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Comparator</span><span class="o">&lt;</span><span class="n">ElementTest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">comparator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparingLong</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="na">rank</span><span class="p">);</span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">Comparator</span><span class="o">&lt;</span><span class="n">ElementTest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">findEquals</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Comparator</span><span class="p">.</span><span class="na">comparing</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="na">uniqueId</span><span class="p">);</span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">UnaryOperator</span><span class="o">&lt;</span><span class="n">ElementTest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">reprioritize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="na">rank</span><span class="w"> </span><span class="o">/=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">e</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">MAX_RUNNABLE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="n">ManagedRunnable</span><span class="o">&lt;</span><span class="n">ElementTest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">managedRunnable</span><span class="w"> </span><span class="o">=</span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">ManagedRunnable</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">MAX_RUNNABLE</span><span class="p">,</span><span class="w"> </span><span class="n">comparator</span><span class="p">,</span><span class="w"> </span><span class="n">findEquals</span><span class="p">,</span><span class="w"> </span><span class="n">reprioritize</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MAX_RUNNABLE</span></code> is the number of priority elements that will be managed in a
+round-robin way equally.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comparator</span></code> is the function to compare 2 items to find which one is priority
+(lowest will be placed at first position).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">findEquals</span></code> is the function to find an item equals to the one passed as argument
+(equality can be based on something different than objects are really the same).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reprioritize</span></code> is the function that traverse all items (not already in short list live) to reorder them
+accordingly to the new priority.</p></li>
+</ul>
+<p>The main point is that the queue is split in 2, in order to not have too much
+items running (or active) at the same time. This is fixed by the maxRunnable parameter.
+Once items are ordered according to priority, this parameter allows to consume those
+number of items in a round robin way.</p>
+<div class="literal-block-wrapper docutils container" id="id17">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>PriorityQueue</strong> usage</span><a class="headerlink" href="#id17" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// One can add items 1 by 1</span>
+<span class="n">managedRunnable</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ElementTest</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
+<span class="c1">// This one will have a lower priority</span>
+<span class="n">managedRunnable</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ElementTest</span><span class="p">(</span><span class="mi">20</span><span class="p">));</span>
+<span class="c1">// One can add items from a collection</span>
+<span class="n">List</span><span class="o">&lt;</span><span class="n">ElementTest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="c1">// This one will be latest one</span>
+<span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ElementTest</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+<span class="c1">// This one will be the first</span>
+<span class="n">list</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ElementTest</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+<span class="n">managedRunnable</span><span class="p">.</span><span class="na">addAll</span><span class="p">(</span><span class="n">list</span><span class="p">);</span>
+<span class="c1">// Now we can start to consume</span>
+<span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">managedRunnable</span><span class="p">.</span><span class="na">isEmpty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">managedRunnable</span><span class="p">.</span><span class="na">poll</span><span class="p">();</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// Queue might be empty when poll is called</span>
+<span class="w">    </span><span class="c1">// Do something with e</span>
+<span class="w">    </span><span class="p">...</span>
+<span class="w">    </span><span class="c1">// If e needs to regain Queue as active runner</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">myTaskNeedsToContinue</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// Item will return to active items (round-robin)</span>
+<span class="w">      </span><span class="n">managedRunnable</span><span class="p">.</span><span class="na">addContinue</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">myTaskNeedsToBeReprioritize</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="c1">// Here the item will be add at the end (out of round-robin)</span>
+<span class="w">      </span><span class="n">managedRunnable</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>One usage could be to select among a lot of actions to be done the top 10
+to apply, and then poll out next ones when able to do so.</p>
+<p>To prevent that an old entry is never planned, the <code class="docutils literal notranslate"><span class="pre">reprioritize</span></code> is called
+each time one element will be taken out of the round robin sub-queue, such that
+it has a chance to become the most priority one.</p>
+</section>
+<section id="trafficshaping">
+<h2><span class="section-number">2.3.3. </span>TrafficShaping<a class="headerlink" href="#trafficshaping" title="Link to this heading">¶</a></h2>
+<p>Limiting traffic on network (or any other resource) could be difficult natively.
+This aims to propose a simple solution.</p>
+<p>Since Quarkus implements natively trafficShaping, the project will use this default one.</p>
+</section>
+<section id="jsonutil">
+<h2><span class="section-number">2.3.4. </span>JsonUtil<a class="headerlink" href="#jsonutil" title="Link to this heading">¶</a></h2>
+<p>Since ObjectMapper from Jackson library is often needed for manual integration,
+this helper returns an ObjectMapper:</p>
+<ul class="simple">
+<li><p>If Quarkus has initialized it, the one from Quarkus</p></li>
+<li><p>If not, a default one, almost equivalent</p></li>
+</ul>
+</section>
+<section id="statemachine">
+<h2><span class="section-number">2.3.5. </span>StateMachine<a class="headerlink" href="#statemachine" title="Link to this heading">¶</a></h2>
+<p>StateMachine package allows to handle simple State Machine with various steps.</p>
+<div class="literal-block-wrapper docutils container" id="id18">
+<div class="code-block-caption"><span class="caption-text">Example code for <strong>StateMachine</strong></span><a class="headerlink" href="#id18" title="Link to this code">¶</a></div>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="c1">// States definition</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">enum</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">NONE</span><span class="p">,</span><span class="w"> </span><span class="n">START</span><span class="p">,</span><span class="w"> </span><span class="n">RUNNING</span><span class="p">,</span><span class="w"> </span><span class="n">PAUSE</span><span class="p">,</span><span class="w"> </span><span class="n">END</span><span class="p">,</span><span class="w"> </span><span class="n">ERROR</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">StateTransition</span><span class="o">&lt;</span><span class="n">ExampleEnumState</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">configuration</span><span class="p">;</span>
+
+<span class="w">  </span><span class="kd">static</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ExampleStateTransition</span><span class="o">[]</span><span class="w"> </span><span class="n">stateTransitions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExampleStateTransition</span><span class="p">.</span><span class="na">values</span><span class="p">();</span>
+<span class="w">    </span><span class="n">configuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">stateTransitions</span><span class="p">.</span><span class="na">length</span><span class="p">);</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleStateTransition</span><span class="w"> </span><span class="n">stateTransition</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">stateTransitions</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">configuration</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">stateTransitions</span><span class="p">.</span><span class="na">elt</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="n">StateMachine</span><span class="o">&lt;</span><span class="n">ExampleEnumState</span><span class="o">&gt;</span><span class="w"> </span><span class="nf">newStateMachine</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StateMachine</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">NONE</span><span class="p">,</span><span class="w"> </span><span class="n">configuration</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// StateTransition definition</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">enum</span><span class="w"> </span><span class="n">ExampleStateTransition</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">tNONE</span><span class="p">(</span><span class="n">NONE</span><span class="p">,</span><span class="w"> </span><span class="n">START</span><span class="p">,</span><span class="w"> </span><span class="n">EnumSet</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">START</span><span class="p">)),</span>
+<span class="w">  </span><span class="n">tSTART</span><span class="p">(</span><span class="n">START</span><span class="p">,</span><span class="w"> </span><span class="n">RUNNING</span><span class="p">,</span><span class="w"> </span><span class="n">EnumSet</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">RUNNING</span><span class="p">,</span><span class="w"> </span><span class="n">PAUSE</span><span class="p">,</span><span class="w"> </span><span class="n">ERROR</span><span class="p">)),</span>
+<span class="w">  </span><span class="n">tRUNNING</span><span class="p">(</span><span class="n">RUNNING</span><span class="p">,</span><span class="w"> </span><span class="n">END</span><span class="p">,</span><span class="w"> </span><span class="n">EnumSet</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">PAUSE</span><span class="p">,</span><span class="w"> </span><span class="n">END</span><span class="p">,</span><span class="w"> </span><span class="n">ERROR</span><span class="p">)),</span>
+<span class="w">  </span><span class="n">tPAUSE</span><span class="p">(</span><span class="n">PAUSE</span><span class="p">,</span><span class="w"> </span><span class="n">RUNNING</span><span class="p">),</span><span class="w"> </span><span class="n">tEND</span><span class="p">(</span><span class="n">END</span><span class="p">),</span><span class="w"> </span><span class="n">tERROR</span><span class="p">(</span><span class="n">ERROR</span><span class="p">);</span>
+
+<span class="w">  </span><span class="kd">public</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">StateTransition</span><span class="o">&lt;</span><span class="n">ExampleEnumState</span><span class="o">&gt;</span><span class="w"> </span><span class="n">elt</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">ExampleStateTransition</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="n">state</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">elt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StateTransition</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">state</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">ExampleStateTransition</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="n">state</span><span class="p">,</span>
+<span class="w">                         </span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="n">stateNext</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">elt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StateTransition</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">stateNext</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">ExampleStateTransition</span><span class="p">(</span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="n">state</span><span class="p">,</span>
+<span class="w">                         </span><span class="kd">final</span><span class="w"> </span><span class="n">ExampleEnumState</span><span class="w"> </span><span class="n">stateNext</span><span class="p">,</span>
+<span class="w">                         </span><span class="kd">final</span><span class="w"> </span><span class="n">EnumSet</span><span class="o">&lt;</span><span class="n">ExampleEnumState</span><span class="o">&gt;</span><span class="w"> </span><span class="n">set</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">elt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StateTransition</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">state</span><span class="p">,</span><span class="w"> </span><span class="n">stateNext</span><span class="p">,</span><span class="w"> </span><span class="n">set</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+<span class="c1">// Example of usages</span>
+<span class="kd">final</span><span class="w"> </span><span class="n">StateMachine</span><span class="o">&lt;</span><span class="n">ExampleEnumState</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stateMachine</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="n">ExampleEnumState</span><span class="p">.</span><span class="na">newStateMachine</span><span class="p">();</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">getState</span><span class="p">();</span><span class="w"> </span><span class="c1">// NONE</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">isReachable</span><span class="p">(</span><span class="n">END</span><span class="p">);</span><span class="w"> </span><span class="c1">// False</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">setDryState</span><span class="p">(</span><span class="n">END</span><span class="p">);</span><span class="w"> </span><span class="c1">// NONE</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">isReachable</span><span class="p">(</span><span class="n">START</span><span class="p">);</span><span class="w"> </span><span class="c1">// True</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">setState</span><span class="p">(</span><span class="n">START</span><span class="p">);</span><span class="w"> </span><span class="c1">// START</span>
+<span class="n">stateMachine</span><span class="p">.</span><span class="na">isTerminal</span><span class="p">();</span><span class="w"> </span><span class="c1">// False</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+    <div class="clearer"></div>
+  </div>
+    <div class="footer">
+      &copy;2022, Frederic Bregier.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/common/Common_Quarkus.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

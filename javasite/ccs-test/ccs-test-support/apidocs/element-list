@@ -1,0 +1,9 @@
+io.clonecloudstore.test.metrics
+io.clonecloudstore.test.resource
+io.clonecloudstore.test.resource.azure
+io.clonecloudstore.test.resource.google
+io.clonecloudstore.test.resource.kafka
+io.clonecloudstore.test.resource.mongodb
+io.clonecloudstore.test.resource.postgres
+io.clonecloudstore.test.resource.pulsar
+io.clonecloudstore.test.resource.s3
