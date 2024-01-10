@@ -22,8 +22,6 @@ import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.FakeActionTopicConsumer;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorBucketServiceImpl;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorObjectServiceImpl;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
@@ -34,6 +32,8 @@ import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.quarkus.logging.Log;
@@ -84,8 +84,8 @@ class AccessorBucketServiceExternalTest {
     bucketRepository = bucketRepositoryInstance.get();
     //Clean database
     bucketRepository.deleteAllDb();
-    FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-    FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
     FakeActionTopicConsumer.reset();
   }
 
@@ -94,7 +94,7 @@ class AccessorBucketServiceExternalTest {
 
     try {
       final var bucketName = "bucketcreatetest";
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
 
       //Create bucket
       final var bucket = service.createBucket(clientId, bucketTechnicalName, true);
@@ -150,47 +150,47 @@ class AccessorBucketServiceExternalTest {
         DaoAccessorBucketRepository.getBucketTechnicalName(clientId, "unknownbucket");
     //Get Bucket not exist
     final Exception exceptionMin = assertThrows(CcsNotExistException.class,
-        () -> service.getBucket(unknownBucketTechnicalName, true, clientId, GuidLike.getGuid()));
+        () -> service.getBucket(unknownBucketTechnicalName, clientId, GuidLike.getGuid(), true));
     assertNotNull(exceptionMin);
-    assertFalse(service.checkBucket(unknownBucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+    assertFalse(service.checkBucket(unknownBucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
     // Check remote
     assertTrue(AccessorProperties.isRemoteRead());
     assertTrue(AccessorProperties.isFixOnAbsent());
     try {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
-      assertTrue(service.checkBucket(unknownBucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+      FakeCommonBucketResourceHelper.errorCode = 204;
+      assertTrue(service.checkBucket(unknownBucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
       assertEquals(0, FakeActionTopicConsumer.getBucketCreate());
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 200;
-      final var bucket = service.getBucket(unknownBucketTechnicalName, true, clientId, GuidLike.getGuid());
+      FakeCommonBucketResourceHelper.errorCode = 200;
+      final var bucket = service.getBucket(unknownBucketTechnicalName, clientId, GuidLike.getGuid(), true);
       assertEquals(unknownBucketTechnicalName, bucket.getId());
       assertEquals(1, getBucketCreateFromTopic(1));
       // Only getBucket try to fix from the remote, so increment value
-      service.getBucket(unknownBucketTechnicalName, true, clientId, GuidLike.getGuid());
+      service.getBucket(unknownBucketTechnicalName, clientId, GuidLike.getGuid(), true);
       assertEquals(2, getBucketCreateFromTopic(2));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     } finally {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-      FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+      FakeCommonBucketResourceHelper.errorCode = 0;
+      FakeCommonObjectResourceHelper.errorCode = 0;
     }
     // Same but fix if absent is off
     assertTrue(AccessorProperties.isRemoteRead());
     AccessorProperties.setFixOnAbsent(false);
     assertFalse(AccessorProperties.isFixOnAbsent());
     try {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
-      assertTrue(service.checkBucket(unknownBucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+      FakeCommonBucketResourceHelper.errorCode = 204;
+      assertTrue(service.checkBucket(unknownBucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
       assertEquals(2, FakeActionTopicConsumer.getBucketCreate());
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 200;
+      FakeCommonBucketResourceHelper.errorCode = 200;
       assertThrows(CcsNotExistException.class,
-          () -> service.getBucket(unknownBucketTechnicalName, true, clientId, GuidLike.getGuid()));
+          () -> service.getBucket(unknownBucketTechnicalName, clientId, GuidLike.getGuid(), true));
       Thread.sleep(100);
       assertEquals(2, getBucketCreateFromTopic(2));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     } finally {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-      FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+      FakeCommonBucketResourceHelper.errorCode = 0;
+      FakeCommonObjectResourceHelper.errorCode = 0;
       AccessorProperties.setFixOnAbsent(true);
     }
     // Same but remote is off
@@ -198,38 +198,38 @@ class AccessorBucketServiceExternalTest {
     assertFalse(AccessorProperties.isRemoteRead());
     assertTrue(AccessorProperties.isFixOnAbsent());
     try {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
-      assertFalse(service.checkBucket(unknownBucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+      FakeCommonBucketResourceHelper.errorCode = 204;
+      assertFalse(service.checkBucket(unknownBucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
       assertEquals(2, FakeActionTopicConsumer.getBucketCreate());
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 200;
+      FakeCommonBucketResourceHelper.errorCode = 200;
       assertThrows(CcsNotExistException.class,
-          () -> service.getBucket(unknownBucketTechnicalName, true, clientId, GuidLike.getGuid()));
+          () -> service.getBucket(unknownBucketTechnicalName, clientId, GuidLike.getGuid(), true));
       Thread.sleep(100);
       assertEquals(2, getBucketCreateFromTopic(2));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     } finally {
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-      FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+      FakeCommonBucketResourceHelper.errorCode = 0;
+      FakeCommonObjectResourceHelper.errorCode = 0;
       AccessorProperties.setRemoteRead(true);
     }
 
     //Create a bucket and get Bucket
     final var bucketName = "testgetbucket";
     final var opId = GuidLike.getGuid();
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final AccessorBucket bucket;
     service.createBucket(clientId, bucketTechnicalName, true);
-    bucket = service.getBucket(bucketTechnicalName, true, clientId, opId);
+    bucket = service.getBucket(bucketTechnicalName, clientId, opId, true);
     assertEquals(bucketName, bucket.getName());
     assertEquals(AccessorStatus.READY, bucket.getStatus());
-    assertTrue(service.checkBucket(bucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+    assertTrue(service.checkBucket(bucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
 
     //Check read bucket deleted
     service.deleteBucket(clientId, bucketTechnicalName, true);
 
-    assertThrows(CcsDeletedException.class, () -> service.getBucket(bucketTechnicalName, true, clientId, opId));
-    assertFalse(service.checkBucket(bucketTechnicalName, false, true, clientId, GuidLike.getGuid()));
+    assertThrows(CcsDeletedException.class, () -> service.getBucket(bucketTechnicalName, clientId, opId, true));
+    assertFalse(service.checkBucket(bucketTechnicalName, false, clientId, GuidLike.getGuid(), true));
 
     final var bucketNameStatusNotA = "bucketnotavailable";
     final var technicalBucketNameNotA = DaoAccessorBucketRepository.getPrefix(clientId) + bucketNameStatusNotA;
@@ -237,14 +237,14 @@ class AccessorBucketServiceExternalTest {
     bucketStatusNotAvailable = service.createBucket(clientId, technicalBucketNameNotA, true);
     assertEquals(bucketNameStatusNotA, bucketStatusNotAvailable.getName());
     assertEquals(AccessorStatus.READY, bucketStatusNotAvailable.getStatus());
-    assertTrue(service.checkBucket(technicalBucketNameNotA, false, true, clientId, GuidLike.getGuid()));
+    assertTrue(service.checkBucket(technicalBucketNameNotA, false, clientId, GuidLike.getGuid(), true));
 
     //Change status to simulate an operation
     final var bucketTmp = bucketRepository.findBucketById(technicalBucketNameNotA);
     bucketRepository.updateBucketStatus(bucketTmp, AccessorStatus.DELETING, null);
 
-    assertThrows(CcsOperationException.class, () -> service.getBucket(technicalBucketNameNotA, true, clientId, opId));
-    assertFalse(service.checkBucket(technicalBucketNameNotA, false, true, clientId, GuidLike.getGuid()));
+    assertThrows(CcsOperationException.class, () -> service.getBucket(technicalBucketNameNotA, clientId, opId, true));
+    assertFalse(service.checkBucket(technicalBucketNameNotA, false, clientId, GuidLike.getGuid(), true));
   }
 
   @Test
@@ -252,7 +252,7 @@ class AccessorBucketServiceExternalTest {
     //Create buckets
     final var bucketName = "testgetbuckets";
 
-    final var prefixBucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var prefixBucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     service.createBucket(clientId, prefixBucketTechnicalName + "1", true);
     service.createBucket(clientId, prefixBucketTechnicalName + "2", true);
     service.createBucket(clientId, prefixBucketTechnicalName + "3", true);
@@ -269,7 +269,7 @@ class AccessorBucketServiceExternalTest {
     final var bucketName = "bucketdeletedtest";
     final AccessorBucket bucket;
     {
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
       bucket = service.createBucket(clientId, bucketTechnicalName, true);
       assertEquals(bucketName, bucket.getName());
       assertEquals(bucketTechnicalName, bucket.getId());
@@ -277,7 +277,7 @@ class AccessorBucketServiceExternalTest {
     }
     //Delete bucket already
     {
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
       final var bucketDeleted = service.deleteBucket(clientId, bucketTechnicalName, true);
       Assertions.assertEquals(AccessorStatus.DELETED, bucketDeleted.getStatus());
       final Exception exceptionDeleted =
@@ -308,11 +308,11 @@ class AccessorBucketServiceExternalTest {
     assertEquals(bucketNameStatusNotAD, bucketStatusNotAD.getName());
     assertEquals(AccessorStatus.READY, bucketStatusNotAD.getStatus());
 
-    final var technicalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var technicalBucketName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     //Change status to simulate an operation
     final var bucketTmp = bucketRepository.findBucketById(technicalBucketName);
     bucketRepository.updateBucketStatus(bucketTmp, AccessorStatus.DELETING, null);
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final Exception exceptionStatusAD =
         assertThrows(CcsOperationException.class, () -> service.deleteBucket(clientId, bucketTechnicalName, true));
     assertNotNull(exceptionStatusAD);

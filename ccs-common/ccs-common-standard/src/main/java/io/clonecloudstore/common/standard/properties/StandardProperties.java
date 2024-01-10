@@ -16,17 +16,12 @@
 
 package io.clonecloudstore.common.standard.properties;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
-import io.clonecloudstore.common.standard.system.DaemonThreadFactory;
 import io.clonecloudstore.common.standard.system.SystemPropertyUtil;
 import io.vertx.core.Vertx;
 
@@ -56,12 +51,6 @@ public class StandardProperties {
   private static final int DEFAULT_BUFFER_SIZE = 131072;
   private static int bufSize = SystemPropertyUtil.get(CCS_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
   private static long maxWaitMs = SystemPropertyUtil.get(CCS_MAX_WAIT_MS, DEFAULT_MAX_WAIT_MS);
-  /**
-   * Global Thread pool for Internal actions such as in TeeInputStream, ZstdCompressedInputStream, S3
-   */
-  public static final ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newVirtualThreadPerTaskExecutor();
-  public static final ThreadFactory DAEMON_THREAD_FACTORY = new DaemonThreadFactory();
-  public static final ExecutorService STANDARD_EXECUTOR_SERVICE = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
   /**
    * Default global Vertx
    */

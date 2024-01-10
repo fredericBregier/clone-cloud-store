@@ -29,6 +29,7 @@ import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.driver.api.StorageType;
@@ -102,9 +103,10 @@ public class AccessorObjectInternalApiClient
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName).setName(objectName);
     // TODO choose compression model
-    prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().getObject(false, bucketName, objectName, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
+    final var uni =
+        getService().getObject(AccessorProperties.isInternalCompression(), bucketName, objectName, clientId, getOpId());
+    return getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni);
   }
 
   /**
@@ -116,33 +118,24 @@ public class AccessorObjectInternalApiClient
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName);
     // TODO choose compression model
-    prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().listObjects(false, bucketName, clientId, getOpId());
-    final var inputStream = getInputStreamBusinessOutFromUni(false, true, uni).inputStream();
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
+    final var uni =
+        getService().listObjects(AccessorProperties.isInternalCompression(), bucketName, clientId, getOpId());
+    final var inputStream =
+        getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni).inputStream();
     return StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
   }
 
   @Override
   protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
-    try {
-      final var accessorObject = response.readEntity(AccessorObject.class);
-      if (accessorObject != null) {
-        return accessorObject;
-      }
-    } catch (final RuntimeException ignore) {
-      // Nothing
-    }
-    final var accessorObject = new AccessorObject();
-    AccessorHeaderDtoConverter.objectFromMap(accessorObject, response.getStringHeaders());
-    return accessorObject;
+    // No PUSH
+    return null;
   }
 
   @Override
   protected Map<String, String> getHeadersFor(final AccessorObject businessIn, final int context) {
     final var map = new HashMap<String, String>();
-    if (context == CONTEXT_SENDING) {
-      AccessorHeaderDtoConverter.objectToMap(businessIn, map);
-    } else if (context == CONTEXT_RECEIVE && filter != null) {
+    if (context == CONTEXT_RECEIVE && filter != null) {
       AccessorHeaderDtoConverter.filterToMap(filter, map);
     }
     return map;

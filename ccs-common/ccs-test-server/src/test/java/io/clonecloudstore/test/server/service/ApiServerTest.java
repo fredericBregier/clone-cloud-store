@@ -36,7 +36,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -87,7 +87,7 @@ class ApiServerTest {
   }
 
   @Test
-  void check10PostInputStreamNetty() {
+  void check10PostInputStream() {
     final var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -104,7 +104,7 @@ class ApiServerTest {
   }
 
   @Test
-  void check11PostInputStreamNettyNoSize() {
+  void check11PostInputStreamNoSize() {
     final var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut = client.postInputStream("test", new FakeInputStream(ApiService.LEN), 0, false, false);
@@ -120,7 +120,7 @@ class ApiServerTest {
   }
 
   @Test
-  void check11PostInputStreamNettyNotChunked() {
+  void check11PostInputStreamNotChunked() {
     final var len = 5 * 1024 * 1024; // Max 10 MB by default
     {
       // Content-Length set to empty or -1
@@ -154,7 +154,7 @@ class ApiServerTest {
   }
 
   @Test
-  void check16GetInputStreamNetty() {
+  void check16GetInputStream() {
     final var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut = client.getInputStream("test", ApiService.LEN, false, false);

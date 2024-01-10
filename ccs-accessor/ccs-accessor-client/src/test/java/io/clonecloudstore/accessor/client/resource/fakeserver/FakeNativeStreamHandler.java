@@ -21,13 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
-import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
-import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.test.server.service.FakeNativeStreamHandlerAbstract;
 import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.RequestScoped;
@@ -35,26 +32,11 @@ import jakarta.enterprise.context.RequestScoped;
 @RequestScoped
 public class FakeNativeStreamHandler extends FakeNativeStreamHandlerAbstract<AccessorObject, AccessorObject> {
   @Override
-  protected boolean checkDigestToCumpute(final AccessorObject businessIn) {
-    return QuarkusProperties.serverComputeSha256();
-  }
-
-  @Override
   protected Map<String, String> getHeaderPushInputStream(final AccessorObject apiBusinessIn, final String finalHash,
                                                          final long size, final AccessorObject apiBusinessOut)
       throws CcsClientGenericException, CcsServerGenericException {
     // Business code should come here (example: headers for object name, object size, ...)
-    final Map<String, String> map = new HashMap<>();
-    AccessorHeaderDtoConverter.objectToMap(apiBusinessOut, map);
-    // Hash from request
-    if (ParametersChecker.isNotEmpty(finalHash)) {
-      // Hash from NettyToInputStream (on the fly)
-      map.put(AccessorConstants.HeaderObject.X_OBJECT_HASH, finalHash);
-    }
-    if (size > 0) {
-      map.put(AccessorConstants.HeaderObject.X_OBJECT_SIZE, Long.toString(size));
-    }
-    return map;
+    return new HashMap<>();
   }
 
   @Override

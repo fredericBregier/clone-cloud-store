@@ -248,6 +248,21 @@ class ParametersCheckerTest {
   }
 
   @Test
+  void accentAndNotAscii() {
+    final var res = ParametersChecker.getSanitizedName("/test/Name with words ");
+    assertEquals("test/Name_with_words", res);
+    assertEquals("test_other_Final_word", ParametersChecker.getSanitizedName("__test__other   Final word_"));
+    assertEquals("-test_other-_Final_word-", ParametersChecker.getSanitizedName("  ---test__other---   Final word---"));
+    assertEquals("aaaeiiiiggnnsssuuy", ParametersChecker.getSanitizedName("āăąēîïĩíĝġńñšŝśûůŷ"));
+    assertEquals("aaaeiiiiggnnsssuuy".toUpperCase(),
+        ParametersChecker.getSanitizedName("āăąēîïĩíĝġńñšŝśûůŷ").toUpperCase());
+    // Not all
+    assertEquals("l", ParametersChecker.getSanitizedName("łđħœ"));
+    assertEquals("aaaeiiiiggnnsssuuy/aaaeiiiiggnnsssuuy_aaaeiiiiggnnsssuuy",
+        ParametersChecker.getSanitizedName("//āăąēîïĩíĝġńñšŝśûůŷ\\āăąēîïĩíĝġńñšŝśûůŷ āăąēîïĩíĝġńñšŝśûůŷ  "));
+  }
+
+  @Test
   void encodedName() {
     final var res = ParametersChecker.getSanitizedName("%2Ftest%2Fsecond");
     assertEquals("test/second", res);

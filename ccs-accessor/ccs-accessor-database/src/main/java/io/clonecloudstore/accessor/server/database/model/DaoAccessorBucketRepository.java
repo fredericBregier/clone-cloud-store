@@ -21,6 +21,7 @@ import java.util.List;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.database.utils.DbQuery;
 import io.clonecloudstore.common.database.utils.DbUpdate;
 import io.clonecloudstore.common.database.utils.RepositoryBaseInterface;
@@ -48,7 +49,7 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
    * @return value of client-id prefix.
    */
   static String getPrefix(final String clientId) {
-    return clientId + "-";
+    return AbstractPublicBucketHelper.getBucketPrefix(clientId);
   }
 
   /**
@@ -59,7 +60,7 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
    * @return value of bucket technical name
    */
   static String getBucketTechnicalName(final String clientId, final String bucketName) {
-    return getPrefix(clientId) + bucketName;
+    return AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
   }
 
   /**
@@ -70,14 +71,14 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
    * @return value of bucket Functional name
    */
   static String getBucketName(final String clientId, final String technicalBucketName) {
-    return technicalBucketName.replace(getPrefix(clientId), "");
+    return AbstractPublicBucketHelper.getBusinessBucketName(clientId, technicalBucketName);
   }
 
-  static String getRealBucketName(final String clientId, final String bucketName, final boolean isPublic) {
-    if (isPublic) {
-      return getBucketTechnicalName(clientId, bucketName);
-    }
-    return bucketName;
+  /**
+   * If Public, will return technical name, else already technical name so return the provided bucketName
+   */
+  static String getFinalBucketName(final String clientId, final String bucketName, final boolean isPublic) {
+    return AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, isPublic);
   }
 
   /**

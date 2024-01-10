@@ -19,6 +19,7 @@ package io.clonecloudstore.accessor.server.simple.resource;
 import java.util.UUID;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
@@ -29,7 +30,6 @@ import io.clonecloudstore.test.resource.s3.MinioProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(MinioProfile.class)
 class AccessorBucketResourceTest {
-  private static final Logger LOG = Logger.getLogger(AccessorBucketResourceTest.class);
   @Inject
   AccessorBucketApiFactory factory;
   @Inject
@@ -144,7 +143,7 @@ class AccessorBucketResourceTest {
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(clientId + "-" + bucketName);
+        driverApi.bucketDelete(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true));
       } catch (final DriverException e) {
         fail(e);
       }

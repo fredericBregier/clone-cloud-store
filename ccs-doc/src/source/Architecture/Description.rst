@@ -1,7 +1,7 @@
 Description
 ####################################
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This project uses Quarkus, the Supersonic Subatomic Java Framework and is compiled with Java 21.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
@@ -55,6 +55,58 @@ A simplest implementation with 1 JVM (1 or more) is available without database, 
 It allows to test the solution with your application or to allow a smooth move to Cloud Clone Store:
 **Accessor Simple Gateway**
 
+
+Notes of versions
+**********************
+
+0.8.0 2024/02
+==============
+
+- Add Apache http client for Accessor Public client (no Quarkus dependency)
+
+
+0.7.0 2024/01
+==============
+
+- Support of Simple Gateway Accessor
+- First steps on Reconciliator batch
+
+0.6.0 2023/11
+==============
+
+- Patch of Quarkus to support InputStream on client side (upload and download)
+
+0.5.0 2023/10
+==============
+
+- Refactorization and simplification
+- Support of Dynamic choice of Database (MongoDB or PostgreSql) in Common
+
+0.4.0 2023/09
+==============
+
+- Performance improvements
+- Support of Proactive replication from Accessor
+
+0.3.0 2023/07
+==============
+
+- Adding Topology support to Replicator
+- Support of Public Accessor with remote access
+
+0.2.0 2023/01
+==============
+
+- Replicator support with asynchronous replication
+- Internal Accessor support
+- Support of Kafka
+
+0.1.0 2022/06
+==============
+
+- Public Accessor support
+- Driver for Amazon S3 and S3 like support
+- Support of MongoDB
 
 Status logic
 *************

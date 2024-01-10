@@ -29,7 +29,7 @@ import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.Transient;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @RegisterForReflection
 public record ReplicatorOrder(String opId, String fromSite, String toSite, String clientId, String bucketName,

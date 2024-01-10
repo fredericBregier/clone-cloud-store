@@ -19,7 +19,7 @@ package io.clonecloudstore.replicator.server.test.conf;
 import java.util.UUID;
 
 import io.clonecloudstore.common.standard.guid.GuidLike;
-import io.clonecloudstore.test.accessor.common.FakeBucketServiceAbstract;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 
 public class Constants {
   public static final String BUCKET_NAME = "test-bucket";
@@ -33,6 +33,7 @@ public class Constants {
   public static final String URI_SERVER = "http://localhost:8081";
   public static final String URI_WRONG_SERVER = "http://localhost:9999";
   public static final String OBJECT_PATH = "test-file.txt";
-  public static final String BUCKET_ID = FakeBucketServiceAbstract.getBucketTechnicalName(CLIENT_ID, BUCKET_NAME, true);
+  public static final String BUCKET_ID =
+      FakeCommonBucketResourceHelper.getBucketTechnicalName(CLIENT_ID, BUCKET_NAME, true);
 
 }

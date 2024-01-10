@@ -31,6 +31,15 @@ using the public API.
 It is also used internally by all services when they need to access or interact with buckets and objects, through the
 internal API, which must be not available to other services than Cloud Clone Store itself.
 
+Client with Apache httpclient5
+=================================
+
+In order to allow more applications to use Clone Cloud Store, an Apache httpclient 5 based CCS client is also
+available in **ccs-accessor-client-apache**.
+
+Dependencies is minimal while all functionalities are supported.
+
+Quarkus is not required.
 
 application.yaml configuration
 ===============================
@@ -76,7 +85,7 @@ application.yaml configuration
      - ``true`` or ``false``, True to allow compression between services
      - ``false``
    * - Redefining ``mp.messaging.incoming.replicator-action-in`` or env ``CCS_REQUEST_ACTION``
-     - Name of the incoming topic for Action Requests
+     - Name of the incoming topic for Action Requests (if more than 1 instance, add broadcast=true to the configuration)
      - ``request-action``
    * - ``quarkus.mongodb.database``
      - Name of the associated database (if MongoDB used, with ccs.db.type = mongo)

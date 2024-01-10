@@ -30,6 +30,6 @@ public class ReplicatorServer {
 
   ReplicatorServer() {
     QuarkusProperties.setCcsModule(Module.REPLICATOR);
-    LOGGER.infof("Configuration: {%s}", ReplicatorProperties.confugrationToString());
+    LOGGER.infof("Configuration: {%s}", ReplicatorProperties.confugrationToString()); // NOSONAR intentional
   }
 }

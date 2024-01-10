@@ -28,12 +28,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class AccessorProperties extends ServiceProperties {
   public static final String CCS_ACCESSOR_REMOTE_READ = "ccs.accessor.remote.read";
   public static final String CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT = "ccs.accessor.remote.fixOnAbsent";
-  public static final String CCS_ACCESSOR_INTERNAL_COMPRESSION = "ccs.accessor.internal.compression";
+  public static final String CCS_INTERNAL_COMPRESSION = "ccs.internal.compression";
   private static boolean remoteRead = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_READ, false);
   private static boolean fixOnAbsent =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, false);
   private static boolean internalCompression =
-      QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_INTERNAL_COMPRESSION, false);
+      QuarkusSystemPropertyUtil.getBooleanConfig(CCS_INTERNAL_COMPRESSION, false);
 
   protected AccessorProperties() {
     super();
@@ -92,6 +92,6 @@ public class AccessorProperties extends ServiceProperties {
   public static String confugrationToString() {
     return String.format("%s, \"%s\":%b, \"%s\":%b, \"%s\":%b", ServiceProperties.confugrationToString(),
         CCS_ACCESSOR_REMOTE_READ, isRemoteRead(), CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, isFixOnAbsent(),
-        CCS_ACCESSOR_INTERNAL_COMPRESSION, isInternalCompression());
+        CCS_INTERNAL_COMPRESSION, isInternalCompression());
   }
 }

@@ -19,7 +19,6 @@ package io.clonecloudstore.replicator.server.remote.client;
 import java.util.List;
 import java.util.Map;
 
-import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
@@ -112,17 +111,8 @@ public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, A
 
   @Override
   protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
-    try {
-      final var businessOut = response.readEntity(AccessorObject.class);
-      if (businessOut != null) {
-        return businessOut;
-      }
-    } catch (final RuntimeException ignore) {
-      // Nothing
-    }
-    final var accessorObject = new AccessorObject();
-    AccessorHeaderDtoConverter.objectFromMap(accessorObject, response.getStringHeaders());
-    return accessorObject;
+    // No Push
+    return null;
   }
 
   @Override

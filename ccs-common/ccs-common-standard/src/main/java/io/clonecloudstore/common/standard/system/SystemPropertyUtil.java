@@ -148,7 +148,7 @@ public class SystemPropertyUtil {
     }
 
     try {
-      value = ParametersChecker.checkSanityString(value);
+      ParametersChecker.checkSanityString(value);
     } catch (final CcsInvalidArgumentRuntimeException e) {
       SysErrLogger.FAKE_LOGGER.syserr(INVALID_PROPERTY + key, e);
       return def;

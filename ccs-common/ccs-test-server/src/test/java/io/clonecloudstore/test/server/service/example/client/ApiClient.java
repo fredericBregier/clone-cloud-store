@@ -57,7 +57,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
     }
   }
 
-  // Example of service for Post InputStream using Netty implementation
+  // Example of service for Post InputStream
   public ApiBusinessOut postInputStream(final String name, final InputStream content, final long len,
                                         final boolean shallCompress, final boolean alreadyCompressed)
       throws CcsWithStatusException {
@@ -70,7 +70,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
     return getResultFromPostInputStreamUni(uni, inputStream);
   }
 
-  // Example of service for Get InputStream using Netty implementation
+  // Example of service for Get InputStream
   public InputStreamBusinessOut<ApiBusinessOut> getInputStream(final String name, final long len,
                                                                final boolean acceptCompressed,
                                                                final boolean shallDecompress)

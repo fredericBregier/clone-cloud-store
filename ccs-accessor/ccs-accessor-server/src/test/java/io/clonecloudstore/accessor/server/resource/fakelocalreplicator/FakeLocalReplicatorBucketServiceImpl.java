@@ -23,7 +23,8 @@ import io.clonecloudstore.common.quarkus.server.service.ServerResponseFilter;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
-import io.clonecloudstore.test.accessor.common.FakeBucketServiceAbstract;
+import io.clonecloudstore.test.accessor.common.FakeBucketPrivateAbstract;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.DefaultValue;
@@ -44,38 +45,18 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestPath;
 
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.BASE;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.COLL_BUCKETS;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.LOCAL;
 
 @Path(BASE + LOCAL + COLL_BUCKETS)
-public class FakeLocalReplicatorBucketServiceImpl extends FakeBucketServiceAbstract {
-  private static final Logger logger = Logger.getLogger(FakeLocalReplicatorBucketServiceImpl.class);
-
-  @Override
-  protected boolean isPublic() {
-    return false;
-  }
-
-  @Override
-  protected void remoteCreateBucket(final AccessorBucket accessorBucket, final String clientId) {
-    logger.infof("Create %d", accessorBucket);
-    // Empty
-  }
-
-  @Override
-  protected void remoteDeleteBucket(final AccessorBucket accessorBucket, final String clientId) {
-    logger.infof("Delete %d", accessorBucket);
-    // Empty
-  }
-
+public class FakeLocalReplicatorBucketServiceImpl extends FakeBucketPrivateAbstract {
   @GET
   @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
   @Path("/{bucketName}")
@@ -116,6 +97,7 @@ public class FakeLocalReplicatorBucketServiceImpl extends FakeBucketServiceAbstr
   @APIResponse(responseCode = "500", description = "Internal Error")
   @Operation(summary = "Check if bucket exists on a remote replicator", description = "Loops through the topology and" +
       " search for a remote replicator owning the bucket")
+  @Blocking
   public Uni<Response> checkBucket(@RestPath String bucketName,
                                    @Parameter(name = FULL_CHECK, description = "If True implies Storage checking",
                                        in = ParameterIn.QUERY, schema = @Schema(type = SchemaType.BOOLEAN), required
@@ -130,17 +112,17 @@ public class FakeLocalReplicatorBucketServiceImpl extends FakeBucketServiceAbstr
   protected Uni<Response> checkBucket0(final String bucketName, final boolean fullCheck, final String clientId,
                                        final boolean isPublic) {
     return Uni.createFrom().emitter(em -> {
-      if (errorCode > 0) {
-        if (errorCode >= 400 && errorCode != 404) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(errorCode));
-        } else if (errorCode != 204) {
+      if (FakeCommonBucketResourceHelper.errorCode > 0) {
+        if (FakeCommonBucketResourceHelper.errorCode >= 400 && FakeCommonBucketResourceHelper.errorCode != 404) {
+          em.fail(CcsServerGenericExceptionMapper.getCcsException(FakeCommonBucketResourceHelper.errorCode));
+        } else if (FakeCommonBucketResourceHelper.errorCode != 204) {
           em.complete((Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build()));
         } else {
           em.complete((Response.status(Response.Status.NO_CONTENT).header(X_TYPE, StorageType.BUCKET)
               .header(ReplicatorConstants.Api.X_TARGET_ID, AccessorProperties.getAccessorSite()).build()));
         }
       } else {
-        checkBucket(em, bucketName, fullCheck, clientId, isPublic);
+        FakeCommonBucketResourceHelper.checkBucketHelper(em, bucketName, fullCheck, clientId, isPublic);
       }
     });
   }

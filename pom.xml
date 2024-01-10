@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.clonecloudstore</groupId>
   <artifactId>ccs-parent</artifactId>
-  <version>0.7.0-SNAPSHOT</version>
+  <version>0.8.0-SNAPSHOT</version>
   <description>Cloud Cloud Store Pom Parent</description>
   <packaging>pom</packaging>
   <!-- For Maven site -->
@@ -50,6 +50,7 @@
     <azure-version>1.0.1</azure-version>
     <google-version>2.6.0</google-version>
     <google-bom-version>26.29.0</google-bom-version>
+    <apache-httpclient.version>5.3</apache-httpclient.version>
     <skipITs>true</skipITs>
     <root.directory>${maven.multiModuleProjectDirectory}</root.directory>
     <!-- Plugins -->
@@ -92,9 +93,10 @@
       ${root.directory}/ccs-accessor/ccs-accessor-model/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-client/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-client-internal/target/jacoco-report/jacoco.xml,
-      ${root.directory}/ccs-accessor/ccs-accessor-client-netty/target/jacoco-report/jacoco.xml,
+      ${root.directory}/ccs-accessor/ccs-accessor-client-apache/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-database/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-test-fake-accessor/target/jacoco-report/jacoco.xml,
+      ${root.directory}/ccs-accessor/ccs-accessor-server-commons/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-server/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-simple-gateway/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-accessor/ccs-accessor-replicator/target/jacoco-report/jacoco.xml,
@@ -152,6 +154,11 @@
         <version>${google-bom-version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>${apache-httpclient.version}</version>
       </dependency>
 
       <!-- Test support -->
@@ -319,7 +326,7 @@
       </dependency>
       <dependency>
         <groupId>io.clonecloudstore</groupId>
-        <artifactId>ccs-accessor-client-netty</artifactId>
+        <artifactId>ccs-accessor-client-apache</artifactId>
         <version>${revision}</version>
       </dependency>
       <dependency>
@@ -364,6 +371,11 @@
       </dependency>
       <dependency>
         <groupId>io.clonecloudstore</groupId>
+        <artifactId>ccs-accessor-server-commons</artifactId>
+        <version>${revision}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.clonecloudstore</groupId>
         <artifactId>ccs-accessor-simple-gateway</artifactId>
         <version>${revision}</version>
       </dependency>
@@ -394,6 +406,19 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jacoco</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
   <build>
     <pluginManagement>
@@ -653,8 +678,16 @@
                   <packages>io.clonecloudstore.driver.api*</packages>
                 </group>
                 <group>
-                  <title>Cloud Cloud Store Driver API S3 Package</title>
+                  <title>Cloud Cloud Store Driver API Amazon S3 Package</title>
                   <packages>io.clonecloudstore.driver.s3*</packages>
+                </group>
+                <group>
+                  <title>Cloud Cloud Store Driver API Azure Blob Storage Package</title>
+                  <packages>io.clonecloudstore.driver.azure*</packages>
+                </group>
+                <group>
+                  <title>Cloud Cloud Store Driver API Google Cloud Storage Package</title>
+                  <packages>io.clonecloudstore.driver.google*</packages>
                 </group>
                 <group>
                   <title>Cloud Cloud Store Accessor Package</title>
@@ -721,8 +754,16 @@
               <packages>io.clonecloudstore.driver.api*</packages>
             </group>
             <group>
-              <title>Cloud Cloud Store Driver API S3 Package</title>
+              <title>Cloud Cloud Store Driver API Amazon S3 Package</title>
               <packages>io.clonecloudstore.driver.s3*</packages>
+            </group>
+            <group>
+              <title>Cloud Cloud Store Driver API Azure Blob Storage Package</title>
+              <packages>io.clonecloudstore.driver.azure*</packages>
+            </group>
+            <group>
+              <title>Cloud Cloud Store Driver API Google Cloud Storage Package</title>
+              <packages>io.clonecloudstore.driver.google*</packages>
             </group>
             <group>
               <title>Cloud Cloud Store Accessor Package</title>
@@ -754,6 +795,11 @@
         <configuration>
           <formats>html,json</formats>
           <suppressionFiles>${root.directory}/dependency-check-suppressions.xml</suppressionFiles>
+          <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+          <nodeAuditAnalyzerEnabled>false</nodeAuditAnalyzerEnabled>
+          <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+          <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+          <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
         </configuration>
         <executions>
           <execution>

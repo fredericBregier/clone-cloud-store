@@ -76,8 +76,9 @@ class DaoTest {
     assertEquals(DaoAccessorBucketRepository.getBucketName(clientId, secondDao.getName()), secondDao.getName());
     assertEquals(DaoAccessorBucketRepository.getBucketTechnicalName(clientId, secondDao.getName()), secondDao.getId());
     assertEquals(DaoAccessorBucketRepository.getPrefix(clientId) + secondDao.getName(), secondDao.getId());
-    assertEquals(DaoAccessorBucketRepository.getRealBucketName(clientId, secondDao.getId(), false), secondDao.getId());
-    assertEquals(DaoAccessorBucketRepository.getRealBucketName(clientId, secondDao.getName(), true), secondDao.getId());
+    assertEquals(DaoAccessorBucketRepository.getFinalBucketName(clientId, secondDao.getId(), false), secondDao.getId());
+    assertEquals(DaoAccessorBucketRepository.getFinalBucketName(clientId, secondDao.getName(), true),
+        secondDao.getId());
     assertTrue(daoAccessorBucket.toString().contains(AccessorProperties.getAccessorSite()));
   }
 

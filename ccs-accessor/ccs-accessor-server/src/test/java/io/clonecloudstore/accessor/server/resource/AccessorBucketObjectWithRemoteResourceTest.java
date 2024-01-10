@@ -22,13 +22,13 @@ import java.util.UUID;
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
 import io.clonecloudstore.accessor.server.FakeActionTopicConsumer;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorBucketServiceImpl;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorObjectServiceImpl;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.clonecloudstore.test.stream.FakeInputStream;
@@ -68,8 +68,8 @@ class AccessorBucketObjectWithRemoteResourceTest {
     }
     DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
         MinIoResource.getRegion());
-    FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-    FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
     FakeActionTopicConsumer.reset();
   }
 
@@ -93,13 +93,13 @@ class AccessorBucketObjectWithRemoteResourceTest {
     try (final var client = factoryBucket.newClient()) {
       assertEquals(0, FakeActionTopicConsumer.getBucketCreate());
       // check non-existing bucket
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 404;
+      FakeCommonBucketResourceHelper.errorCode = 404;
       assertEquals(StorageType.NONE, client.checkBucket(bucketName, clientId));
       assertThrows(CcsWithStatusException.class, () -> client.getBucket(bucketName, clientId));
       assertEquals(0, getBucketCreateFromTopic(0));
 
       // simple check existing bucket
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
+      FakeCommonBucketResourceHelper.errorCode = 204;
       assertEquals(StorageType.BUCKET, client.checkBucket(bucketName, clientId));
       var res = client.getBucket(bucketName, clientId);
       assertEquals(bucketName, res.getName());
@@ -132,8 +132,8 @@ class AccessorBucketObjectWithRemoteResourceTest {
     try (final var client = factoryObject.newClient()) {
       assertEquals(0, getObjectCreateFromTopic(0));
       // check non-existing object
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
-      FakeLocalReplicatorObjectServiceImpl.errorCode = 404;
+      FakeCommonBucketResourceHelper.errorCode = 204;
+      FakeCommonObjectResourceHelper.errorCode = 404;
       var res = client.checkObjectOrDirectory(bucketName, objectName, clientId);
       assertEquals(StorageType.NONE, res);
       Thread.sleep(100);
@@ -143,8 +143,8 @@ class AccessorBucketObjectWithRemoteResourceTest {
       assertEquals(0, getObjectCreateFromTopic(0));
 
       // simple check existing object
-      FakeLocalReplicatorBucketServiceImpl.errorCode = 204;
-      FakeLocalReplicatorObjectServiceImpl.errorCode = 204;
+      FakeCommonBucketResourceHelper.errorCode = 204;
+      FakeCommonObjectResourceHelper.errorCode = 204;
       res = client.checkObjectOrDirectory(bucketName, objectName, clientId);
       assertEquals(StorageType.OBJECT, res);
       assertEquals(1, getObjectCreateFromTopic(1));

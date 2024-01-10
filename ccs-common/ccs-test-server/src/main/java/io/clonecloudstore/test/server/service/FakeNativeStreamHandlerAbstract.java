@@ -25,6 +25,7 @@ import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.server.service.NativeStreamHandlerAbstract;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
+import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import jakarta.enterprise.context.Dependent;
 import org.jboss.logging.Logger;
@@ -42,12 +43,13 @@ public abstract class FakeNativeStreamHandlerAbstract<I, O> extends NativeStream
     LOGGER.debugf("Post State %b %b %b %b", shallCompress(), shallDecompress(), isKeepInputStreamCompressed(),
         isAlreadyCompressed());
     LOGGER.debugf("Standard Consume %s", apiBusinessIn);
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       // Business code should come here
       try {
         final var bytes = new byte[StandardProperties.getBufSize()];
         long time = System.currentTimeMillis();
-        while (true) {
+        var still = true;
+        while (still) {
           long now = System.currentTimeMillis();
           if (now - time > StandardProperties.getMaxWaitMs()) {
             exceptionAtomicReference.compareAndSet(null, new CcsOperationException("Time out"));
@@ -56,11 +58,11 @@ public abstract class FakeNativeStreamHandlerAbstract<I, O> extends NativeStream
           time = now;
           try {
             if (inputStream.read(bytes, 0, bytes.length) < 0) {
-              break;
+              still = false;
             }
           } catch (final IOException e) {
             exceptionAtomicReference.compareAndSet(null, e);
-            break;
+            still = false;
           }
         }
       } finally {

@@ -30,15 +30,16 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CaffeineCache;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 @ApplicationScoped
 @Unremovable
 public class TopologyApiClientFactory extends SimpleClientFactoryAbstract<TopologyApi> {
   private static final String ALL_UP_KEY = "ALL_UP_KEY";
-  @Inject
-  @CacheName("topology-cache")
   Cache cache;
+
+  public TopologyApiClientFactory(@CacheName("topology-cache") final Cache cache) {
+    this.cache = cache;
+  }
 
   @Override
   public TopologyApiClient newClient() {

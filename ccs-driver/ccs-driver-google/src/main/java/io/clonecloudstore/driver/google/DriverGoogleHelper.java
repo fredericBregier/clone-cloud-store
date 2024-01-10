@@ -437,7 +437,7 @@ public class DriverGoogleHelper {
       final var outputStream = new PipedOutputStream(inputStream); // NOSONAR intentional
       final var finalInputStream =
           new InputStreamClosing(inputStream, outputStream, readChannel); // NOSONAR intentional
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try {
           var read = 0;
           final var buf = new byte[StandardProperties.getBufSize()];
@@ -620,7 +620,7 @@ public class DriverGoogleHelper {
     @Override
     public long transferTo(final OutputStream out) throws IOException {
       checkException();
-      return pipedInputStream.transferTo(out);
+      return SystemTools.transferTo(pipedInputStream, out);
     }
   }
 }

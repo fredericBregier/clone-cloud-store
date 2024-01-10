@@ -24,7 +24,7 @@ import jakarta.ws.rs.client.ClientResponseContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 public class ResponseObjectClientFilter implements ResteasyReactiveClientResponseFilter {
 

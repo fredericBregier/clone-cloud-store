@@ -86,7 +86,7 @@ class AccessorBucketServiceInternalTest {
 
     try {
       final var bucketName = "bucketcreatetest";
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
 
       //Create bucket
       final var bucket = service.createBucket(clientId, bucketTechnicalName, true);
@@ -130,26 +130,26 @@ class AccessorBucketServiceInternalTest {
         DaoAccessorBucketRepository.getBucketTechnicalName(clientId, "unknownbucket");
     //Get Bucket not exist
     final Exception exceptionMin = assertThrows(CcsNotExistException.class,
-        () -> service.getBucket(unknownBucketTechnicalName, false, null, null));
+        () -> service.getBucket(unknownBucketTechnicalName, null, null, false));
     assertNotNull(exceptionMin);
-    assertFalse(service.checkBucket(unknownBucketTechnicalName, false, false, clientId, GuidLike.getGuid()));
+    assertFalse(service.checkBucket(unknownBucketTechnicalName, false, clientId, GuidLike.getGuid(), false));
 
     //Create a bucket and get Bucket
     final var bucketName = "testgetbucket";
     final var opId = GuidLike.getGuid();
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final AccessorBucket bucket;
     service.createBucket(clientId, bucketTechnicalName, true);
-    bucket = service.getBucket(bucketTechnicalName, true, clientId, opId);
+    bucket = service.getBucket(bucketTechnicalName, clientId, opId, true);
     assertEquals(bucketName, bucket.getName());
     assertEquals(AccessorStatus.READY, bucket.getStatus());
-    assertTrue(service.checkBucket(bucketTechnicalName, false, false, clientId, GuidLike.getGuid()));
+    assertTrue(service.checkBucket(bucketTechnicalName, false, clientId, GuidLike.getGuid(), false));
 
     //Check read bucket deleted
     service.deleteBucket(clientId, bucketTechnicalName, false);
 
-    assertThrows(CcsDeletedException.class, () -> service.getBucket(bucketTechnicalName, true, clientId, opId));
-    assertFalse(service.checkBucket(bucketTechnicalName, false, false, clientId, GuidLike.getGuid()));
+    assertThrows(CcsDeletedException.class, () -> service.getBucket(bucketTechnicalName, clientId, opId, true));
+    assertFalse(service.checkBucket(bucketTechnicalName, false, clientId, GuidLike.getGuid(), false));
 
     final var bucketNameStatusNotA = "bucketnotavailable";
     final var technicalBucketNameNotA = DaoAccessorBucketRepository.getPrefix(clientId) + bucketNameStatusNotA;
@@ -157,14 +157,14 @@ class AccessorBucketServiceInternalTest {
     bucketStatusNotAvailable = service.createBucket(clientId, technicalBucketNameNotA, true);
     assertEquals(bucketNameStatusNotA, bucketStatusNotAvailable.getName());
     assertEquals(AccessorStatus.READY, bucketStatusNotAvailable.getStatus());
-    assertTrue(service.checkBucket(technicalBucketNameNotA, false, false, clientId, GuidLike.getGuid()));
+    assertTrue(service.checkBucket(technicalBucketNameNotA, false, clientId, GuidLike.getGuid(), false));
 
     //Change status to simulate an operation
     final var bucketTmp = bucketRepository.findBucketById(technicalBucketNameNotA);
     bucketRepository.updateBucketStatus(bucketTmp, AccessorStatus.DELETING, null);
 
-    assertThrows(CcsOperationException.class, () -> service.getBucket(technicalBucketNameNotA, true, clientId, opId));
-    assertFalse(service.checkBucket(technicalBucketNameNotA, false, false, clientId, GuidLike.getGuid()));
+    assertThrows(CcsOperationException.class, () -> service.getBucket(technicalBucketNameNotA, clientId, opId, true));
+    assertFalse(service.checkBucket(technicalBucketNameNotA, false, clientId, GuidLike.getGuid(), false));
   }
 
   @Test
@@ -172,7 +172,7 @@ class AccessorBucketServiceInternalTest {
     //Create buckets
     final var bucketName = "testgetbuckets";
 
-    final var prefixBucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var prefixBucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     service.createBucket(clientId, prefixBucketTechnicalName + "1", true);
     service.createBucket(clientId, prefixBucketTechnicalName + "2", true);
     service.createBucket(clientId, prefixBucketTechnicalName + "3", true);
@@ -189,7 +189,7 @@ class AccessorBucketServiceInternalTest {
     final var bucketName = "bucketdeletedtest";
     final AccessorBucket bucket;
     {
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
       bucket = service.createBucket(clientId, bucketTechnicalName, true);
       assertEquals(bucketName, bucket.getName());
       assertEquals(bucketTechnicalName, bucket.getId());
@@ -197,7 +197,7 @@ class AccessorBucketServiceInternalTest {
     }
     //Delete bucket already
     {
-      final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+      final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
       final var bucketDeleted = service.deleteBucket(clientId, bucketTechnicalName, false);
       Assertions.assertEquals(AccessorStatus.DELETED, bucketDeleted.getStatus());
       final Exception exceptionDeleted =
@@ -228,11 +228,11 @@ class AccessorBucketServiceInternalTest {
     assertEquals(bucketNameStatusNotAD, bucketStatusNotAD.getName());
     assertEquals(AccessorStatus.READY, bucketStatusNotAD.getStatus());
 
-    final var technicalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var technicalBucketName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     //Change status to simulate an operation
     final var bucketTmp = bucketRepository.findBucketById(technicalBucketName);
     bucketRepository.updateBucketStatus(bucketTmp, AccessorStatus.DELETING, null);
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final Exception exceptionStatusAD =
         assertThrows(CcsOperationException.class, () -> service.deleteBucket(clientId, bucketTechnicalName, false));
     assertNotNull(exceptionStatusAD);

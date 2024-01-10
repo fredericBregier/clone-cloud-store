@@ -10,6 +10,7 @@ mp:
         connector: smallrye-kafka
         topic: ${CCS_REQUEST_ACTION:request-action}
         retry-attempts: 10
+        #broadcast: true
         auto:
           offset:
             reset: earliest

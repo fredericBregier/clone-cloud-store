@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.guid.GuidLike;
+import io.clonecloudstore.common.standard.properties.ApiConstants;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.MDC;
@@ -35,9 +37,6 @@ import org.jboss.logmanager.MDC;
  */
 public abstract class SimpleClientAbstract<S extends Closeable> implements Closeable {
   private static final Logger LOGGER = Logger.getLogger(SimpleClientAbstract.class);
-  public static final String X_OP_ID = "x-clonecloudstore-op-id";
-  public static final String X_ERROR = "x-clonecloudstore-error";
-  public static final String X_MODULE = "x-clonecloudstore-module";
   public static final String MDC_COMPRESSED_CONTENT = "mdc-compressed-content";
   public static final String MDC_COMPRESSED_RESPONSE = "mdc-compressed-response";
   public static final String MDC_QUERY_HEADERS = "mdc-query-headers";
@@ -182,7 +181,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
     if (opId.get() != null) {
       INPUTSTREAM_OBJECT_MAP.remove(opId.get());
     }
-    MDC.remove(X_OP_ID);
+    MDC.remove(ApiConstants.X_OP_ID);
   }
 
   /**
@@ -193,7 +192,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   public static String setMdcOpId(final String opId) {
     final var opIdReal = ParametersChecker.isNotEmpty(opId) ? opId : GuidLike.getGuid();
     LOGGER.debugf("Renew OpId? %b (%s => %s)", !ParametersChecker.isNotEmpty(opId), opId, opIdReal);
-    MDC.put(X_OP_ID, opIdReal);
+    MDC.put(ApiConstants.X_OP_ID, opIdReal);
     QuarkusProperties.refreshModuleMdc();
     return opIdReal;
   }
@@ -202,7 +201,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
    * @return the current OpId or a new one if none
    */
   public static String getMdcOpId() {
-    var opId = MDC.get(X_OP_ID);
+    var opId = MDC.get(ApiConstants.X_OP_ID);
     if (ParametersChecker.isEmpty(opId)) {
       opId = setMdcOpId(null);
     } else {
@@ -227,7 +226,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
    * Reset OpId to empty
    */
   public void resetMdcOpId() {
-    MDC.remove(X_OP_ID);
+    MDC.remove(ApiConstants.X_OP_ID);
     this.opId.set(null);
   }
 

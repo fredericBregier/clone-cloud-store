@@ -58,8 +58,8 @@ application.yaml configuration
    * - Redefining ``mp.messaging.outgoing.replicator-action-out`` or env ``CCS_REQUEST_ACTION``
      - Name of the outgoing topic for Action Requests
      - ``request-action``
-   * - Redefining ``mp.messaging.outgoing.replicator-request-out`` or env ``CCS_REQUEST_REPLICATION``
-     - Name of the incoming and outgoing topic for Replication Requests
+   * - Redefining ``mp.messaging.incoming.replicator-request-out`` / ``mp.messaging.outgoing.replicator-request-out`` or env ``CCS_REQUEST_REPLICATION``
+     - Name of the incoming and outgoing topic for Replication Requests (if more than 1 instance, add broadcast=true to the incoming configuration)
      - ``request-replication``
    * - ``quarkus.rest-client."io.clonecloudstore.accessor.client.internal.api.AccessorBucketInternalApi".url``
      - Http(s) url of the service

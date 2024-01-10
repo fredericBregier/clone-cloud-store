@@ -54,13 +54,9 @@ public class NativeStreamHandler extends NativeStreamHandlerAbstract<StorageObje
 
   @Override
   protected void postSetup() {
+    super.postSetup();
     setDriverApi();
     getCloser().add(driverApi);
-  }
-
-  @Override
-  protected boolean checkDigestToCumpute(final StorageObject businessIn) {
-    return true;
   }
 
   @Override
@@ -90,7 +86,7 @@ public class NativeStreamHandler extends NativeStreamHandlerAbstract<StorageObje
     // Hash from request
     var hash = apiBusinessIn.hash();
     if (finalHash != null) {
-      // Hash from NettyToInputStream (on the fly)
+      // Hash from InputStream (on the fly)
       hash = finalHash;
     }
     try {
@@ -108,28 +104,7 @@ public class NativeStreamHandler extends NativeStreamHandlerAbstract<StorageObje
   protected Map<String, String> getHeaderPushInputStream(final StorageObject apiBusinessIn, final String finalHash,
                                                          final long size, final StorageObject apiBusinessOut) {
     // Business code should come here (example: headers for object name, object size, ...)
-    final var map = getHeaderMap(apiBusinessIn);
-    final var creationDate = apiBusinessOut.creationDate();
-    if (creationDate != null) {
-      map.put(ApiConstants.X_CREATION_DATE, creationDate.toString());
-    }
-    // Hash from request
-    var hash = apiBusinessIn.hash();
-    if (apiBusinessOut.hash() != null) {
-      // Hash from prepared Output
-      hash = apiBusinessOut.hash();
-    }
-    if (hash == null) {
-      // Hash from NettyToInputStream (on the fly)
-      hash = finalHash;
-    }
-    if (hash != null) {
-      map.put(ApiConstants.X_HASH, hash);
-    }
-    if (size > 0) {
-      map.put(ApiConstants.X_LEN, Long.toString(size));
-    }
-    return map;
+    return new HashMap<>();
   }
 
   @Override

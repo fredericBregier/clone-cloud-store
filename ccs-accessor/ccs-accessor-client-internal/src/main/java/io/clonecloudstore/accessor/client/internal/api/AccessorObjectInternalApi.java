@@ -21,9 +21,8 @@ import java.io.InputStream;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
-import io.netty.handler.codec.http.HttpHeaderValues;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.NotBody;
 import io.smallrye.mutiny.Uni;
@@ -60,7 +59,8 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.INTERNAL_
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_OBJECT;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
@@ -122,7 +122,7 @@ public interface AccessorObjectInternalApi extends Closeable {
   default String computeCompressionModel(ComputedParamContext context) {
     int argPos = 0;
     if ((boolean) context.methodParameters().get(argPos).value()) {
-      return HttpHeaderValues.ZSTD.toString();
+      return COMPRESSION_ZSTD;
     }
     return null;
   }

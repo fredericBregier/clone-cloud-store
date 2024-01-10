@@ -400,7 +400,7 @@ abstract class ObjectClientAzureBase {
       assertTrue(storageObject.creationDate().isAfter(before));
       var to = System.nanoTime();
       var time = (to - from) / 1000000000.0;
-      LOG.info("Time Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Creation: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       // Create Object 2
       from = System.nanoTime();
@@ -413,7 +413,7 @@ abstract class ObjectClientAzureBase {
       assertEquals(shaReal, storageObject.hash());
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Creation: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       assertEquals(StorageType.OBJECT, apiClient.objectOrDirectoryExists(bucket, object + 1));
@@ -450,7 +450,7 @@ abstract class ObjectClientAzureBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Read StreamNetty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Read Stream: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       try {
@@ -467,7 +467,7 @@ abstract class ObjectClientAzureBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Read StreamNetty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Read Stream: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       // Wrongly ReCreate Object 1
       from = System.nanoTime();
@@ -479,7 +479,7 @@ abstract class ObjectClientAzureBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Wrong Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Wrong Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       try {
@@ -490,7 +490,7 @@ abstract class ObjectClientAzureBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Wrong Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Wrong Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       apiClient.objectDelete(bucket, object + 1);

@@ -29,6 +29,7 @@ import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.accessor.server.simple.application.AccessorObjectService;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
@@ -50,7 +51,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -98,7 +99,7 @@ class AccessorObjectResourceTest {
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, BUCKET_NAME);
+    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_NAME, true);
     createBucketAndObject(BUCKET_NAME, finalBucketName, OBJECT);
     createBucketAndObject(BUCKET_NAME, finalBucketName, '/' + OBJECT);
   }
@@ -238,7 +239,7 @@ class AccessorObjectResourceTest {
   @Test
   void checkTryCreateWhileAlreadyInCreation() throws CcsWithStatusException {
     final var bucketName = "retry-create";
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, bucketName);
+    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
     // Create Bucket
     try (final var client = factoryBucket.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
@@ -277,7 +278,7 @@ class AccessorObjectResourceTest {
   @Test
   void createBucketAndObjectRemote() throws CcsWithStatusException {
     final var bucketName = "change-remote";
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, bucketName);
+    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
     // Create Bucket
     try (final var client = factoryBucket.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
@@ -464,8 +465,8 @@ class AccessorObjectResourceTest {
         }
       }
       {
-        final var inputStream = client.listObjects(bucketName, clientId,
-            new AccessorFilter().setMetadataFilter(new HashMap<String, String>()));
+        final var inputStream =
+            client.listObjects(bucketName, clientId, new AccessorFilter().setMetadataFilter(new HashMap<>()));
         try {
           final var stream = StreamIteratorUtils.getListFromIterator(inputStream);
           assertEquals(1, stream.size());
@@ -580,13 +581,14 @@ class AccessorObjectResourceTest {
 
   @Test
   void createBucketAndMultipleObject() throws CcsWithStatusException {
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, BUCKET_MULTI_NAME);
+    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME, true);
     createBucketAndMultipleObject(BUCKET_MULTI_NAME, finalBucketName, true);
   }
 
   @Test
   void createBucketAndMultipleObjectNoSize() throws CcsWithStatusException {
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, BUCKET_MULTI_NAME + "2");
+    final var finalBucketName =
+        AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME + "2", true);
     createBucketAndMultipleObject(BUCKET_MULTI_NAME + "2", finalBucketName, false);
   }
 
@@ -666,7 +668,8 @@ class AccessorObjectResourceTest {
       final var accessorBucket = client.createBucket(bucket, clientId);
       LOG.infof("Bucket: %s", bucket);
       Assertions.assertEquals(bucket, accessorBucket.getName());
-      Assertions.assertEquals(AccessorBucketResource.getRealBucketName(clientId, bucket), accessorBucket.getId());
+      Assertions.assertEquals(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucket, true),
+          accessorBucket.getId());
     } catch (final CcsWithStatusException e) {
       fail(e);
     }

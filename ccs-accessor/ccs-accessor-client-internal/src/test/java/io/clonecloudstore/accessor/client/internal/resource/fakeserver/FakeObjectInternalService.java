@@ -57,7 +57,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestPath;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
@@ -254,6 +254,9 @@ public class FakeObjectInternalService
                                  @DefaultValue("") @HeaderParam(X_OP_ID) final String opId,
                                  final HttpServerRequest request, @Context final Closer closer) {
     final var accessorObject = new AccessorObject().setName(objectName).setSite("site").setBucket(bucketName);
+    if (errorCode > 0) {
+      throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+    }
     // use InputStream abstract implementation
     return readObject(request, closer, accessorObject, false);
   }

@@ -24,7 +24,7 @@ import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
-import io.clonecloudstore.accessor.server.simple.resource.AccessorBucketResource;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotAcceptableException;
@@ -36,7 +36,6 @@ import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.DriverApi;
 import io.clonecloudstore.driver.api.DriverApiRegistry;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.api.model.StorageObject;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.clonecloudstore.test.resource.s3.MinioProfile;
@@ -93,10 +92,10 @@ class AccessorObjectServiceExternalTest {
     final var prefix = "dir/";
     final AccessorBucket bucket;
     final DriverApi driverApi = DriverApiRegistry.getDriverApiFactory().getInstance();
-    final var bucketTechnicalName = AccessorBucketResource.getRealBucketName(clientId, bucketName);
+    final var bucketTechnicalName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
     // First create bucket
     try {
-      bucket = service.createBucket(clientId, bucketTechnicalName);
+      bucket = service.createBucket(clientId, bucketTechnicalName, true);
       assertEquals(bucketName, bucket.getName());
       assertEquals(bucketTechnicalName, bucket.getId());
       Assertions.assertEquals(AccessorStatus.READY, bucket.getStatus());
@@ -108,8 +107,9 @@ class AccessorObjectServiceExternalTest {
     try {
       // Assert object is not existing
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName));
-      assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketTechnicalName, objectName));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
+      assertThrows(CcsNotExistException.class,
+          () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
       {
         final var inputStream = serviceObject.filterObjects(bucketTechnicalName, null, driverApi);
         try {
@@ -135,8 +135,7 @@ class AccessorObjectServiceExternalTest {
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      StorageObject storageObject = new StorageObject(bucketTechnicalName, objectName, "hash", 100, Instant.now());
-      serviceObject.createObjectFinalize(storageObject, "hash", 100);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, true);
       // Assert object is existing
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
 
@@ -218,8 +217,9 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
-            new AccessorFilter().setMetadataFilter(new HashMap<String, String>()), driverApi);
+        final var inputStream =
+            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setMetadataFilter(new HashMap<>()),
+                driverApi);
         try {
           final var iterator = StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, SystemTools.consumeAll(iterator));
@@ -253,8 +253,8 @@ class AccessorObjectServiceExternalTest {
       }
 
       // Object not in S3 so NONE
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/"));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/", true));
       // Throw since Object not in S3
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
     } catch (final CcsAlreadyExistException | CcsServerGenericException | CcsNotExistException |
@@ -262,16 +262,18 @@ class AccessorObjectServiceExternalTest {
       fail(e);
     }
     // Delete object
-    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketTechnicalName, objectName));
+    assertThrows(CcsNotExistException.class,
+        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
     // Retry Delete object
-    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketTechnicalName, objectName));
+    assertThrows(CcsNotExistException.class,
+        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
     assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
 
     // Delete Bucket
     try {
-      final var bucketDeleted = service.deleteBucket(clientId, bucketTechnicalName);
+      final var bucketDeleted = service.deleteBucket(clientId, bucketTechnicalName, true);
       Assertions.assertEquals(AccessorStatus.DELETED, bucketDeleted.getStatus());
-      assertThrows(CcsDeletedException.class, () -> service.deleteBucket(clientId, bucketTechnicalName));
+      assertThrows(CcsDeletedException.class, () -> service.deleteBucket(clientId, bucketTechnicalName, true));
     } catch (final CcsNotExistException | CcsDeletedException | CcsServerGenericException |
                    CcsNotAcceptableException e) {
       throw new RuntimeException(e);
@@ -283,7 +285,7 @@ class AccessorObjectServiceExternalTest {
   void checkWithInvalidBucket() {
     final var bucketName = "bucket-not-created";
     final var objectName = "dir/objectName";
-    final var bucketTechnicalName = AccessorBucketResource.getRealBucketName(clientId, bucketName);
+    final var bucketTechnicalName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
     final var create = new AccessorObject().setBucket(bucketTechnicalName).setName(objectName);
     AccessorObject object;
     try {
@@ -293,18 +295,19 @@ class AccessorObjectServiceExternalTest {
       assertThrows(CcsNotExistException.class, () -> serviceObject.createObject(create, "hash", 100));
       // Assert object is existing
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir/"));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir/", true));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
       // Object not in S3 so NONE
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/"));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/", true));
       // Throw since Object not in S3
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
     } catch (final CcsServerGenericException e) {
       fail(e);
     }
     // Delete object
-    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketTechnicalName, objectName));
+    assertThrows(CcsNotExistException.class,
+        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
     assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
   }
 }

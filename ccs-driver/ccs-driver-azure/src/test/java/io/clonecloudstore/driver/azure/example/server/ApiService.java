@@ -54,7 +54,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestPath;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
 
 @Path(ApiConstants.API_ROOT)
 public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, NativeStreamHandler> {

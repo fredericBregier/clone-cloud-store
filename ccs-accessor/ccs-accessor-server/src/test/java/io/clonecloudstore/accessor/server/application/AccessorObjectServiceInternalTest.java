@@ -114,7 +114,7 @@ class AccessorObjectServiceInternalTest {
     final var objectName = "dir/objectName";
     final var prefix = "dir/";
     final AccessorBucket bucket;
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     // First create bucket
     try {
       bucket = service.createBucket(clientId, bucketTechnicalName, false);
@@ -156,11 +156,11 @@ class AccessorObjectServiceInternalTest {
         }
       }
       // Create object
-      object = serviceObject.createObject(create, "hash", 100).getDto();
+      object = serviceObject.createObject(create, "hash", 100);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, false);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, false);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -244,8 +244,8 @@ class AccessorObjectServiceInternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
-            new AccessorFilter().setMetadataFilter(new HashMap<String, String>()));
+        final var inputStream =
+            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setMetadataFilter(new HashMap<>()));
         try {
           final var iterator = StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
           assertEquals(1, SystemTools.consumeAll(iterator));
@@ -313,11 +313,11 @@ class AccessorObjectServiceInternalTest {
       assertThrows(CcsNotExistException.class,
           () -> serviceObject.checkPullable(bucketTechnicalName, objectName, false, clientId, opId));
       // Create object
-      object = serviceObject.createObject(create, "hash", 100).getDto();
+      object = serviceObject.createObject(create, "hash", 100);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, false);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, false);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -355,11 +355,11 @@ class AccessorObjectServiceInternalTest {
       assertThrows(CcsNotExistException.class,
           () -> serviceObject.checkPullable(bucketTechnicalName, objectName, false, clientId, opId));
       // Create object
-      object = serviceObject.createObject(create, null, 0).getDto();
+      object = serviceObject.createObject(create, null, 0);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, false);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, false);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -397,7 +397,7 @@ class AccessorObjectServiceInternalTest {
       // Change object status to IN_Progress and recheck creation
       objectRepository.updateObjectStatus(bucketTechnicalName, objectName, AccessorStatus.UPLOAD, null);
       // Create object but cannot
-      assertThrows(CcsNotAcceptableException.class, () -> serviceObject.createObject(create, null, 0).getDto());
+      assertThrows(CcsNotAcceptableException.class, () -> serviceObject.createObject(create, null, 0));
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
@@ -437,7 +437,7 @@ class AccessorObjectServiceInternalTest {
   void checkWithInvalidBucket() {
     final var bucketName = "bucket-not-created";
     final var objectName = "dir/objectName";
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final var create = new AccessorObject().setBucket(bucketTechnicalName).setName(objectName);
     AccessorObject object;
     try {
@@ -449,7 +449,7 @@ class AccessorObjectServiceInternalTest {
       // Create object
       assertThrows(CcsNotExistException.class, () -> serviceObject.createObject(create, "hash", 100));
       assertThrows(CcsOperationException.class,
-          () -> serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, false));
+          () -> serviceObject.createObjectFinalize(create, "hash", 100, clientId, false));
       // Assert object is existing
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
       assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir/", false));

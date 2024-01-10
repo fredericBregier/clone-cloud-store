@@ -29,8 +29,8 @@ import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
-import io.clonecloudstore.replicator.test.fake.FakeBucketServiceImpl;
-import io.clonecloudstore.replicator.test.fake.FakeObjectServiceImpl;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -74,21 +74,21 @@ class LocalReplicatorApiClientTest {
     try (final var client = factory.newClient()) {
       {
         logger.debugf("\n\nTesting check bucket found responses");
-        FakeBucketServiceImpl.errorCode = 0;
+        FakeCommonBucketResourceHelper.errorCode = 0;
         final var storageType =
             Assertions.assertDoesNotThrow(() -> client.checkBucket(BUCKET_NAME, FULL_CHECK, CLIENT_ID, OP_ID));
         assertEquals(new ReplicatorResponse<>(StorageType.BUCKET, null), storageType);
       }
       {
         logger.debugf("\n\nTesting check bucket not found responses");
-        FakeBucketServiceImpl.errorCode = 404;
+        FakeCommonBucketResourceHelper.errorCode = 404;
         final var storageType =
             Assertions.assertDoesNotThrow(() -> client.checkBucket(BUCKET_NAME, FULL_CHECK, CLIENT_ID, OP_ID));
         assertEquals(new ReplicatorResponse<>(StorageType.NONE, null), storageType);
       }
       {
         logger.debugf("\n\nTesting check bucket error responses");
-        FakeBucketServiceImpl.errorCode = 400;
+        FakeCommonBucketResourceHelper.errorCode = 400;
         assertThrows(CcsWithStatusException.class, () -> {
           client.checkBucket(BUCKET_NAME, FULL_CHECK, CLIENT_ID, OP_ID);
         });
@@ -101,21 +101,21 @@ class LocalReplicatorApiClientTest {
     try (final var client = factory.newClient()) {
       {
         logger.debugf("\n\nTesting check object found responses");
-        FakeObjectServiceImpl.errorCode = 0;
+        FakeCommonObjectResourceHelper.errorCode = 0;
         final var storageType = Assertions.assertDoesNotThrow(
             () -> client.checkObjectOrDirectory(BUCKET_NAME, OBJECT_PATH, FULL_CHECK, CLIENT_ID, OP_ID));
         assertEquals(new ReplicatorResponse<>(StorageType.OBJECT, null), storageType);
       }
       {
         logger.debugf("\n\nTesting check object not found responses");
-        FakeObjectServiceImpl.errorCode = 404;
+        FakeCommonObjectResourceHelper.errorCode = 404;
         final var storageType = Assertions.assertDoesNotThrow(
             () -> client.checkObjectOrDirectory(BUCKET_NAME, OBJECT_PATH, FULL_CHECK, CLIENT_ID, OP_ID));
         assertEquals(new ReplicatorResponse<>(StorageType.NONE, null), storageType);
       }
       {
         logger.debugf("\n\nTesting check object error responses");
-        FakeObjectServiceImpl.errorCode = 400;
+        FakeCommonObjectResourceHelper.errorCode = 400;
         assertThrows(CcsWithStatusException.class, () -> {
           client.checkObjectOrDirectory(BUCKET_NAME, OBJECT_PATH, FULL_CHECK, CLIENT_ID, OP_ID);
         });
@@ -128,8 +128,8 @@ class LocalReplicatorApiClientTest {
     try (final var client = factory.newClient()) {
       {
         logger.debugf("\n\nTesting read remote object");
-        FakeObjectServiceImpl.errorCode = 0;
-        FakeObjectServiceImpl.length = REMOTE_READ_STREAM_LEN;
+        FakeCommonObjectResourceHelper.errorCode = 0;
+        FakeCommonObjectResourceHelper.length = REMOTE_READ_STREAM_LEN;
         final var stream = Assertions.assertDoesNotThrow(
             () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, "", OP_ID).inputStream());
         final var len = assertDoesNotThrow(() -> FakeInputStream.consumeAll(stream));
@@ -137,8 +137,8 @@ class LocalReplicatorApiClientTest {
       }
       {
         logger.debugf("\n\nTesting read remote object");
-        FakeObjectServiceImpl.errorCode = 0;
-        FakeObjectServiceImpl.length = REMOTE_READ_STREAM_LEN;
+        FakeCommonObjectResourceHelper.errorCode = 0;
+        FakeCommonObjectResourceHelper.length = REMOTE_READ_STREAM_LEN;
         final var stream = Assertions.assertDoesNotThrow(
             () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, SITE, OP_ID).inputStream());
         final var len = assertDoesNotThrow(() -> FakeInputStream.consumeAll(stream));
@@ -146,8 +146,8 @@ class LocalReplicatorApiClientTest {
       }
 
       logger.debugf("\n\nTesting read remote object not found");
-      FakeObjectServiceImpl.errorCode = 404;
-      FakeObjectServiceImpl.length = REMOTE_READ_STREAM_LEN;
+      FakeCommonObjectResourceHelper.errorCode = 404;
+      FakeCommonObjectResourceHelper.length = REMOTE_READ_STREAM_LEN;
       final CcsWithStatusException e = assertThrows(CcsWithStatusException.class, () -> {
         client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, "", OP_ID).inputStream();
       });

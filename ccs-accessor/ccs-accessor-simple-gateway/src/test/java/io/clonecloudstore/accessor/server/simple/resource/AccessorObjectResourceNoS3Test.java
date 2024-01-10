@@ -22,6 +22,7 @@ import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.NoResourceProfile;
@@ -58,7 +59,7 @@ class AccessorObjectResourceNoS3Test {
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = AccessorBucketResource.getRealBucketName(clientId, BUCKET_NAME);
+    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_NAME, true);
     createBucketAndObject(BUCKET_NAME);
   }
 

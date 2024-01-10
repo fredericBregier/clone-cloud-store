@@ -196,7 +196,7 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     }
   }
 
-  // Example of service for Post InputStream using Netty implementation
+  // Example of service for Post InputStream
   public StorageObject postInputStream(final String bucket, final String name, final InputStream content,
                                        final String hash, final long len)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverNotAcceptableException, DriverException {
@@ -224,7 +224,7 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     }
   }
 
-  // Example of service for Get InputStream using Netty implementation
+  // Example of service for Get InputStream
   public InputStreamBusinessOut<StorageObject> getInputStream(final String bucket, final String name)
       throws DriverNotFoundException, DriverException {
     // Business code should come here

@@ -303,7 +303,7 @@ public class BoundedByteBuffer implements Closeable {
       final int availableLength;
       try {
         availableLength = lock.tryBeginConsume(length);
-      } catch (final InterruptedException e) {// SONAR intentional
+      } catch (final InterruptedException e) {// NOSONAR intentional
         throw new IOException("Interrupted thread", e);
       }
       return availableLength;

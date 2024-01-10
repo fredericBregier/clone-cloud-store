@@ -139,17 +139,8 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
 
   @Override
   protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
-    try {
-      final var businessOut = response.readEntity(AccessorObject.class);
-      if (businessOut != null) {
-        return businessOut;
-      }
-    } catch (final RuntimeException ignore) {
-      // Nothing
-    }
-    final var accessorObject = new AccessorObject();
-    AccessorHeaderDtoConverter.objectFromMap(accessorObject, response.getStringHeaders());
-    return accessorObject;
+    // No Push
+    return null;
   }
 
   @Override

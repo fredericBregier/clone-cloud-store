@@ -67,8 +67,8 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
   }
 
   @Override
-  protected boolean checkDigestToCumpute(final ApiBusinessIn businessIn) {
-    return !businessIn.name.startsWith(PROXY_TEST);
+  protected boolean checkDigestToCompute(final ApiBusinessIn businessIn) {
+    return QuarkusProperties.serverComputeSha256() && !businessIn.name.startsWith(PROXY_TEST);
   }
 
   @Override
@@ -92,7 +92,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
         isAlreadyCompressed());
     if (apiBusinessIn.name.startsWith(PROXY_COMP_TEST)) {
       final var finalName = apiBusinessIn.name.substring(PROXY_COMP_TEST.length());
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try (final var client = factory.newClient()) {
           client.setOpId(getOpId());
           LOG.debugf("DEBUG Name Post %s", apiBusinessIn.name);
@@ -113,7 +113,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
       Thread.yield();
     } else if (apiBusinessIn.name.startsWith(PROXY_TEST)) {
       final var finalName = apiBusinessIn.name.substring(PROXY_TEST.length());
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         ApiBusinessOut businessOut = null;
         try (final var client = factory.newClient()) {
           client.setOpId(getOpId());
@@ -136,7 +136,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
       Thread.yield();
     } else {
       LOG.debugf("DEBUG Standard Consume %s", apiBusinessIn);
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         // Business code should come here
         try {
           final var bytes = new byte[QuarkusProperties.getBufSize()];
@@ -227,20 +227,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
                                                          final long size, final ApiBusinessOut apiBusinessOut)
       throws CcsClientGenericException, CcsServerGenericException {
     // Business code should come here (example: headers for object name, object size, ...)
-    final Map<String, String> map = new HashMap<>();
-    if (apiBusinessIn.name.equals(THROWABLE_NAME)) {
-      // Here send nothing back
-      return map;
-    }
-    if (apiBusinessOut == null) {
-      map.put(X_NAME, apiBusinessIn.name);
-      map.put(X_LEN, Long.toString(size));
-    } else {
-      map.put(X_NAME, apiBusinessOut.name);
-      map.put(X_CREATION_DATE, apiBusinessOut.creationDate.toString());
-      map.put(X_LEN, Long.toString(apiBusinessOut.len));
-    }
-    return map;
+    return new HashMap<>();
   }
 
   @Override

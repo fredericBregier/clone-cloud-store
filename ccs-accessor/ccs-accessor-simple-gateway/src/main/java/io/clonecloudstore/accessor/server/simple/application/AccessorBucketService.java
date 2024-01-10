@@ -21,6 +21,9 @@ import java.util.LinkedList;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
+import io.clonecloudstore.accessor.server.commons.AccessorBucketServiceInterface;
+import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotAcceptableException;
@@ -44,7 +47,7 @@ import org.jboss.logging.Logger;
  * Accessor Bucket Service
  */
 @ApplicationScoped
-public class AccessorBucketService {
+public class AccessorBucketService implements AccessorBucketServiceInterface {
   private static final Logger LOGGER = Logger.getLogger(AccessorBucketService.class);
   private static final String BUCKET_STRING = "Bucket ";
   private final DriverApiFactory storageDriverFactory;
@@ -54,7 +57,7 @@ public class AccessorBucketService {
   }
 
   static String getBucketName(final String clientId, final String technicalBucketName) {
-    return technicalBucketName.replace(clientId + "-", "");
+    return AbstractPublicBucketHelper.getBusinessBucketName(clientId, technicalBucketName);
   }
 
   /**
@@ -64,7 +67,8 @@ public class AccessorBucketService {
    * @param technicalBucketName Technical Bucket Name
    * @return AccessorBucket add on Database and in object storage
    */
-  public AccessorBucket createBucket(final String clientId, final String technicalBucketName)
+  @Override
+  public AccessorBucket createBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
       throws CcsAlreadyExistException, CcsOperationException {
     final var bucketName = getBucketName(clientId, technicalBucketName);
     try {
@@ -107,7 +111,9 @@ public class AccessorBucketService {
    * @param technicalBucketName Bucket technical name
    * @return AccessorBucket found with technical name
    */
-  public AccessorBucket getBucket(final String technicalBucketName, final String clientId)
+  @Override
+  public AccessorBucket getBucket(final String technicalBucketName, final String clientId, final String opId,
+                                  final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException {
     final var bucketName = getBucketName(clientId, technicalBucketName);
     try (final var storageDriver = storageDriverFactory.getInstance()) {
@@ -146,6 +152,7 @@ public class AccessorBucketService {
    *
    * @return the list of Buckets
    */
+  @Override
   public Collection<AccessorBucket> getBuckets(final String clientId) throws CcsOperationException {
     //Search buckets.
     final var collection = new LinkedList<AccessorBucket>();
@@ -153,7 +160,7 @@ public class AccessorBucketService {
       final var iterator = storageDriver.bucketsIterator();
       while (iterator.hasNext()) {
         final var storageBucket = iterator.next();
-        if (storageBucket.bucket().startsWith(clientId + "-")) {
+        if (storageBucket.bucket().startsWith(AbstractPublicBucketHelper.getBucketPrefix(clientId))) {
           AccessorBucket result = new AccessorBucket();
           final String technicalBucketName = storageBucket.bucket();
           final var bucketName = getBucketName(clientId, technicalBucketName);
@@ -177,7 +184,9 @@ public class AccessorBucketService {
    * @param technicalBucketName Bucket technical name
    * @return True if it exists
    */
-  public boolean checkBucket(final String technicalBucketName) throws CcsOperationException {
+  @Override
+  public boolean checkBucket(final String technicalBucketName, final boolean fullCheck, final String clientId,
+                             final String opId, final boolean isPublic) throws CcsOperationException {
     try (final var storageDriver = storageDriverFactory.getInstance()) {
       return storageDriver.bucketExists(technicalBucketName);
     } catch (final DriverException e) {
@@ -192,9 +201,10 @@ public class AccessorBucketService {
    * @param technicalBucketName Bucket technical name
    * @return the associated DTO- deleted
    */
-  public AccessorBucket deleteBucket(final String clientId, final String technicalBucketName)
+  @Override
+  public AccessorBucket deleteBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
-    if (checkBucket(technicalBucketName)) {
+    if (checkBucket(technicalBucketName, true, clientId, SimpleClientAbstract.getMdcOpId(), true)) {
       AccessorBucket result = new AccessorBucket();
       final var bucketName = getBucketName(clientId, technicalBucketName);
       result.setName(bucketName);

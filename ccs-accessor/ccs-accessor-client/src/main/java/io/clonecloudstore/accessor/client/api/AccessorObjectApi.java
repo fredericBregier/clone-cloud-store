@@ -21,9 +21,8 @@ import java.io.InputStream;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
-import io.netty.handler.codec.http.HttpHeaderValues;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.NotBody;
 import io.smallrye.mutiny.Uni;
@@ -57,7 +56,8 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.NoCache;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
@@ -135,7 +135,7 @@ public interface AccessorObjectApi extends Closeable {
   default String computeCompressionModel(ComputedParamContext context) {
     int argPos = 0;
     if ((boolean) context.methodParameters().get(argPos).value()) {
-      return HttpHeaderValues.ZSTD.toString();
+      return COMPRESSION_ZSTD;
     }
     return null;
   }
@@ -239,8 +239,8 @@ public interface AccessorObjectApi extends Closeable {
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
   @Operation(summary = "Create object", description = "Create object")
-  @RequestBody(required = true, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema =
-  @Schema(type = SchemaType.STRING, format = "binary")), description = "InputStream as content")
+  @RequestBody(required = true, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM), description =
+      "InputStream as content")
   @APIResponse(responseCode = "201", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
       schema = @Schema(implementation = AccessorObject.class)))
   @APIResponse(responseCode = "400", description = "Bad Request")
@@ -266,6 +266,7 @@ public interface AccessorObjectApi extends Closeable {
       @Parameter(name = AccessorConstants.HeaderObject.X_OBJECT_EXPIRES, description = "Expiration Date", in =
           ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = false)})
   @ClientHeaderParam(name = CONTENT_TYPE, value = MediaType.APPLICATION_OCTET_STREAM)
+  @ClientHeaderParam(name = "Transfer-Encoding", value = "chunked")
   @ClientHeaderParam(name = CONTENT_ENCODING, value = "{computeCompressionModel}", required = false)
   Uni<Response> createObject(@NotBody final boolean provideCompressed, @PathParam("bucketName") final String bucketName,
                              @PathParam("objectName") final String objectName,

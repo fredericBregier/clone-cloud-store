@@ -23,8 +23,6 @@ import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -32,9 +30,11 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_ERROR;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_MODULE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CLOSE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CONNECTION;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 /**
  * Abstraction to enable InputStream Get (Pull) and Post (Push) implementations.
@@ -59,7 +59,7 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
    * Method to use within the POST query definition with a @Blocking annotation.
    * This method should be called by the REST API to handle the received InputStream.
    *
-   * @param keepInputStreamCompressed If True, and if the InputStream is compressed, will kept as is; else will
+   * @param keepInputStreamCompressed If True, and if the InputStream is compressed, will be kept as is; else will
    *                                  decompress the InputStream if it is compressed
    */
   protected Uni<Response> createObject(final HttpServerRequest request, final Closer closer, final I businessIn,
@@ -112,7 +112,6 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
       default -> Response.serverError();
     };
     return responseBuild.header(X_ERROR, e.getMessage()).header(X_MODULE, QuarkusProperties.getCcsModule().name())
-        .header(X_OP_ID, SimpleClientAbstract.getMdcOpId())
-        .header(HttpHeaderNames.CONNECTION.toString(), HttpHeaderValues.CLOSE.toString()).build();
+        .header(X_OP_ID, SimpleClientAbstract.getMdcOpId()).header(CONNECTION, CLOSE).build();
   }
 }

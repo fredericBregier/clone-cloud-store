@@ -33,7 +33,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 /**
- * Client Abstraction with prepared methods for Get and Post request using InputStream with Netty
+ * Client Abstraction with prepared methods for Get and Post request using InputStream
  *
  * @param <I> the type for Business Input request (in GET or POST)
  * @param <O> the type for Business Output request (in POST)

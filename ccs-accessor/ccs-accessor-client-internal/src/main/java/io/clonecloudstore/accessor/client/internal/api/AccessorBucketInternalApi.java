@@ -21,8 +21,8 @@ import java.util.Collection;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -54,7 +54,7 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_BUCKE
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_INTERNAL;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 /**
  * API REST for Accessor Bucket for Internals between Clone Cloud Store services

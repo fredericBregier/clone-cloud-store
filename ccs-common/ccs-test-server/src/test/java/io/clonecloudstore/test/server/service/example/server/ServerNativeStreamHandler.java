@@ -39,11 +39,6 @@ public class ServerNativeStreamHandler extends FakeNativeStreamHandlerAbstract<A
   private static final Logger LOG = Logger.getLogger(ServerNativeStreamHandler.class);
 
   @Override
-  protected boolean checkDigestToCumpute(final ApiBusinessIn businessIn) {
-    return true;
-  }
-
-  @Override
   protected ApiBusinessOut getBusinessOutForPushAnswer(final ApiBusinessIn apiBusinessIn, final String finalHash,
                                                        final long size) {
     final var businessOut = new ApiBusinessOut();
@@ -63,16 +58,7 @@ public class ServerNativeStreamHandler extends FakeNativeStreamHandlerAbstract<A
                                                          final long size, final ApiBusinessOut apiBusinessOut)
       throws CcsClientGenericException, CcsServerGenericException {
     // Business code should come here (example: headers for object name, object size, ...)
-    final Map<String, String> map = new HashMap<>();
-    if (apiBusinessOut == null) {
-      map.put(X_NAME, apiBusinessIn.name);
-      map.put(X_LEN, Long.toString(size));
-    } else {
-      map.put(X_NAME, apiBusinessOut.name);
-      map.put(X_CREATION_DATE, apiBusinessOut.creationDate.toString());
-      map.put(X_LEN, Long.toString(apiBusinessOut.len));
-    }
-    return map;
+    return new HashMap<>();
   }
 
   @Override

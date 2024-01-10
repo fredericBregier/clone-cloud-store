@@ -1,7 +1,7 @@
 ![Clone Cloud Store Logo](ccs-doc/src/source/_static/clone-cloud-store-logo-small.png)
-# Clone Cloud Store Project
+# Clone Cloud Store
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This project uses Quarkus, the Supersonic Subatomic Java Framework, based on Java 21.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
@@ -73,6 +73,7 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
   - Include remote checking if locally not present (by configuration)
   - Include remote cloning
   - Include Public Client and Internal Client (Quarkus)
+  - Include Public Client based on Apache httpclient 5 without need of Quarkus
   - Simple Gateway with no Database nor Remote access or cloning available
 - Driver
   - Support of S3, Azure Blob Storage and Google Cloud Storage
@@ -90,11 +91,6 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
 
 - API could change, in particular Accessor public API (for client application) (see Client Authentication)
-
-- Client without Quarkus is still on going
-
-  - The idea is to allow non Quarkus application in Java to have a ready client SDK.
-  - For Quarkus application, the client already exists
 
 - Client authentication
 
@@ -135,3 +131,41 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
   - However, for PostgreSql or MongoDB, it can be done through configuration so keeping one jar
   - Should it be separate jar (individual per module and per option) or flatten jar (per option)?
   - Helm, Ansible and Dockerfile or other ways to distribute image 
+
+
+## Notes of versions
+
+# 0.8.0 2024/02
+- Add Apache http client for Accessor Public client (no Quarkus dependency)
+- 
+
+# 0.7.0 2024/01
+- Support of MongoDB and Kafka
+- Support of Accessor with remote access and proactive reconciliation
+- Support of Simple Gateway Accessor
+- Support of Replicator
+- Support of Topology
+- Support of Azure Blob Storage, Google Cloud Storage, in addition of Amazon S3 and S3 like
+- First steps on Reconciliator batch
+
+# 0.6.0 2023/11
+- Patch of Quarkus to support InputStream on client side (upload and download)
+
+# 0.5.0 2023/10
+- Refactorization and simplification
+- Support of Dynamic choice of Database (MongoDB or PostgreSql) in Common
+
+# 0.4.0 2023/09
+- Performance improvements
+- Support of proactive replication from Accessor
+
+# 0.3.0 2023/07
+- Adding Topology support to Replicator
+
+# 0.2.0 2023/01
+- Replicator support with asynchronous replication
+- Internal Accessor support
+
+# 0.1.0 2022/06
+- Public Accessor support
+- Driver for Amazon S3 and S3 like support

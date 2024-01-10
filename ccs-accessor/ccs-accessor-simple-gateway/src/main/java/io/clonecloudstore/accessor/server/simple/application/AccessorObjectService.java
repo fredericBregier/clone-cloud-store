@@ -24,6 +24,7 @@ import java.util.Objects;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AccessorObjectServiceInterface;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotAcceptableException;
@@ -46,7 +47,7 @@ import jakarta.enterprise.context.ApplicationScoped;
  * Accessor Bucket Service
  */
 @ApplicationScoped
-public class AccessorObjectService {
+public class AccessorObjectService implements AccessorObjectServiceInterface {
   private static final String STATUS_STRING = " Status: ";
   private static final String ISSUE_STRING = " issue: ";
   private final DriverApiFactory storageDriverFactory;
@@ -69,13 +70,21 @@ public class AccessorObjectService {
   /**
    * Check if object or directory exists
    */
-  public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName)
-      throws CcsOperationException {
+  @Override
+  public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
+                                             final boolean fullCheck) throws CcsOperationException {
     try (final var client = storageDriverFactory.getInstance()) {
       return client.directoryOrObjectExistsInBucket(bucketName, objectOrDirectoryName);
     } catch (final DriverException e) {
       throw new CcsOperationException(mesg(bucketName, objectOrDirectoryName) + ISSUE_STRING + e.getMessage(), e);
     }
+  }
+
+  @Override
+  public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
+                                             final boolean fullCheck, final String clientId, final String opId,
+                                             final boolean external) throws CcsOperationException {
+    return objectOrDirectoryExists(bucketName, objectOrDirectoryName, fullCheck);
   }
 
   /**
@@ -95,6 +104,7 @@ public class AccessorObjectService {
   /**
    * Get DB Object DTO
    */
+  @Override
   public AccessorObject getObjectInfo(final String bucketName, final String objectName)
       throws CcsNotExistException, CcsOperationException {
     final var storageObject = getObjectMetadata(bucketName, objectName);
@@ -106,6 +116,7 @@ public class AccessorObjectService {
    *
    * @throws CcsNotAcceptableException if already in creation step
    */
+  @Override
   public AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len)
       throws CcsOperationException, CcsAlreadyExistException, CcsNotExistException, CcsNotAcceptableException {
     try {
@@ -136,16 +147,20 @@ public class AccessorObjectService {
   /**
    * Once Object really created in Driver Storage, finalize the Object in DB and Replicator if needed
    */
-  public AccessorObject createObjectFinalize(final StorageObject storageObject, final String hash, final long len)
+  @Override
+  public AccessorObject createObjectFinalize(final AccessorObject accessorObject, final String hash, final long len,
+                                             final String clientId, final boolean external)
       throws CcsOperationException {
-    return fromStorageObject(storageObject).setStatus(AccessorStatus.READY).setSite(ServiceProperties.getAccessorSite())
-        .setSize(len).setHash(hash);
+    return accessorObject.setStatus(AccessorStatus.READY).setSite(ServiceProperties.getAccessorSite()).setSize(len)
+        .setHash(hash);
   }
 
   /**
    * Delete object in DB and through Replicator if needed
    */
-  public void deleteObject(final String bucketName, final String objectName)
+  @Override
+  public void deleteObject(final String bucketName, final String objectName, final String clientId,
+                           final boolean external)
       throws CcsDeletedException, CcsNotExistException, CcsOperationException {
     // Delete in S3
     deleteObjectOnStorage(bucketName, objectName);
@@ -214,14 +229,19 @@ public class AccessorObjectService {
     return accessorObject.setStatus(AccessorStatus.READY);
   }
 
-  public InputStream filterObjects(final String bucket, final AccessorFilter filter, final DriverApi driver) {
+  /**
+   * @param bucketName technical name
+   * @param filter     the filter to apply on Objects
+   * @return a stream (InputStream) of AccessorObject line by line (newline separated)
+   */
+  public InputStream filterObjects(final String bucketName, final AccessorFilter filter, final DriverApi driver) {
     try {
       if (filter == null) {
-        final var iterator = driver.objectsIteratorInBucket(bucket);
+        final var iterator = driver.objectsIteratorInBucket(bucketName);
         return StreamIteratorUtils.getInputStreamFromIterator(iterator,
             source -> filter(fromStorageObject((StorageObject) source), filter), AccessorObject.class);
       }
-      final var iterator = driver.objectsIteratorInBucket(bucket, filter.getNamePrefix(), filter.getCreationAfter(),
+      final var iterator = driver.objectsIteratorInBucket(bucketName, filter.getNamePrefix(), filter.getCreationAfter(),
           filter.getCreationBefore());
       return StreamIteratorUtils.getInputStreamFromIterator(iterator,
           source -> filter(fromStorageObject((StorageObject) source), filter), AccessorObject.class);
@@ -232,5 +252,10 @@ public class AccessorObjectService {
     } catch (final DriverException | IOException e) {
       throw new CcsOperationException(e);
     }
+  }
+
+  @Override
+  public InputStream filterObjects(final String bucketName, final AccessorFilter filter) throws CcsOperationException {
+    throw new UnsupportedOperationException("Not implemented");
   }
 }

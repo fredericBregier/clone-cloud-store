@@ -22,165 +22,40 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
-import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractObjectNativeStreamHandler;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
-import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
-import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
-import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
-import io.clonecloudstore.common.quarkus.server.service.NativeServerResponseException;
-import io.clonecloudstore.common.quarkus.server.service.NativeStreamHandlerAbstract;
-import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
-import io.clonecloudstore.common.standard.system.ParametersChecker;
-import io.clonecloudstore.driver.api.DriverApi;
-import io.clonecloudstore.driver.api.DriverApiRegistry;
-import io.clonecloudstore.driver.api.exception.DriverAlreadyExistException;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
-import io.clonecloudstore.driver.api.model.StorageObject;
 import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.API_ROOT;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
-
 @RequestScoped
-public class ObjectNativeStreamHandler extends NativeStreamHandlerAbstract<AccessorObject, AccessorObject> {
+public class ObjectNativeStreamHandler extends AbstractObjectNativeStreamHandler {
   private static final Logger LOGGER = Logger.getLogger(ObjectNativeStreamHandler.class);
-  private final AccessorObjectService service;
-  private DriverApi driverApi;
-  private AccessorFilter filter;
-  private volatile boolean isListing;
-  private String clientId;
-  private boolean external;
-  private AtomicReference<AccessorObject> checked;
   private AtomicReference<String> remoteTargetId;
 
+  protected ObjectNativeStreamHandler() {
+    super(CDI.current().select(AccessorObjectService.class).get());
+  }
+
   protected ObjectNativeStreamHandler(final AccessorObjectService service) {
-    this.service = service;
+    super(service);
   }
 
   @Override
   protected void postSetup() {
     super.postSetup();
-    setDriverApi();
-    getCloser().add(driverApi);
     remoteTargetId = new AtomicReference<>();
-    checked = new AtomicReference<>();
-    final var headers = this.getRequest().headers();
-    clientId = headers.get(X_CLIENT_ID);
-    external = this.getRequest().uri().startsWith(API_ROOT);
     LOGGER.debugf("External ? %b %s", external, this.getRequest().uri());
-    final var currentBucketName = getBusinessIn().getBucket();
-    final var currentObjectName = getBusinessIn().getName();
-    AccessorHeaderDtoConverter.objectFromMap(getBusinessIn(), headers);
-    // Force for Replicator already having the right bucket name and object name, but not others while already computed
-    LOGGER.debugf("Previous bucket %s => %s", getBusinessIn().getBucket(), currentBucketName);
-    getBusinessIn().setBucket(currentBucketName);
-    if (ParametersChecker.isNotEmpty(currentObjectName)) {
-      getBusinessIn().setName(currentObjectName);
-    }
-    // Force local site
-    getBusinessIn().setSite(ServiceProperties.getAccessorSite());
-    LOGGER.debugf("Object to create/return: %s", getBusinessIn());
-    isListing = false;
-    filter = null;
-  }
-
-  @Override
-  protected boolean checkDigestToCumpute(final AccessorObject businessIn) {
-    return true;
-  }
-
-  private void setDriverApi() {
-    if (driverApi == null) {
-      // No native CDI here
-      driverApi = DriverApiRegistry.getDriverApiFactory().getInstance();
-    }
-  }
-
-  @Override
-  protected void checkPushAble(final AccessorObject object, final MultipleActionsInputStream inputStream) {
-    try {
-      // Size may differ on Object and InputStream if compression
-      final var daoObject = service.createObject(object, object.getHash(), object.getSize());
-      final var objectStorage =
-          new StorageObject(daoObject.getBucket(), daoObject.getName(), daoObject.getHash(), daoObject.getSize(),
-              daoObject.getCreation());
-      LOGGER.debugf("Debug Log Creation: %s %s from %s", object.getBucket(), objectStorage, daoObject);
-      driverApi.objectPrepareCreateInBucket(objectStorage, inputStream);
-    } catch (final DriverNotFoundException e) {
-      throw new CcsNotExistException(e.getMessage(), e);
-    } catch (final DriverAlreadyExistException e) {
-      throw new CcsAlreadyExistException(e.getMessage(), e);
-    } catch (final DriverException e) {
-      throw new CcsOperationException(e.getMessage(), e);
-    }
-  }
-
-  @Override
-  protected AccessorObject getAnswerPushInputStream(final AccessorObject object, final String finalHash,
-                                                    final long size) {
-    // Hash from request
-    var hash = object.getHash();
-    if (finalHash != null) {
-      // Hash from NettyToInputStream (on the fly)
-      hash = finalHash;
-    }
-    try {
-      LOGGER.debugf("Debug Log End Creation: %s %s from %s", object.getBucket(), object.getName(), object);
-      // Size here is the "real" uncompressed size
-      driverApi.objectFinalizeCreateInBucket(object.getBucket(), object.getName(), size, hash);
-      final var dao =
-          service.createObjectFinalize(object.getBucket(), object.getName(), hash, size, clientId, external);
-      return dao.getDto();
-    } catch (final DriverNotFoundException e) {
-      throw new CcsNotExistException(e.getMessage(), e);
-    } catch (final DriverAlreadyExistException e) {
-      throw new CcsAlreadyExistException(e.getMessage(), e);
-    } catch (final DriverException e) {
-      throw new CcsOperationException(e.getMessage(), e);
-    }
-  }
-
-  @Override
-  protected Map<String, String> getHeaderPushInputStream(final AccessorObject objectIn, final String finalHash,
-                                                         final long size, final AccessorObject objectOut) {
-    return new HashMap<>();
-  }
-
-  public Response pullList() throws NativeServerResponseException {
-    try {
-      isListing = true;
-      final var accessorFilter = new AccessorFilter();
-      final var foundFilter = AccessorHeaderDtoConverter.filterFromMap(accessorFilter, this.getRequest().headers());
-      if (foundFilter) {
-        accessorFilter.setNamePrefix(ParametersChecker.getSanitizedName(accessorFilter.getNamePrefix()));
-        filter = accessorFilter;
-      } else {
-        filter = new AccessorFilter();
-      }
-      preparePull();
-      // Proxy operation is possible, so getting first InputStream in order to get correct Headers then
-      return doGetInputStream();
-    } catch (final CcsClientGenericException | CcsServerGenericException e) {
-      // Change to create an exception with response that will be used in case of error
-      sendError(e.getStatus(), e);
-    } catch (final NativeServerResponseException e) {
-      throw e;
-    } catch (final Exception e) {
-      sendError(Response.Status.INTERNAL_SERVER_ERROR, e);
-    } finally {
-      clear();
-    }
-    throw getNativeClientResponseException(Response.Status.INTERNAL_SERVER_ERROR);
   }
 
   @Override
@@ -191,7 +66,9 @@ public class ObjectNativeStreamHandler extends NativeStreamHandlerAbstract<Acces
         LOGGER.debug("Filter able: " + object.getBucket() + " = " + filter);
         return true;
       }
-      final var response = service.checkPullable(object.getBucket(), object.getName(), external, clientId, getOpId());
+      final var response =
+          ((AccessorObjectService) service).checkPullable(object.getBucket(), object.getName(), external, clientId,
+              getOpId());
       checked.set(response.response());
       remoteTargetId.set(response.targetId());
       LOGGER.debug("Pull able: " + object.getBucket() + "/" + object.getName() + " = " + object);
@@ -217,12 +94,13 @@ public class ObjectNativeStreamHandler extends NativeStreamHandlerAbstract<Acces
         // Replicator client to remote read (which will raised NOT_FOUND if necessary)
         final InputStreamBusinessOut<AccessorObject> inputStreamBusinessOut;
         inputStreamBusinessOut =
-            service.getRemotePullInputStream(object.getBucket(), object.getName(), clientId, remoteTargetId.get(),
-                getOpId());
+            ((AccessorObjectService) service).getRemotePullInputStream(object.getBucket(), object.getName(), clientId,
+                remoteTargetId.get(), getOpId());
         checked.set(inputStreamBusinessOut.dtoOut());
         if (AccessorProperties.isFixOnAbsent()) {
-          service.generateReplicationOrderForObject(checked.get().getBucket(), checked.get().getName(), clientId,
-              getOpId(), remoteTargetId.get(), checked.get().getSize(), checked.get().getHash());
+          ((AccessorObjectService) service).generateReplicationOrderForObject(checked.get().getBucket(),
+              checked.get().getName(), clientId, getOpId(), remoteTargetId.get(), checked.get().getSize(),
+              checked.get().getHash());
         }
         return inputStreamBusinessOut.inputStream();
       }
@@ -230,20 +108,6 @@ public class ObjectNativeStreamHandler extends NativeStreamHandlerAbstract<Acces
     } catch (final DriverException e) {
       throw new CcsOperationException(e.getMessage(), e);
     }
-  }
-
-  @Override
-  protected Map<String, String> getHeaderPullInputStream(final AccessorObject objectIn) {
-    final Map<String, String> map = new HashMap<>();
-    if (isListing) {
-      return map;
-    }
-    if (checked.get() != null) {
-      AccessorHeaderDtoConverter.objectToMap(checked.get(), map);
-      return map;
-    }
-    AccessorHeaderDtoConverter.objectToMap(objectIn, map);
-    return map;
   }
 
   @Override
@@ -256,7 +120,7 @@ public class ObjectNativeStreamHandler extends NativeStreamHandlerAbstract<Acces
       if (isUpload() && status != Response.Status.NOT_ACCEPTABLE.getStatusCode() &&
           (AccessorStatus.UPLOAD.equals(currentStatus) || AccessorStatus.UNKNOWN.equals(currentStatus) ||
               currentStatus == null)) {
-        service.inError(object.getBucket(), object.getName());
+        ((AccessorObjectService) service).inError(object.getBucket(), object.getName());
       }
     } catch (final CcsNotExistException | CcsServerGenericException ignore) {
       // Ignore

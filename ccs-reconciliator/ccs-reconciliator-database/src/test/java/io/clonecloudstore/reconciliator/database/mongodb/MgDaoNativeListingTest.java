@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObject;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
 import io.clonecloudstore.accessor.server.database.mongodb.MgDaoAccessorObjectRepository;
@@ -70,7 +71,8 @@ class MgDaoNativeListingTest {
   private static final Logger LOGGER = Logger.getLogger(MgDaoNativeListingTest.class);
   private static final String BUCKET = "mybucket";
   private static final String CLIENT_ID = "client-id";
-  private static final String CLIENT_BUCKET = CLIENT_ID + "-" + BUCKET;
+  private static final String CLIENT_BUCKET =
+      AbstractPublicBucketHelper.getTechnicalBucketName(CLIENT_ID, BUCKET, true);
   private static final String FROM_SITE = "from-site";
   private static final String OBJECT_NAME = "dir/object_";
   private static final String REQUEST_ID = "request-id";

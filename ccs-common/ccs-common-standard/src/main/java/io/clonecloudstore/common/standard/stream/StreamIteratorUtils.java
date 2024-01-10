@@ -79,7 +79,7 @@ public class StreamIteratorUtils {
     final var writer = new PipedOutputStream(); // NOSONAR for try-resources
     final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
         stream.sequential().forEach(item -> {
           final var exc = reader.exception;
@@ -170,7 +170,7 @@ public class StreamIteratorUtils {
     final var writer = new PipedOutputStream(); // NOSONAR for try-resources
     final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
         while (iterator.hasNext()) {
           final var item = iterator.next();

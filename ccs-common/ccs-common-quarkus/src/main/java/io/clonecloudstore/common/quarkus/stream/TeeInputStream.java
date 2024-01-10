@@ -53,7 +53,7 @@ public class TeeInputStream implements Closeable {
     final var bufferSize = StandardProperties.getBufSize() * 10;
     this.boundedByteBuffer = new BoundedByteBuffer(bufferSize, nbCopy);
 
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
         copy();
       } catch (final IOException e) {

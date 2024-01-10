@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AccessorBucketServiceInterface;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
 import io.clonecloudstore.common.database.utils.DbQuery;
@@ -53,7 +54,7 @@ import static io.clonecloudstore.accessor.server.database.model.DaoAccessorObjec
  * Accessor Bucket Service
  */
 @ApplicationScoped
-public class AccessorBucketService {
+public class AccessorBucketService implements AccessorBucketServiceInterface {
   private static final Logger LOGGER = Logger.getLogger(AccessorBucketService.class);
   private static final String BUCKET_STRING = "Bucket ";
   private final LocalReplicatorService localReplicatorService;
@@ -79,6 +80,7 @@ public class AccessorBucketService {
    * @param isPublic            True means replicate with replicator module
    * @return AccessorBucket add on Database and in object storage
    */
+  @Override
   public AccessorBucket createBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
       throws CcsAlreadyExistException, CcsOperationException {
     final var bucketName = DaoAccessorBucketRepository.getBucketName(clientId, technicalBucketName);
@@ -170,8 +172,9 @@ public class AccessorBucketService {
    * @param technicalBucketName Bucket technical name
    * @return AccessorBucket found with technical name
    */
-  public AccessorBucket getBucket(final String technicalBucketName, final boolean external, final String clientId,
-                                  final String opId)
+  @Override
+  public AccessorBucket getBucket(final String technicalBucketName, final String clientId, final String opId,
+                                  final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException {
     try {
       //Search bucket in database with ID.
@@ -185,7 +188,7 @@ public class AccessorBucketService {
           throw new CcsOperationException(BUCKET_STRING + technicalBucketName + " status " + bucket.getStatus());
         }
       } else {
-        if (external && AccessorProperties.isRemoteRead()) {
+        if (isPublic && AccessorProperties.isRemoteRead()) {
           // Use remote check
           AccessorBucket response = getRemoteAccessorBucket(technicalBucketName, clientId, opId);
           if (response != null) {
@@ -220,6 +223,7 @@ public class AccessorBucketService {
    *
    * @return the list of Buckets
    */
+  @Override
   public Collection<AccessorBucket> getBuckets(final String clientId) throws CcsOperationException {
     try {
       //Search buckets in Database.
@@ -234,17 +238,18 @@ public class AccessorBucketService {
    *
    * @param technicalBucketName Bucket technical name
    * @param fullCheck           True to check Object Storage
-   * @param external            True to check remotely if not found locally
    * @param clientId            the clientId
    * @param opId                the OperationId
+   * @param isPublic            True to check remotely if not found locally
    * @return True if it exists
    */
-  public boolean checkBucket(final String technicalBucketName, final boolean fullCheck, final boolean external,
-                             final String clientId, final String opId) throws CcsOperationException {
+  @Override
+  public boolean checkBucket(final String technicalBucketName, final boolean fullCheck, final String clientId,
+                             final String opId, final boolean isPublic) throws CcsOperationException {
     try {
       // Could use simply COUNT
       final var bucket = bucketRepository.findBucketById(technicalBucketName);
-      if (bucket == null && external && AccessorProperties.isRemoteRead()) {
+      if (bucket == null && isPublic && AccessorProperties.isRemoteRead()) {
         // Use remote check
         return remoteCheckBucket(technicalBucketName, clientId, opId);
       }
@@ -281,10 +286,11 @@ public class AccessorBucketService {
    *
    * @param clientId            Client ID used to identify client
    * @param technicalBucketName Bucket technical name
-   * @param external            true to send replication message on replicator
+   * @param isPublic            true to send replication message on replicator
    * @return the associated DTO- deleted
    */
-  public AccessorBucket deleteBucket(final String clientId, final String technicalBucketName, final boolean external)
+  @Override
+  public AccessorBucket deleteBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
     try {
       var bucket = bucketRepository.findBucketById(technicalBucketName);
@@ -299,7 +305,7 @@ public class AccessorBucketService {
         }
         bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETING, null);
         final var deleted = updateAccessorBucketDelete(technicalBucketName, bucket);
-        if (external) {
+        if (isPublic) {
           LOGGER.infof("Replicate Delete Order for %s ", bucket.getId());
           localReplicatorService.delete(bucket.getId(), clientId);
         }

@@ -20,11 +20,10 @@ import java.io.Closeable;
 import java.io.InputStream;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.NotBody;
 import io.smallrye.mutiny.Uni;
@@ -67,7 +66,8 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SITE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SIZE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_STATUS;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
@@ -204,7 +204,7 @@ public interface LocalReplicatorApi extends Closeable {
   default String computeCompressionModel(ComputedParamContext context) {
     int argPos = 0;
     if ((boolean) context.methodParameters().get(argPos).value()) {
-      return HttpHeaderValues.ZSTD.toString();
+      return COMPRESSION_ZSTD;
     }
     return null;
   }

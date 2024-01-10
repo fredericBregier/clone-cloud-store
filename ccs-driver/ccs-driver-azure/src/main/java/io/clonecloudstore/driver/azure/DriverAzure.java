@@ -37,7 +37,7 @@ import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.standard.properties.StandardProperties.STANDARD_EXECUTOR_SERVICE;
+import static io.clonecloudstore.common.standard.system.SystemTools.STANDARD_EXECUTOR_SERVICE;
 
 /**
  * Azure Driver

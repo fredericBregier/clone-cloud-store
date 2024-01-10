@@ -56,6 +56,7 @@ import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_LE
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_NAME;
 
 @Path(API_FULLROOT)
+@NoCache
 public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerNativeStreamHandler> {
   public static final long LEN = 50 * 1024 * 1024;
   public static final String NOT_FOUND_NAME = "notFoundName";
@@ -95,7 +96,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @POST
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  @NoCache
   @Blocking
   public Uni<Response> createObject(final HttpServerRequest request, @Context final Closer closer,
                                     final InputStream inputStream,
@@ -113,7 +113,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  @NoCache
   @Blocking
   public Uni<Response> createObjectUsingPut(final HttpServerRequest request, @Context final Closer closer,
                                             final InputStream inputStream,
@@ -132,7 +131,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @POST
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  @NoCache
   @Blocking
   public Uni<Response> createObjectThrough(final HttpServerRequest request, @Context final Closer closer,
                                            final InputStream inputStream,
@@ -150,7 +148,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Path(API_COLLECTIONS + "/{business}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @NoCache
   @Blocking
   public Uni<Response> readObject(@RestPath final String business, @DefaultValue("0") @RestHeader(X_LEN) final long len,
                                   final HttpServerRequest request, @Context final Closer closer) {
@@ -167,7 +164,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Path(API_COLLECTIONS + "/{business}")
   @PUT
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @NoCache
   @Blocking
   public Uni<Response> readObjectPut(@RestPath final String business,
                                      @DefaultValue("0") @RestHeader(X_LEN) final long len,
@@ -184,7 +180,6 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Path(API_COLLECTIONS + THROUGH + "/{business}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @NoCache
   @Blocking
   public Uni<Response> readObjectThrough(@RestPath final String business,
                                          @DefaultValue("0") @RestHeader(X_LEN) final long len,

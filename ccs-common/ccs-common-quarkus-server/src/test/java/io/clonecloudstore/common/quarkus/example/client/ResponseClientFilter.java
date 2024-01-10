@@ -28,10 +28,10 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_CREATION_DATE;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_LEN;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_NAME;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @ApplicationScoped
 public class ResponseClientFilter implements ResteasyReactiveClientResponseFilter {

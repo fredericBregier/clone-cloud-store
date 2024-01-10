@@ -56,7 +56,6 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.API_COLLECTIONS;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.API_FULLROOT;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_NAME;
@@ -64,6 +63,7 @@ import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService
 import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.PROXY_TEST;
 import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.THROWABLE_NAME;
 import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.ULTRA_COMPRESSION_TEST;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -1000,7 +1000,7 @@ class ApiFullServerTest {
   }
 
   @Test
-  void check50_PostInputStreamNettyOkNoWrongDelay() {
+  void check50_PostInputStreamOkNoWrongDelay() {
     final var start = System.nanoTime();
     final var oldTimeOut = StandardProperties.getMaxWaitMs();
     try (final var client = factory.newClient()) {

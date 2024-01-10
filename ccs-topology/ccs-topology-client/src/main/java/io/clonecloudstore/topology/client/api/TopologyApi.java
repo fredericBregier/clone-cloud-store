@@ -19,8 +19,8 @@ package io.clonecloudstore.topology.client.api;
 import java.io.Closeable;
 import java.util.Collection;
 
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.clonecloudstore.topology.model.Topology;
 import io.clonecloudstore.topology.model.TopologyStatus;
 import io.smallrye.mutiny.Uni;

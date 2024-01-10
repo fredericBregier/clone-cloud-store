@@ -27,7 +27,7 @@ import jakarta.ws.rs.container.PreMatching;
 import jakarta.ws.rs.ext.Provider;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @Provider
 @PreMatching

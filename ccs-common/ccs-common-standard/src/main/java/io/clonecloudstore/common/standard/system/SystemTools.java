@@ -23,6 +23,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
@@ -30,9 +33,14 @@ import java.util.stream.Stream;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 
-import static io.clonecloudstore.common.standard.properties.StandardProperties.STANDARD_EXECUTOR_SERVICE;
-
 public class SystemTools {
+  /**
+   * Global Thread pool for Internal actions such as in TeeInputStream, ZstdCompressedInputStream, S3
+   */
+  public static final ExecutorService VIRTUAL_EXECUTOR_SERVICE = Executors.newVirtualThreadPerTaskExecutor();
+  public static final ThreadFactory DAEMON_THREAD_FACTORY = new DaemonThreadFactory();
+  public static final ExecutorService STANDARD_EXECUTOR_SERVICE = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
+
   private SystemTools() {
     // Nothing
   }
@@ -160,7 +168,7 @@ public class SystemTools {
     MultipleActionsInputStream mi = null;
     if (inputStream instanceof MultipleActionsInputStream mi1) {
       mi = mi1;
-      mi.changeExceptionDuringCount(Boolean.FALSE);
+      mi.invalidExceptionDuringConsumeWhileErrorInputStream(Boolean.FALSE);
     }
     try {
       long currentTime = System.currentTimeMillis();
@@ -182,7 +190,7 @@ public class SystemTools {
     } finally {
       silentlyCloseNoException(inputStream);
       if (mi != null) {
-        mi.changeExceptionDuringCount(Boolean.TRUE);
+        mi.invalidExceptionDuringConsumeWhileErrorInputStream(Boolean.TRUE);
       }
     }
   }

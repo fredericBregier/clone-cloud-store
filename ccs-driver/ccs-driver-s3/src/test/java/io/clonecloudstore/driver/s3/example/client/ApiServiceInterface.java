@@ -20,8 +20,8 @@ import java.io.Closeable;
 import java.io.InputStream;
 import java.util.List;
 
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
 import io.smallrye.mutiny.Uni;

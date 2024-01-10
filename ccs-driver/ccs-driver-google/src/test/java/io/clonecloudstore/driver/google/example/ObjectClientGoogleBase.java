@@ -400,7 +400,7 @@ abstract class ObjectClientGoogleBase {
       assertTrue(storageObject.creationDate().isAfter(before));
       var to = System.nanoTime();
       var time = (to - from) / 1000000000.0;
-      LOG.info("Time Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       // Create Object 2
       from = System.nanoTime();
@@ -413,7 +413,7 @@ abstract class ObjectClientGoogleBase {
       assertEquals(shaReal, storageObject.hash());
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       assertEquals(StorageType.OBJECT, apiClient.objectOrDirectoryExists(bucket, object + 1));
@@ -450,7 +450,7 @@ abstract class ObjectClientGoogleBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Read StreamNetty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Read Stream: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       try {
@@ -467,7 +467,7 @@ abstract class ObjectClientGoogleBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Read StreamNetty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Read Stream: " + time + " speed: " + len / time / 1024 / 1024.0);
 
       // Wrongly ReCreate Object 1
       from = System.nanoTime();
@@ -479,7 +479,7 @@ abstract class ObjectClientGoogleBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Wrong Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Wrong Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       try {
@@ -490,7 +490,7 @@ abstract class ObjectClientGoogleBase {
       }
       to = System.nanoTime();
       time = (to - from) / 1000000000.0;
-      LOG.info("Time Wrong Creation Netty: " + time + " speed: " + len / time / 1024 / 1024.0);
+      LOG.info("Time Wrong Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
       from = System.nanoTime();
       apiClient.objectDelete(bucket, object + 1);
@@ -516,9 +516,10 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test98BigFileNoChunkShaComputeTest() {
+  void test98BigFileNoChunkShaComputeTest() throws InterruptedException {
     DriverGoogleProperties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
     QuarkusProperties.setServerComputeSha256(true);
+    Thread.sleep(100);
     final var start = System.nanoTime();
     testBigFile(2, bigLen, null);
     final var stop = System.nanoTime();
@@ -527,9 +528,10 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test99BigFileChunkedShaComputeTest() {
+  void test99BigFileChunkedShaComputeTest() throws InterruptedException {
     DriverGoogleProperties.setDynamicPartSize(10 * 1024 * 1024);
     QuarkusProperties.setServerComputeSha256(true);
+    Thread.sleep(100);
     final var start = System.nanoTime();
     testBigFile(5, bigLen, null);
     final var stop = System.nanoTime();

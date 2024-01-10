@@ -61,7 +61,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
@@ -315,6 +315,9 @@ public class FakeObjectService extends StreamServiceAbstract<AccessorObject, Acc
     final var accessorObject = new AccessorObject();
     AccessorHeaderDtoConverter.objectFromMap(accessorObject, request.headers());
     accessorObject.setName(decodedName).setSite("site").setBucket(bucketName);
+    if (errorCode > 0) {
+      throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+    }
     return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(), false,
         inputStream);
   }
@@ -369,6 +372,9 @@ public class FakeObjectService extends StreamServiceAbstract<AccessorObject, Acc
                                  final HttpServerRequest request, @Context final Closer closer) {
     final var decodedName = ParametersChecker.getSanitizedName(objectName);
     final var accessorObject = new AccessorObject().setName(decodedName).setSite("site").setBucket(bucketName);
+    if (errorCode > 0) {
+      throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+    }
     // use InputStream abstract implementation
     return readObject(request, closer, accessorObject, false);
   }

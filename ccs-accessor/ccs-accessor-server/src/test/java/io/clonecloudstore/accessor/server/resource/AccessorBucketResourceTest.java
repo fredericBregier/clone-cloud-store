@@ -20,13 +20,13 @@ import java.util.UUID;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorBucketServiceImpl;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorObjectServiceImpl;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -63,8 +63,8 @@ class AccessorBucketResourceTest {
     }
     DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
         MinIoResource.getRegion());
-    FakeLocalReplicatorBucketServiceImpl.errorCode = 404;
-    FakeLocalReplicatorObjectServiceImpl.errorCode = 404;
+    FakeCommonBucketResourceHelper.errorCode = 404;
+    FakeCommonObjectResourceHelper.errorCode = 404;
   }
 
   @Test

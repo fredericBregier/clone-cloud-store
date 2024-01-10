@@ -21,7 +21,7 @@ import java.io.OutputStream;
 
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
-import io.clonecloudstore.common.standard.properties.StandardProperties;
+import io.clonecloudstore.common.standard.system.SystemTools;
 
 /**
  * Transform one InputStream to Multiple InputStream, each one being a chunk of the primary one.
@@ -49,7 +49,7 @@ public class ChunkInputStream extends InputStream {
     totalLen = len > 0 ? len : -1;
     var chunkLen = Math.max(Math.min(chunkSize, maxChunkSize), MIN_CHUNK_SIZE);
     if (totalLen > 0) {
-      chunkLen = (int) Math.min(totalLen, chunkLen);
+      chunkLen = (int) Math.min(totalLen, chunkLen);// NOSONAR
     }
     this.chunkSize = chunkLen;
     buffer = new byte[chunkSize];
@@ -231,13 +231,7 @@ public class ChunkInputStream extends InputStream {
 
   @Override
   public long transferTo(final OutputStream out) throws IOException {
-    var transferred = 0L;
-    var read = 0;
-    for (final var buf = new byte[StandardProperties.getBufSize()]; (read = read(buf, 0, buf.length)) >= 0;
-         transferred += read) {
-      out.write(buf, 0, read);
-    }
-    return transferred;
+    return SystemTools.transferTo(this, out);
   }
 
   private int bufRead(final byte[] b, final int off, final int len) {

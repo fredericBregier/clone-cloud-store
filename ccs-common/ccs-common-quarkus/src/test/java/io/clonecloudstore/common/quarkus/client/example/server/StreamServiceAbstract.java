@@ -29,9 +29,9 @@ import io.vertx.core.http.HttpServerRequest;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_ERROR;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_MODULE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 /**
  * Abstraction to enable InputStream Get (Pull) and Post (Push) implementations.

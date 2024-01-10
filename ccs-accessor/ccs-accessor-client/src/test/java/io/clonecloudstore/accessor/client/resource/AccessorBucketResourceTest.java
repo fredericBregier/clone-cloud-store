@@ -18,7 +18,6 @@ package io.clonecloudstore.accessor.client.resource;
 
 import java.util.UUID;
 
-import io.clonecloudstore.accessor.client.AccessorBucketApiClient;
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.resource.fakeserver.FakeBucketService;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
@@ -34,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 class AccessorBucketResourceTest {
 
-  private static final Logger LOG = Logger.getLogger(AccessorBucketApiClient.class);
+  private static final Logger LOG = Logger.getLogger(AccessorBucketResourceTest.class);
   @Inject
   AccessorBucketApiFactory factory;
 
@@ -51,6 +50,7 @@ class AccessorBucketResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.createBucket("bucket", clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -59,6 +59,7 @@ class AccessorBucketResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getBucket("bucket", clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -67,6 +68,7 @@ class AccessorBucketResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.deleteBucket("bucket", clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -75,6 +77,7 @@ class AccessorBucketResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getBuckets(clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn("Status: " + e.getStatus(), e);
@@ -84,6 +87,7 @@ class AccessorBucketResourceTest {
     FakeBucketService.errorCode = 406;
     try (final var client = factory.newClient()) {
       client.deleteBucket("bucket", clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 406) {
         LOG.warn(e, e);
@@ -104,34 +108,26 @@ class AccessorBucketResourceTest {
     try (final var client = factory.newClient()) {
       client.createBucket("bucket", clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
     try (final var client = factory.newClient()) {
       client.getBucket("bucket", clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
     try (final var client = factory.newClient()) {
       client.deleteBucket("bucket", clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
     try (final var client = factory.newClient()) {
       client.getBuckets(clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
   }
 }

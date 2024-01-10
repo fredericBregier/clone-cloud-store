@@ -33,9 +33,9 @@ import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.replicator.client.LocalReplicatorApiClientFactory;
 import io.clonecloudstore.replicator.server.local.application.LocalReplicatorService;
 import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApiService;
-import io.clonecloudstore.replicator.server.test.fake.accessor.FakeBucketInternalServiceImpl;
-import io.clonecloudstore.replicator.server.test.fake.accessor.FakeObjectInternalServiceImpl;
 import io.clonecloudstore.replicator.server.test.fake.topology.FakeTopologyResource;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
 import io.clonecloudstore.test.resource.kafka.KafkaProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
@@ -88,8 +88,8 @@ class LocalReplicatorApiTest {
     final var topology = new Topology(TOPOLOGY_NAME, TOPOLOGY_NAME, URI_SERVER, TopologyStatus.UP);
     FakeTopologyResource.topology = topology;
     FakeDriverFactory.cleanUp();
-    FakeBucketInternalServiceImpl.errorCode = 0;
-    FakeObjectInternalServiceImpl.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
   }
 
   @Test
@@ -97,8 +97,8 @@ class LocalReplicatorApiTest {
     // First error return
     LOGGER.infof("Error as 400 to 500");
     try (final var client = localReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      FakeBucketInternalServiceImpl.errorCode = 400;
-      FakeObjectInternalServiceImpl.errorCode = 400;
+      FakeCommonBucketResourceHelper.errorCode = 400;
+      FakeCommonObjectResourceHelper.errorCode = 400;
       assertEquals(500, assertThrows(CcsWithStatusException.class,
           () -> client.checkBucket(BUCKET_ID, true, CLIENT_ID, OP_ID)).getStatus());
       assertEquals(500,
@@ -108,8 +108,8 @@ class LocalReplicatorApiTest {
       assertThrows(CcsWithStatusException.class,
           () -> client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, "", OP_ID)).getStatus();
     } finally {
-      FakeBucketInternalServiceImpl.errorCode = 0;
-      FakeObjectInternalServiceImpl.errorCode = 0;
+      FakeCommonBucketResourceHelper.errorCode = 0;
+      FakeCommonObjectResourceHelper.errorCode = 0;
     }
     // Second absent items
     LOGGER.infof("Error as 404");

@@ -79,10 +79,13 @@ public class RequestActionConsumer {
         }
         LOGGER.debugf("Done Order %s", replicatorOrder);
       } catch (final RuntimeException e) {
-        // FIXME May NACK the message ?
         LOGGER.warn(replicatorOrder + " => " + e.getMessage());
       }
     }
+    bulkMetricsUpdates(creBucket, creObject, delBucket, delObject);
+  }
+
+  private void bulkMetricsUpdates(final int creBucket, final int creObject, final int delBucket, final int delObject) {
     if (creBucket > 0) {
       bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, TAG_CREATE).increment(creBucket);
     }

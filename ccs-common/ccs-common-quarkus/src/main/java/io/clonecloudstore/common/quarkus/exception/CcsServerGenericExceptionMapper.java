@@ -24,7 +24,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
 
 /**
  * Global Server Exception Mapper

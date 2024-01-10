@@ -20,7 +20,7 @@ import java.net.URI;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorBucket;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;

@@ -30,7 +30,7 @@ import io.clonecloudstore.common.standard.system.BaseXx;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
 
-import static io.clonecloudstore.common.standard.properties.StandardProperties.VIRTUAL_EXECUTOR_SERVICE;
+import static io.clonecloudstore.common.standard.system.SystemTools.VIRTUAL_EXECUTOR_SERVICE;
 
 public class MultipleActionsInputStream extends InputStream {
   private final InputStream inputStream;
@@ -98,7 +98,7 @@ public class MultipleActionsInputStream extends InputStream {
   }
 
   public void compress(final int level) throws IOException {
-    workInputStream = new ZstdCompressInputStream(workInputStream, true, level);
+    workInputStream = new ZstdCompressInputStream(workInputStream, level);
     isCompress = true;
   }
 
@@ -160,7 +160,10 @@ public class MultipleActionsInputStream extends InputStream {
     return read;
   }
 
-  public void changeExceptionDuringCount(final boolean valid) {
+  /**
+   * Allows to prevent exception during ConsumeWhileError by enclosing call between False and True set
+   */
+  public void invalidExceptionDuringConsumeWhileErrorInputStream(final boolean valid) {
     exceptionDuringCount.set(valid);
   }
 
@@ -175,13 +178,13 @@ public class MultipleActionsInputStream extends InputStream {
 
   @Override
   public int read(final byte[] b) throws IOException {
-    ParametersChecker.checkParameter("Buffer cannot be null", b);
+    ParametersChecker.checkParameter("Buffer cannot be null", b);// NOSONAR
     return read(b, 0, b.length);
   }
 
   @Override
   public int read(final byte[] b, final int off, final int len) throws IOException {
-    ParametersChecker.checkParameter("Buffer cannot be null", b);
+    ParametersChecker.checkParameter("Buffer cannot be null", b);// NOSONAR
     check();
     final var read = workInputStream.read(b, off, len);
     if (read > 0 && digest != null) {

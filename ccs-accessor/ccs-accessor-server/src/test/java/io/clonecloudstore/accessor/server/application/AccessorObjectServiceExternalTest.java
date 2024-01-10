@@ -28,8 +28,6 @@ import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.FakeActionTopicConsumer;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorBucketServiceImpl;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorObjectServiceImpl;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
@@ -44,6 +42,8 @@ import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.clonecloudstore.test.stream.FakeInputStream;
@@ -113,8 +113,8 @@ class AccessorObjectServiceExternalTest {
     //Clean database
     bucketRepository.deleteAllDb();
     objectRepository.deleteAllDb();
-    FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-    FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
   }
 
   private long getObjectCreateFromTopic(final long desired) throws InterruptedException {
@@ -135,7 +135,7 @@ class AccessorObjectServiceExternalTest {
     final var objectName = "dir/objectName";
     final var prefix = "dir/";
     final AccessorBucket bucket;
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     // First create bucket
     try {
       bucket = service.createBucket(clientId, bucketTechnicalName, true);
@@ -184,11 +184,11 @@ class AccessorObjectServiceExternalTest {
       assertTrue(AccessorProperties.isFixOnAbsent());
       try {
         assertEquals(0, FakeActionTopicConsumer.getObjectCreate());
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 204;
+        FakeCommonObjectResourceHelper.errorCode = 204;
         assertEquals(StorageType.OBJECT,
             serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true, clientId, opId, true));
         assertEquals(1, getObjectCreateFromTopic(1));
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 200;
+        FakeCommonObjectResourceHelper.errorCode = 200;
         final var objectGet = serviceObject.checkPullable(bucketTechnicalName, objectName, true, clientId, opId);
         assertEquals(objectName, objectGet.response().getName());
         Thread.sleep(100);
@@ -203,8 +203,8 @@ class AccessorObjectServiceExternalTest {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } finally {
-        FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+        FakeCommonBucketResourceHelper.errorCode = 0;
+        FakeCommonObjectResourceHelper.errorCode = 0;
       }
       // Same but fix if absent is off
       assertTrue(AccessorProperties.isRemoteRead());
@@ -212,12 +212,12 @@ class AccessorObjectServiceExternalTest {
       assertFalse(AccessorProperties.isFixOnAbsent());
       try {
         assertEquals(1, FakeActionTopicConsumer.getObjectCreate());
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 204;
+        FakeCommonObjectResourceHelper.errorCode = 204;
         assertEquals(StorageType.OBJECT,
             serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true, clientId, opId, true));
         Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 200;
+        FakeCommonObjectResourceHelper.errorCode = 200;
         final var objectGet = serviceObject.checkPullable(bucketTechnicalName, objectName, true, clientId, opId);
         assertEquals(objectName, objectGet.response().getName());
         Thread.sleep(100);
@@ -232,8 +232,8 @@ class AccessorObjectServiceExternalTest {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } finally {
-        FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+        FakeCommonBucketResourceHelper.errorCode = 0;
+        FakeCommonObjectResourceHelper.errorCode = 0;
         AccessorProperties.setFixOnAbsent(true);
       }
       // Same but remote is off
@@ -242,12 +242,12 @@ class AccessorObjectServiceExternalTest {
       assertTrue(AccessorProperties.isFixOnAbsent());
       try {
         assertEquals(1, FakeActionTopicConsumer.getObjectCreate());
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 204;
+        FakeCommonObjectResourceHelper.errorCode = 204;
         assertEquals(StorageType.NONE,
             serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true, clientId, opId, true));
         Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 200;
+        FakeCommonObjectResourceHelper.errorCode = 200;
         assertThrows(CcsNotExistException.class,
             () -> serviceObject.checkPullable(bucketTechnicalName, objectName, true, clientId, opId));
         Thread.sleep(100);
@@ -255,17 +255,17 @@ class AccessorObjectServiceExternalTest {
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } finally {
-        FakeLocalReplicatorBucketServiceImpl.errorCode = 0;
-        FakeLocalReplicatorObjectServiceImpl.errorCode = 0;
+        FakeCommonBucketResourceHelper.errorCode = 0;
+        FakeCommonObjectResourceHelper.errorCode = 0;
         AccessorProperties.setRemoteRead(true);
       }
 
       // Create object
-      object = serviceObject.createObject(create, "hash", 100).getDto();
+      object = serviceObject.createObject(create, "hash", 100);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, true);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, true);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -354,8 +354,8 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
-            new AccessorFilter().setMetadataFilter(new HashMap<String, String>()));
+        final var inputStream =
+            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setMetadataFilter(new HashMap<>()));
         try {
           final var iterator = StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
           assertEquals(1, SystemTools.consumeAll(iterator));
@@ -424,11 +424,11 @@ class AccessorObjectServiceExternalTest {
       assertThrows(CcsNotExistException.class,
           () -> serviceObject.checkPullable(bucketTechnicalName, objectName, true, clientId, opId));
       // Create object
-      object = serviceObject.createObject(create, "hash", 100).getDto();
+      object = serviceObject.createObject(create, "hash", 100);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, true);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, true);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -469,11 +469,11 @@ class AccessorObjectServiceExternalTest {
       assertThrows(CcsNotExistException.class,
           () -> serviceObject.checkPullable(bucketTechnicalName, objectName, true, clientId, opId));
       // Create object
-      object = serviceObject.createObject(create, null, 0).getDto();
+      object = serviceObject.createObject(create, null, 0);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
-      serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, true);
+      serviceObject.createObjectFinalize(object, "hash", 100, clientId, true);
       // Assert object is existing
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
@@ -516,7 +516,7 @@ class AccessorObjectServiceExternalTest {
       // Change object status to IN_Progress and recheck creation
       objectRepository.updateObjectStatus(bucketTechnicalName, objectName, AccessorStatus.UPLOAD, null);
       // Create object but cannot
-      assertThrows(CcsNotAcceptableException.class, () -> serviceObject.createObject(create, null, 0).getDto());
+      assertThrows(CcsNotAcceptableException.class, () -> serviceObject.createObject(create, null, 0));
       object = serviceObject.getObjectInfo(bucketTechnicalName, objectName);
       assertEquals(bucketTechnicalName, object.getBucket());
       assertEquals(objectName, object.getName());
@@ -558,7 +558,7 @@ class AccessorObjectServiceExternalTest {
   void checkWithInvalidBucket() {
     final var bucketName = "bucket-not-created";
     final var objectName = "dir/objectName";
-    final var bucketTechnicalName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucketName);
+    final var bucketTechnicalName = DaoAccessorBucketRepository.getFinalBucketName(clientId, bucketName, true);
     final var create = new AccessorObject().setBucket(bucketTechnicalName).setName(objectName);
     AccessorObject object;
     try {
@@ -570,7 +570,7 @@ class AccessorObjectServiceExternalTest {
       // Create object
       assertThrows(CcsNotExistException.class, () -> serviceObject.createObject(create, "hash", 100));
       assertThrows(CcsOperationException.class,
-          () -> serviceObject.createObjectFinalize(bucketTechnicalName, objectName, "hash", 100, clientId, true));
+          () -> serviceObject.createObjectFinalize(create, "hash", 100, clientId, true));
       // Assert object is existing
       assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
       assertEquals(StorageType.NONE,

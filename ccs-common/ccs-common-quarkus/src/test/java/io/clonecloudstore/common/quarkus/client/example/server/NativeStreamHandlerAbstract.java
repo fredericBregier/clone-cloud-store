@@ -35,19 +35,23 @@ import io.clonecloudstore.common.standard.inputstream.ZstdCompressInputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.Vertx;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CHUNKED;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CLOSE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CONNECTION;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.TRANSFER_ENCODING;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @Dependent
 public abstract class NativeStreamHandlerAbstract<I, O> {
@@ -92,15 +96,15 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     this.request = request;
     this.closer = closer;
     final var multiMap = request.headers();
-    keepAlive = !HttpHeaderValues.CLOSE.toString().equals(multiMap.get(HttpHeaderNames.CONNECTION));
+    keepAlive = !CLOSE.equals(multiMap.get(CONNECTION));
     var len = 0L;
-    final var length = multiMap.get(HttpHeaderNames.CONTENT_LENGTH);
+    final var length = multiMap.get(HttpHeaders.CONTENT_LENGTH);
     if (ParametersChecker.isNotEmpty(length)) {
       len = Long.parseLong(length);
     }
     inputStreamLength = len;
-    shallCompress = multiMap.contains(HttpHeaderNames.ACCEPT_ENCODING, HttpHeaderValues.ZSTD, true);
-    alreadyCompressed = multiMap.contains(HttpHeaderNames.CONTENT_ENCODING, HttpHeaderValues.ZSTD, true);
+    shallCompress = multiMap.contains(HttpHeaders.ACCEPT_ENCODING, COMPRESSION_ZSTD, true);
+    alreadyCompressed = multiMap.contains(HttpHeaders.CONTENT_ENCODING, COMPRESSION_ZSTD, true);
     var opIdHeader = multiMap.get(X_OP_ID);
     if (opIdHeader == null) {
       opIdHeader = GuidLike.getGuid();
@@ -146,8 +150,7 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
       closer.add(inputStream);
       LOG.debugf("DEBUG START UPLOAD %s", businessIn);
       final var inputStreamFinal = prepareUpload(inputStream);
-      if (ParametersChecker.isEmpty(getOriginalHash()) && QuarkusProperties.serverComputeSha256() &&
-          checkDigestToCumpute(businessIn)) {
+      if (ParametersChecker.isEmpty(getOriginalHash()) && checkDigestToCumpute(businessIn)) {
         inputStreamFinal.computeDigest(DigestAlgo.SHA256);
       }
       getCloser().add(inputStreamFinal);
@@ -190,12 +193,12 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     closer.add(inputStream);
     final var map = getHeaderPullInputStream(getBusinessIn());
     final var response = Response.ok();
-    map.put(HttpHeaderNames.TRANSFER_ENCODING.toString(), HttpHeaderValues.CHUNKED.toString());
+    map.put(TRANSFER_ENCODING, CHUNKED);
     if (!isKeepAlive()) {
-      map.put(HttpHeaderNames.CONNECTION.toString(), HttpHeaderValues.CLOSE.toString());
+      map.put(CONNECTION, CLOSE);
     }
     if (shallCompress()) {
-      map.put(HttpHeaderNames.CONTENT_ENCODING.toString(), HttpHeaderValues.ZSTD.toString());
+      map.put(HttpHeaders.CONTENT_ENCODING, COMPRESSION_ZSTD);
     }
     for (final var entry : map.entrySet()) {
       response.header(entry.getKey(), entry.getValue());
@@ -224,9 +227,9 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
         (waitForAllReadInputStream.isDigestEnabled()) ? waitForAllReadInputStream.getDigest() : getOriginalHash();
     final var businessOut = getAnswerPushInputStream(getBusinessIn(), finalHash, len);
     final var map = getHeaderPushInputStream(getBusinessIn(), finalHash, len, businessOut);
-    map.put(HttpHeaderNames.CONTENT_TYPE.toString(), MediaType.APPLICATION_JSON);
+    map.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
     if (!isKeepAlive()) {
-      map.put(HttpHeaderNames.CONNECTION.toString(), HttpHeaderValues.CLOSE.toString());
+      map.put(CONNECTION, CLOSE);
     }
     var responseBuilder = Response.status(Response.Status.CREATED);
     for (final var entry : map.entrySet()) {
@@ -362,15 +365,19 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
   }
 
   /**
+   * Default based on QuarkusProperties.serverComputeSha256
+   *
    * @return True if the digest is to be computed on the fly
    */
-  protected abstract boolean checkDigestToCumpute(I businessIn);
+  protected boolean checkDigestToCumpute(I businessIn) {
+    return QuarkusProperties.serverComputeSha256();
+  }
 
   /**
-   * Check if the request for POST is valid, and if so, adapt the given NettyToInputStream that will
+   * Check if the request for POST is valid, and if so, adapt the given InputStream that will
    * be used to consume the original InputStream.
    * The implementation shall use the business logic to check the validity for this InputStream reception
-   * (from client to server) and, if valid, use the NettyToInputStream, either as is or as a standard InputStream.
+   * (from client to server) and, if valid, use the InputStream, either as is or as a standard InputStream.
    * (example: check through Object Storage that object does not exist yet, and if so
    * add the consumption of the stream for the Object Storage object creation).
    * Note that the stream might be kept compressed if keepInputStreamCompressed was specified at construction.

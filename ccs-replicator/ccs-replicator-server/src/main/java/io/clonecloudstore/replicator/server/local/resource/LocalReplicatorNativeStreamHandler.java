@@ -58,7 +58,7 @@ public class LocalReplicatorNativeStreamHandler extends NativeStreamHandlerAbstr
   }
 
   @Override
-  protected boolean checkDigestToCumpute(final ReplicatorOrder businessIn) {
+  protected boolean checkDigestToCompute(final ReplicatorOrder businessIn) {
     return false;
   }
 
@@ -79,7 +79,7 @@ public class LocalReplicatorNativeStreamHandler extends NativeStreamHandlerAbstr
   protected Map<String, String> getHeaderPushInputStream(final ReplicatorOrder replicatorOrder, final String finalHash,
                                                          final long size, final AccessorObject accessorObject) {
     // NO PUSH
-    return replicatorOrder.getHeaders();
+    return new HashMap<>();
   }
 
   @Override

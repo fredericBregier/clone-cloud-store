@@ -30,6 +30,7 @@ import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.driver.api.StorageType;
@@ -98,13 +99,21 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
    */
   public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
                                                           final String clientId) throws CcsWithStatusException {
+    return getObject(bucketName, objectName, clientId, false);
+  }
+
+  /**
+   * @return both InputStream and Object DTO
+   */
+  public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
+                                                          final String clientId, final boolean compressed)
+      throws CcsWithStatusException {
     this.filter = null;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName).setName(objectName);
-    // TODO choose compression model
     prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().getObject(false, bucketName, objectName, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    final var uni = getService().getObject(compressed, bucketName, objectName, clientId, getOpId());
+    return getInputStreamBusinessOutFromUni(compressed, true, uni);
   }
 
   /**
@@ -116,9 +125,11 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName);
     // TODO choose compression model
-    prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().listObjects(false, bucketName, clientId, getOpId());
-    final var inputStream = getInputStreamBusinessOutFromUni(false, true, uni).inputStream();
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
+    final var uni =
+        getService().listObjects(AccessorProperties.isInternalCompression(), bucketName, clientId, getOpId());
+    final var inputStream =
+        getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni).inputStream();
     return StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
   }
 
@@ -127,11 +138,18 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
    */
   public AccessorObject createObject(final AccessorObject accessorObject, final String clientId, final InputStream body)
       throws CcsWithStatusException {
+    return createObject(accessorObject, clientId, body, false);
+  }
+
+  /**
+   * @return the associated DTO
+   */
+  public AccessorObject createObject(final AccessorObject accessorObject, final String clientId, final InputStream body,
+                                     final boolean compressed) throws CcsWithStatusException {
     this.filter = null;
-    // TODO choose compression model
-    final var inputStream = prepareInputStreamToSend(body, false, false, accessorObject);
+    final var inputStream = prepareInputStreamToSend(body, compressed, false, accessorObject);
     final var uni =
-        getService().createObject(false, accessorObject.getBucket(), accessorObject.getName(), clientId, getOpId(),
+        getService().createObject(compressed, accessorObject.getBucket(), accessorObject.getName(), clientId, getOpId(),
             inputStream);
     return getResultFromPostInputStreamUni(uni, inputStream);
   }

@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.SysErrLogger;
 import io.clonecloudstore.common.standard.system.SystemRandomSecure;
+import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.clonecloudstore.test.stream.VoidOutputStream;
 import io.quarkus.test.junit.QuarkusTest;
@@ -71,7 +72,7 @@ class CipherInputStreamTest {
   }
 
   @Test
-  void test50NettyInputStreamAndCipher()
+  void test50InputStreamAndCipher()
       throws IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException,
       NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
     final var len = 100 * 1024 * 1024;
@@ -90,7 +91,7 @@ class CipherInputStreamTest {
       final AtomicReference<IOException> ioExceptionAtomicReference = new AtomicReference<>();
       final var decrypt = new CipherInputStream(cipherEncrypt, cipherDec);
       final OutputStream outputStream = new VoidOutputStream();
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try {
           decrypt.available();
           computedLen.set(decrypt.transferTo(outputStream));
@@ -127,7 +128,7 @@ class CipherInputStreamTest {
   }
 
   @Test
-  void test51NettyInputStreamAndCipherHalf()
+  void test51InputStreamAndCipherHalf()
       throws IOException, InterruptedException, NoSuchAlgorithmException, InvalidKeySpecException,
       NoSuchPaddingException, InvalidAlgorithmParameterException, InvalidKeyException {
     final var len = 100 * 1024 * 1024;
@@ -144,7 +145,7 @@ class CipherInputStreamTest {
       final AtomicReference<IOException> ioExceptionAtomicReference = new AtomicReference<>();
 
       final OutputStream outputStream = new VoidOutputStream();
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try {
           cipherEncrypt.available();
           computedLen.set(cipherEncrypt.transferTo(outputStream));

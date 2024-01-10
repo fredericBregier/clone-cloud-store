@@ -31,8 +31,6 @@ import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.FakeRequestTopicConsumer;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorBucketServiceImpl;
-import io.clonecloudstore.accessor.server.resource.fakelocalreplicator.FakeLocalReplicatorObjectServiceImpl;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
@@ -41,6 +39,8 @@ import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.s3.DriverS3Properties;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
 import io.clonecloudstore.test.resource.s3.MinIoResource;
 import io.clonecloudstore.test.stream.FakeInputStream;
@@ -56,7 +56,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -95,8 +95,8 @@ class AccessorObjectResourceTest {
     }
     DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
         MinIoResource.getRegion());
-    FakeLocalReplicatorBucketServiceImpl.errorCode = 404;
-    FakeLocalReplicatorObjectServiceImpl.errorCode = 404;
+    FakeCommonBucketResourceHelper.errorCode = 404;
+    FakeCommonObjectResourceHelper.errorCode = 404;
     FakeRequestTopicConsumer.reset();
   }
 

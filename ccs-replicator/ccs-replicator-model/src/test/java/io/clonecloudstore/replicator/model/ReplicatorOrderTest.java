@@ -23,7 +23,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Action.CREATE;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Action.DELETE;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.X_TARGET_ID;

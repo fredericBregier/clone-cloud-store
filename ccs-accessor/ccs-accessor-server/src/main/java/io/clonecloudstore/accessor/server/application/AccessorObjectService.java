@@ -23,6 +23,7 @@ import java.time.Instant;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AccessorObjectServiceInterface;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObject;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
@@ -58,10 +59,10 @@ import org.jboss.logging.Logger;
 import static io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository.BUCKET;
 
 /**
- * Accessor Bucket Service
+ * Accessor Object Service
  */
 @ApplicationScoped
-public class AccessorObjectService {
+public class AccessorObjectService implements AccessorObjectServiceInterface {
   private static final Logger LOGGER = Logger.getLogger(AccessorObjectService.class);
   private static final String STATUS_STRING = " Status: ";
   private static final String ISSUE_STRING = " issue: ";
@@ -92,6 +93,7 @@ public class AccessorObjectService {
    * @param fullCheck             if True, and if Object, will check on Driver Storage
    * @return the associated StorageType
    */
+  @Override
   public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
                                              final boolean fullCheck) throws CcsOperationException {
     return objectOrDirectoryExists(bucketName, objectOrDirectoryName, fullCheck, null, null, false);
@@ -100,6 +102,7 @@ public class AccessorObjectService {
   /**
    * Check if object or directory exists
    */
+  @Override
   public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
                                              final boolean fullCheck, final String clientId, final String opId,
                                              final boolean external) throws CcsOperationException {
@@ -170,6 +173,7 @@ public class AccessorObjectService {
    * @param filter     the filter to apply on Objects
    * @return a stream (InputStream) of AccessorObject line by line (newline separated)
    */
+  @Override
   public InputStream filterObjects(final String bucketName, final AccessorFilter filter) throws CcsOperationException {
     try {
       DbQuery query = new DbQuery(RestQuery.QUERY.EQ, BUCKET, bucketName);
@@ -249,6 +253,7 @@ public class AccessorObjectService {
   /**
    * Get DB Object DTO
    */
+  @Override
   public AccessorObject getObjectInfo(final String bucketName, final String objectName)
       throws CcsNotExistException, CcsOperationException {
     try {
@@ -267,7 +272,8 @@ public class AccessorObjectService {
    *
    * @throws CcsNotAcceptableException if already in creation step
    */
-  public DaoAccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len)
+  @Override
+  public AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len)
       throws CcsOperationException, CcsAlreadyExistException, CcsNotExistException, CcsNotAcceptableException {
     try {
       // Check non-existence in DB/S3
@@ -304,7 +310,7 @@ public class AccessorObjectService {
             .setCreation(Instant.now()).setStatus(AccessorStatus.UPLOAD);
         objectRepository.insert(daoAccessorObject);
       }
-      return daoAccessorObject;
+      return daoAccessorObject.getDto();
     } catch (final CcsDbException e) {
       throw new CcsOperationException(
           "Database error on create object : " + accessorObject.getBucket() + " - " + accessorObject.getName(), e);
@@ -314,19 +320,22 @@ public class AccessorObjectService {
   /**
    * Once Object really created in Driver Storage, finalize the Object in DB and Replicator if needed
    */
-  public DaoAccessorObject createObjectFinalize(final String bucketName, final String objectName, final String hash,
-                                                final long len, final String clientId, final boolean external)
+  @Override
+  public AccessorObject createObjectFinalize(final AccessorObject accessorObject, final String hash, final long len,
+                                             final String clientId, final boolean external)
       throws CcsOperationException {
     try {
       // Update Database with status available and metadata from ObjectStorage
-      objectRepository.updateObjectStatusHashLen(bucketName, objectName, AccessorStatus.READY, hash, len);
+      objectRepository.updateObjectStatusHashLen(accessorObject.getBucket(), accessorObject.getName(),
+          AccessorStatus.READY, hash, len);
       if (external) {
         // Send message to replicator topic.
-        localReplicatorService.create(bucketName, objectName, clientId, len, hash);
+        localReplicatorService.create(accessorObject.getBucket(), accessorObject.getName(), clientId, len, hash);
       }
-      return objectRepository.getObject(bucketName, objectName);
+      return objectRepository.getObject(accessorObject.getBucket(), accessorObject.getName()).getDto();
     } catch (final CcsDbException e) {
-      throw new CcsOperationException("Database error on create object finalize : " + bucketName + " - " + objectName,
+      throw new CcsOperationException(
+          "Database error on create object finalize : " + accessorObject.getBucket() + " - " + accessorObject.getName(),
           e);
     }
   }
@@ -334,6 +343,7 @@ public class AccessorObjectService {
   /**
    * Delete object in DB and through Replicator if needed
    */
+  @Override
   public void deleteObject(final String bucketName, final String objectName, final String clientId,
                            final boolean external)
       throws CcsDeletedException, CcsNotExistException, CcsOperationException {

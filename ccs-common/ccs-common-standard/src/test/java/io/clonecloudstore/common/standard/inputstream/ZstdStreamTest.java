@@ -286,7 +286,7 @@ class ZstdStreamTest {
     final var outputStream = new ByteArrayOutputStream();
     var read = 0;
     final var atomicReference =
-        (AtomicReference<IOException>) getField(ZstdCompressInputStream.class, "exceptionAtomicReference",
+        (AtomicReference<IOException>) getField(ZstdCompressInputStream.class, "ioExceptionAtomicReference",
             zstdCompressInputStream);
     try {
       while ((read = zstdCompressInputStream.read(bytes)) >= 0) {
@@ -319,11 +319,11 @@ class ZstdStreamTest {
         (LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0)) + " MB/s ");
   }
 
-  void zstdCompressDecompressNoFlush(final boolean flush, final boolean highlyCompressed) throws IOException {
+  void zstdCompressDecompressNoFlush(final boolean highlyCompressed) throws IOException {
     final var bytes = new byte[StandardProperties.getBufSize()];
     final var inputStream = highlyCompressed ? new FakeInputStream(BIG_LEN, (byte) 'A') : new FakeInputStream(BIG_LEN);
     final var start = System.nanoTime();
-    final var zstdCompressInputStream = new ZstdCompressInputStream(inputStream, flush);
+    final var zstdCompressInputStream = new ZstdCompressInputStream(inputStream);
     final var zstdDecompressInputStream = new ZstdDecompressInputStream(zstdCompressInputStream);
     int read;
     var computedLen = 0L;
@@ -343,11 +343,8 @@ class ZstdStreamTest {
 
   @Test
   void test04FromZstdCompressDecompress() throws IOException {
-    zstdCompressDecompressNoFlush(true, false);
-    zstdCompressDecompressNoFlush(true, false);
-    zstdCompressDecompressNoFlush(true, true);
-    zstdCompressDecompressNoFlush(false, false);
-    zstdCompressDecompressNoFlush(false, true);
+    zstdCompressDecompressNoFlush(false);
+    zstdCompressDecompressNoFlush(true);
   }
 
   @Test
@@ -474,12 +471,12 @@ class ZstdStreamTest {
         (BIG_LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0)) + " MB/s ");
   }
 
-  void zstdCompleteExample(final boolean flush, final boolean highlyCompressed) throws IOException {
+  void zstdCompleteExample(final boolean highlyCompressed) throws IOException {
     final long readLimit = 400 * 1024 * 1024;
     final var bytes = new byte[StandardProperties.getBufSize()];
     final var inputStream = highlyCompressed ? new FakeInputStream(BIG_LEN, (byte) 'A') : new FakeInputStream(BIG_LEN);
     final var start = System.nanoTime();
-    final var zstdCompressInputStream = new ZstdCompressInputStream(inputStream, flush);
+    final var zstdCompressInputStream = new ZstdCompressInputStream(inputStream);
     final var zstdDecompressInputStream = new ZstdDecompressInputStream(zstdCompressInputStream);
     int read;
     var computedLen = 0L;
@@ -497,10 +494,7 @@ class ZstdStreamTest {
 
   @Test
   void test10FromZstdCompleteExample() throws IOException {
-    zstdCompleteExample(true, false);
-    zstdCompleteExample(true, false);
-    zstdCompleteExample(true, true);
-    zstdCompleteExample(false, false);
-    zstdCompleteExample(false, true);
+    zstdCompleteExample(false);
+    zstdCompleteExample(true);
   }
 }

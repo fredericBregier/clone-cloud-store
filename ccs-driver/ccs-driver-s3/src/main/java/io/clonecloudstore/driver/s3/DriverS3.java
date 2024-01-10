@@ -43,7 +43,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-import static io.clonecloudstore.common.standard.properties.StandardProperties.STANDARD_EXECUTOR_SERVICE;
+import static io.clonecloudstore.common.standard.system.SystemTools.STANDARD_EXECUTOR_SERVICE;
 
 /**
  * S3 Driver

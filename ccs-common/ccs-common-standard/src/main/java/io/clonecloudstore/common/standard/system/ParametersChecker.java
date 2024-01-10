@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Checker for Parameters <br>
@@ -37,6 +38,10 @@ public final class ParametersChecker {
 
   // Default ASCII for Param check
   private static final Pattern UNPRINTABLE_PATTERN = Pattern.compile("[\\p{Cntrl}]");
+  private static final Pattern INVALID_CHAR_PATTERN = Pattern.compile("[^a-zA-Z0-9/_ .\\-]");
+  private static final Pattern SPACE_UNDERSCORE_PATTERN = Pattern.compile("[\\s_]+");
+  private static final Pattern MINUS_PATTERN = Pattern.compile("\\-+");
+
   private static final List<String> RULES = new ArrayList<>();
 
   // default parameters for XML check
@@ -54,10 +59,11 @@ public final class ParametersChecker {
   public static final int OBJECT_LENGTH = 1024;
   public static final int SITE_LENGTH = 256;
   private static final Pattern BUCKET_NAME_PATTERN = Pattern.compile("^[0-9a-z\\-]{3," + BUCKET_LENGTH + "}$");
-  private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_\\./\\-]{1," + OBJECT_LENGTH + "}$");
+  private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_./\\-]{1," + OBJECT_LENGTH + "}$");
   public static final String INVALID_INPUT = "Invalid input";
 
   public static final String INVALID_URI = "Invalid uri [%s]";
+  public static final String ACCENTS = "āăąēîïĩíĝġńñšŝśûůŷ";
 
   static {
     RULES.add(CDATA_TAG_UNESCAPED);
@@ -135,9 +141,9 @@ public final class ParametersChecker {
    * @param value to check
    * @throws CcsInvalidArgumentRuntimeException if invalid
    */
-  public static String checkSanityString(final String value) throws CcsInvalidArgumentRuntimeException {
+  public static void checkSanityString(final String value) throws CcsInvalidArgumentRuntimeException {
     if (isEmpty(value)) {
-      return value;
+      return;
     }
     if (UNPRINTABLE_PATTERN.matcher(value).find()) {
       throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
@@ -147,7 +153,6 @@ public final class ParametersChecker {
         throw new CcsInvalidArgumentRuntimeException("Invalid tag sanity check");
       }
     }
-    return value;
   }
 
   /**
@@ -274,7 +279,14 @@ public final class ParametersChecker {
       return null;
     }
     final var decoded = urlDecodePathParam(objectName);
+    checkSanityString(objectName);
     var name = decoded.replace('\\', '/').replace("//", "/");
+    name = StringUtils.stripAccents(name);
+    name = SPACE_UNDERSCORE_PATTERN.matcher(name).replaceAll(" ");
+    name = INVALID_CHAR_PATTERN.matcher(name).replaceAll("");
+    name = MINUS_PATTERN.matcher(name).replaceAll("-");
+    name = name.trim();
+    name = SPACE_UNDERSCORE_PATTERN.matcher(name).replaceAll("_");
     if (name.startsWith("/")) {
       name = name.substring(1);
     }

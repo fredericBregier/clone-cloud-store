@@ -3,11 +3,6 @@ Missing or In Progress Functionalities
 
 - API could change, in particular Accessor public API (for client application) (see Client Authentication)
 
-- Client without Quarkus is still on going
-
-  - The idea is to allow non Quarkus application in Java to have a ready client SDK.
-  - For Quarkus application, the client already exists
-
 - Client authentication
 
   - Could be done through MTLS or OIDC

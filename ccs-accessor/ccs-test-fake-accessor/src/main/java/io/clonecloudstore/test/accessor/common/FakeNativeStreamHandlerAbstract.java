@@ -24,16 +24,14 @@ import java.util.Map;
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractObjectNativeStreamHandler;
+import io.clonecloudstore.accessor.server.commons.AccessorObjectServiceInterface;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
-import io.clonecloudstore.common.quarkus.server.service.NativeStreamHandlerAbstract;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
-import io.clonecloudstore.common.standard.system.ParametersChecker;
-import io.clonecloudstore.driver.api.DriverApi;
-import io.clonecloudstore.driver.api.DriverApiRegistry;
 import io.clonecloudstore.driver.api.exception.DriverAlreadyExistException;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
@@ -43,20 +41,17 @@ import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.Dependent;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_HASH;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SIZE;
-
 @Dependent
-public abstract class FakeNativeStreamHandlerAbstract
-    extends NativeStreamHandlerAbstract<AccessorObject, AccessorObject> {
+public abstract class FakeNativeStreamHandlerAbstract extends AbstractObjectNativeStreamHandler {
   private static final Logger LOGGER = Logger.getLogger(FakeNativeStreamHandlerAbstract.class);
-  private DriverApi driverApi;
-  private AccessorObject checked;
-  private String clientId;
+
+  protected FakeNativeStreamHandlerAbstract() {
+    super((AccessorObjectServiceInterface) null);
+  }
 
   @Override
   protected void postSetup() {
+    super.postSetup();
     internalInitBeforeAction();
   }
 
@@ -66,37 +61,18 @@ public abstract class FakeNativeStreamHandlerAbstract
    * Initialize information from Headers
    */
   protected void internalInitBeforeAction() {
-    setDriverApi();
-    getCloser().add(driverApi);
-    final var headers = getRequest().headers();
-    clientId = headers.get(X_CLIENT_ID);
-    final var currentBucketName = getBusinessIn().getBucket();
-    final var currentObjectName = getBusinessIn().getName();
-    AccessorHeaderDtoConverter.objectFromMap(getBusinessIn(), headers);
-    // Force for Replicator already having the right bucket name and object name, but not others while already computed
-    LOGGER.debugf("Previous bucket %s => %s", getBusinessIn().getBucket(), currentBucketName);
-    getBusinessIn().setBucket(currentBucketName);
-    if (ParametersChecker.isNotEmpty(currentObjectName)) {
-      getBusinessIn().setName(currentObjectName);
-    }
-  }
-
-  private void setDriverApi() {
-    if (driverApi == null) {
-      driverApi = DriverApiRegistry.getDriverApiFactory().getInstance();
-    }
   }
 
   @Override
-  protected void checkPushAble(final AccessorObject object, final MultipleActionsInputStream nettyToInputStream) {
-    if (FakeObjectServiceAbstract.errorCode > 0) {
-      throw CcsServerGenericExceptionMapper.getCcsException(FakeObjectServiceAbstract.errorCode);
+  protected void checkPushAble(final AccessorObject object, final MultipleActionsInputStream inputStream) {
+    if (FakeCommonObjectResourceHelper.errorCode > 0) {
+      throw CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode);
     }
     try {
       final var objectStorage =
           new StorageObject(object.getBucket(), object.getName(), object.getHash(), object.getSize(),
               object.getCreation());
-      driverApi.objectPrepareCreateInBucket(objectStorage, nettyToInputStream);
+      driverApi.objectPrepareCreateInBucket(objectStorage, inputStream);
     } catch (final DriverNotFoundException e) {
       throw new CcsNotExistException(e.getMessage(), e);
     } catch (final DriverAlreadyExistException e) {
@@ -119,13 +95,13 @@ public abstract class FakeNativeStreamHandlerAbstract
     // Hash from request
     var hash = object.getHash();
     if (finalHash != null) {
-      // Hash from NettyToInputStream (on the fly)
+      // Hash from MultipleActionsInputStream (on the fly)
       hash = finalHash;
     }
     try {
       final var storageObject =
           driverApi.objectFinalizeCreateInBucket(object.getBucket(), object.getName(), size, hash);
-      final var accessorObject = FakeObjectServiceAbstract.fromStorageObject(storageObject);
+      final var accessorObject = FakeCommonObjectResourceHelper.fromStorageObject(storageObject);
       remoteCreation(accessorObject, clientId);
       return accessorObject;
     } catch (final DriverNotFoundException e) {
@@ -135,22 +111,6 @@ public abstract class FakeNativeStreamHandlerAbstract
     } catch (final DriverException e) {
       throw new CcsOperationException(e.getMessage(), e);
     }
-  }
-
-  @Override
-  protected Map<String, String> getHeaderPushInputStream(final AccessorObject objectIn, final String finalHash,
-                                                         final long size, final AccessorObject objectOut) {
-    final Map<String, String> map = new HashMap<>();
-    AccessorHeaderDtoConverter.objectToMap(objectOut, map);
-    // Hash from request
-    if (ParametersChecker.isNotEmpty(finalHash)) {
-      // Hash from NettyToInputStream (on the fly)
-      map.put(X_OBJECT_HASH, finalHash);
-    }
-    if (size > 0) {
-      map.put(X_OBJECT_SIZE, Long.toString(size));
-    }
-    return map;
   }
 
   /**
@@ -167,24 +127,24 @@ public abstract class FakeNativeStreamHandlerAbstract
 
   protected boolean internalCheckPullable(final AccessorObject object) {
     LOGGER.infof("Check FakeApi %s/%s", object.getBucket(), object.getName());
-    if (FakeObjectServiceAbstract.errorCode > 0) {
-      if (FakeObjectServiceAbstract.errorCode == 404) {
+    if (FakeCommonObjectResourceHelper.errorCode > 0) {
+      if (FakeCommonObjectResourceHelper.errorCode == 404) {
         return false;
       }
-      throw CcsServerGenericExceptionMapper.getCcsException(FakeObjectServiceAbstract.errorCode);
+      throw CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode);
     }
     try {
       final var storageObject = driverApi.objectGetMetadataInBucket(object.getBucket(), object.getName());
       if (storageObject != null) {
-        checked = FakeObjectServiceAbstract.fromStorageObject(storageObject);
+        checked.set(FakeCommonObjectResourceHelper.fromStorageObject(storageObject));
         LOGGER.infof("Checked FakeApi %s/%s", object.getBucket(), object.getName());
         return true;
       }
       if (isPublic() && checkRemotePullable(object, getRequest().headers(), clientId)) {
-        checked = object.setStatus(AccessorStatus.READY).cloneInstance().setHash("hash").setCreation(Instant.now())
-            .setId(GuidLike.getGuid()).setSize(FakeObjectServiceAbstract.length);
+        checked.set(object.setStatus(AccessorStatus.READY).cloneInstance().setHash("hash").setCreation(Instant.now())
+            .setId(GuidLike.getGuid()).setSize(FakeCommonObjectResourceHelper.length));
       } else {
-        checked = null;
+        checked.set(null);
       }
       LOGGER.infof("Checked failed FakeApi %s/%s", object.getBucket(), object.getName());
       return false;
@@ -209,9 +169,9 @@ public abstract class FakeNativeStreamHandlerAbstract
   @Override
   protected InputStream getPullInputStream(final AccessorObject object) {
     try {
-      if (FakeObjectServiceAbstract.errorCode > 0) {
-        if (FakeObjectServiceAbstract.errorCode >= 400) {
-          throw CcsServerGenericExceptionMapper.getCcsException(FakeObjectServiceAbstract.errorCode);
+      if (FakeCommonObjectResourceHelper.errorCode > 0) {
+        if (FakeCommonObjectResourceHelper.errorCode >= 400) {
+          throw CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode);
         } else {
           return new FakeInputStream(100);
         }
@@ -233,26 +193,10 @@ public abstract class FakeNativeStreamHandlerAbstract
   }
 
   @Override
-  protected Map<String, String> getHeaderPullInputStream(final AccessorObject objectIn) {
-    final Map<String, String> map = new HashMap<>();
-    if (checked != null) {
-      AccessorHeaderDtoConverter.objectToMap(checked, map);
-      return map;
-    }
-    AccessorHeaderDtoConverter.objectToMap(objectIn, map);
-    return map;
-  }
-
-  @Override
   protected Map<String, String> getHeaderError(final AccessorObject object, final int status) {
     final Map<String, String> map = new HashMap<>();
     AccessorHeaderDtoConverter.objectToMap(object, map);
     return map;
-  }
-
-  @Override
-  protected boolean checkDigestToCumpute(final AccessorObject businessIn) {
-    return true;
   }
 }
 

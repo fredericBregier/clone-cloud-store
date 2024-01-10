@@ -54,6 +54,7 @@ class AccessorObjectInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.listObjects("bucket", "clientid", null);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -62,6 +63,7 @@ class AccessorObjectInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.listObjects("bucket", "clientid", new AccessorFilter().setNamePrefix("prefix"));
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -70,6 +72,7 @@ class AccessorObjectInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getObjectInfo("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -78,6 +81,7 @@ class AccessorObjectInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getObject("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
