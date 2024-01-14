@@ -83,7 +83,6 @@ abstract class ObjectClientAzureBase {
             LOG.error(e.getMessage());
           }
         }
-        ;
         apiClient.bucketDelete(bucket.bucket());
       }
     } catch (final Exception e) {

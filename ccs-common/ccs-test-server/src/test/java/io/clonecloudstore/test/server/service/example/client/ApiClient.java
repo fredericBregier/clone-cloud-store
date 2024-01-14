@@ -81,7 +81,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
     businessIn.len = len;
     prepareInputStreamToReceive(acceptCompressed, businessIn);
     final var uni = getService().readObject(name);
-    return getInputStreamBusinessOutFromUni(acceptCompressed, shallDecompress, uni);
+    return getInputStreamBusinessOutFromUni(shallDecompress, uni);
   }
 
   // Example of service out of any InputStream operations, including using the same URI but not same Accept header
@@ -101,7 +101,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
   }
 
   @Override
-  protected ApiBusinessOut getApiBusinessOutFromResponse(final Response response) {
+  protected ApiBusinessOut getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var businessOut = response.readEntity(ApiBusinessOut.class);
       if (businessOut != null) {

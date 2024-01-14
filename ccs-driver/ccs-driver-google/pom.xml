@@ -39,16 +39,17 @@
       <artifactId>quarkus-google-cloud-storage</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-common-quarkus</artifactId>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-driver-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>

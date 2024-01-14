@@ -35,16 +35,16 @@ public class ZstdCompressInputStream extends AbstractCommonInputStream {
     this(inputStream, -1);
   }
 
+  public ZstdCompressInputStream(final InputStream inputStream, final int level) throws IOException {
+    super(inputStream, level);
+  }
+
   @Override
   protected OutputStream getNewOutputStream(Object level) throws IOException {
     var zstdOutputStream = new ZstdOutputStream(pipedOutputStream, RecyclingBufferPool.INSTANCE, (int) level);
     zstdOutputStream.setChecksum(false);
     zstdOutputStream.setCloseFrameOnFlush(true);
     return zstdOutputStream;
-  }
-
-  public ZstdCompressInputStream(final InputStream inputStream, final int level) throws IOException {
-    super(inputStream, level);
   }
 
   public long getSizeRead() {

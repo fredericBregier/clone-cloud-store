@@ -258,6 +258,6 @@ public class FakeObjectInternalService
       throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
     }
     // use InputStream abstract implementation
-    return readObject(request, closer, accessorObject, false);
+    return readObject(request, closer, accessorObject);
   }
 }

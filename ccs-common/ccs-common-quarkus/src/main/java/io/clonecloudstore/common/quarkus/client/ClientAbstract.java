@@ -52,9 +52,9 @@ public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleCl
   }
 
   /**
-   * @return the BusinessOut from the response content and/or headers
+   * @return the BusinessOut from the response content and/or headers for Create Operation
    */
-  protected abstract O getApiBusinessOutFromResponse(final Response response);
+  protected abstract O getApiBusinessOutFromResponseForCreate(final Response response);
 
   /**
    * @param context 1 for sending InputStream, -1 for receiving InputStream, or anything else
@@ -86,7 +86,8 @@ public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleCl
       throws CcsWithStatusException {
     Thread.yield();
     try {
-      return getApiBusinessOutFromResponse((Response) exceptionMapper.handleUniObject(this, uni, sendInputStream));
+      return getApiBusinessOutFromResponseForCreate(
+          (Response) exceptionMapper.handleUniObject(this, uni, sendInputStream));
     } finally {
       resetQueryContext();
       resetMdcOpId();
@@ -98,8 +99,7 @@ public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleCl
     SimpleClientAbstract.acceptCompression(acceptCompressed);
   }
 
-  protected InputStreamBusinessOut<O> getInputStreamBusinessOutFromUni(final boolean acceptCompressed,
-                                                                       final boolean shallDecompress,
+  protected InputStreamBusinessOut<O> getInputStreamBusinessOutFromUni(final boolean shallDecompress,
                                                                        final Uni<InputStream> inputStreamUni)
       throws CcsWithStatusException {
     InputStream inputStream = null;
@@ -107,11 +107,14 @@ public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleCl
       inputStream = (InputStream) exceptionMapper.handleUniObject(this, inputStreamUni);
       inputStream = MultipleActionsInputStream.create(inputStream);
       O businessOut = (O) SimpleClientAbstract.getDtoFromHeaders();
-      LOGGER.debugf("Status (%s) acceptComp %b shallDecomp %b", businessOut, acceptCompressed, shallDecompress);
-      if (acceptCompressed && shallDecompress) {
+      boolean isContentCompressed = SimpleClientAbstract.getCompressionStatusFromHeaders();
+      LOGGER.debugf("Status (%s) shallDecomp %b contentCompressed %b", businessOut, shallDecompress,
+          isContentCompressed);
+      if (shallDecompress && isContentCompressed) {
         ((MultipleActionsInputStream) inputStream).decompress();
+        isContentCompressed = false;
       }
-      return new InputStreamBusinessOut<>(businessOut, inputStream);
+      return new InputStreamBusinessOut<>(businessOut, inputStream, isContentCompressed);
     } catch (IOException e) {
       SystemTools.consumeWhileErrorInputStream(inputStream, StandardProperties.getMaxWaitMs());
       throw new CcsOperationException(e);

@@ -89,8 +89,10 @@ public class RemoteReplicatorNativeStreamHandler extends NativeStreamHandlerAbst
       // Store output object for getHeaderPullInputStream
       client.setOpId(getOpId());
       final var result =
-          client.getObject(replicatorOrder.bucketName(), replicatorOrder.objectName(), replicatorOrder.clientId());
+          client.getObject(replicatorOrder.bucketName(), replicatorOrder.objectName(), replicatorOrder.clientId(),
+              false);
       fromInputStream = result.dtoOut();
+      setResponseCompressed(result.compressed());
       return result.inputStream();
     } catch (final CcsClientGenericException | CcsServerGenericException e) {
       LOGGER.errorf(COULD_NOT_REMOTE_READ, e.getMessage());

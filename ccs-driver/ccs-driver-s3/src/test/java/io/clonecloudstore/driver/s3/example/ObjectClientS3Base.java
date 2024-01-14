@@ -83,7 +83,6 @@ abstract class ObjectClientS3Base {
             LOGGER.error(e.getMessage());
           }
         }
-        ;
         apiClient.bucketDelete(bucket.bucket());
       }
     } catch (final Exception e) {

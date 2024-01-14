@@ -91,6 +91,6 @@ public abstract class FakeAccessorObjectPrivateAbstract<H extends FakeNativeStre
     final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
     final var accessorObject = new AccessorObject().setName(ParametersChecker.getSanitizedName(objectName))
         .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName);
-    return readObject(request, closer, accessorObject, false);
+    return readObject(request, closer, accessorObject);
   }
 }

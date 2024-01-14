@@ -46,10 +46,7 @@ public class FakeCommonBucketResourceHelper {
   public static String site = "site";
 
   public static String getBucketTechnicalName(final String clientId, final String bucketName, final boolean isPublic) {
-    if (isPublic) {
-      return AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
-    }
-    return bucketName;
+    return AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, isPublic);
   }
 
   public static String getName(final String clientId, final String bucketName, final boolean isPublic) {
@@ -123,9 +120,10 @@ public class FakeCommonBucketResourceHelper {
 
   public static void getBucketHelper(final UniEmitter<? super AccessorBucket> em, final String bucketName,
                                      final String clientId, final boolean isPublic) {
-    final var accessorBucket = fromQueryParameter(bucketName, clientId, isPublic, AccessorStatus.READY);
+    final var techName = getBucketTechnicalName(clientId, bucketName, isPublic);
     try (final var fakeDriver = DriverApiRegistry.getDriverApiFactory().getInstance()) {
-      if (fakeDriver.bucketExists(accessorBucket.getId())) {
+      if (fakeDriver.bucketExists(techName)) {
+        final var accessorBucket = fromQueryParameter(bucketName, clientId, isPublic, AccessorStatus.READY);
         em.complete(accessorBucket);
       } else {
         em.fail(new CcsNotExistException(Response.Status.NOT_FOUND.getReasonPhrase()));
@@ -184,9 +182,9 @@ public class FakeCommonBucketResourceHelper {
 
   public static void deleteBucketHelper(final UniEmitter<? super Response> em, final String bucketName,
                                         final String clientId, final boolean isPublic) {
-    final var accessorBucket = fromQueryParameter(bucketName, clientId, isPublic, AccessorStatus.DELETED);
+    final var techName = getBucketTechnicalName(clientId, bucketName, isPublic);
     try (final var fakeDriver = DriverApiRegistry.getDriverApiFactory().getInstance()) {
-      fakeDriver.bucketDelete(accessorBucket.getId());
+      fakeDriver.bucketDelete(techName);
       em.complete(Response.noContent().build());
     } catch (final DriverNotAcceptableException e) {
       em.fail(new CcsNotAcceptableException(e.getMessage()));

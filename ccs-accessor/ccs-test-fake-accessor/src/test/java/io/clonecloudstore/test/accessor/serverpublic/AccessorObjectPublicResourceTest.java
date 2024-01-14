@@ -217,7 +217,6 @@ public class AccessorObjectPublicResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     // Try delete Bucket not empty
@@ -335,7 +334,6 @@ public class AccessorObjectPublicResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
 

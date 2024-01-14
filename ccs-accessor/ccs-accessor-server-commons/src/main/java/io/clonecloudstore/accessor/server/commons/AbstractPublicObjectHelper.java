@@ -82,7 +82,6 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
     LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, request.method().name());
     final var object = new AccessorObject().setBucket(finalBucketName);
-    // TODO choose compression model
     return readObjectList(request, closer, object, false);
   }
 
@@ -97,7 +96,7 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     return Uni.createFrom().emitter(em -> {
       final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
       final var finalObjectName = ParametersChecker.getSanitizedName(pathDirectoryOrObject);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
       try {
         final var storageType =
             service.objectOrDirectoryExists(finalBucketName, finalObjectName, false, clientId, opId, true);
@@ -124,7 +123,7 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     return Uni.createFrom().emitter(em -> {
       final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
       final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
       try {
         final var object = service.getObjectInfo(finalBucketName, finalObjectName);
         em.complete(object);
@@ -148,10 +147,9 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
                                  final HttpServerRequest request, @Context final Closer closer) {
     final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
     final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
     final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName);
-    // TODO choose compression model
-    return readObject(request, closer, object, false);
+    return readObject(request, closer, object);
   }
 
   /**
@@ -176,7 +174,7 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
                                     final InputStream inputStream) {
     final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
     final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, objectName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, objectName);
     final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName).setSize(xObjectSize)
         .setHash(xObjectHash);
     if (xObjectSize <= 0) {
@@ -185,8 +183,7 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
         object.setSize(Long.parseLong(length));
       }
     }
-    // TODO choose compression model
-    return createObject(request, closer, object, object.getSize(), object.getHash(), false, inputStream);
+    return createObject(request, closer, object, object.getSize(), object.getHash(), inputStream);
   }
 
   public Uni<Response> deleteObject(@PathParam("bucketName") final String bucketName,
@@ -199,7 +196,7 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     return Uni.createFrom().emitter(em -> {
       final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
       final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
       try {
         service.deleteObject(finalBucketName, finalObjectName, clientId, true);
         em.complete(Response.noContent().build());

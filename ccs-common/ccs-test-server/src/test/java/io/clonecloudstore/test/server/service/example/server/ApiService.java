@@ -86,7 +86,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
     final var businessIn = new ApiBusinessIn();
     businessIn.name = name;
     businessIn.len = len;
-    return createObject(request, closer, businessIn, businessIn.len, null, false, inputStream);
+    return createObject(request, closer, businessIn, businessIn.len, null, inputStream);
   }
 
   // REST API for sending InputStream back to client
@@ -101,7 +101,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
     businessIn.name = business;
     // Fake LEN
     businessIn.len = len > 0 ? len : LEN;
-    return readObject(request, closer, businessIn, false);
+    return readObject(request, closer, businessIn);
   }
 
   // Example of REST API out of any InputStream usage but same URI (different accept through Produces annotation)

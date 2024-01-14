@@ -78,7 +78,6 @@ public abstract class AbstractPrivateObjectHelper<H extends NativeStreamHandlerA
     final var finalBucketName = getTechnicalBucketName(clientId, bucketName, false);
     LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, request.method().name());
     final var object = new AccessorObject().setBucket(finalBucketName);
-    // TODO choose compression model
     return readObjectList(request, closer, object, false);
   }
 
@@ -96,7 +95,7 @@ public abstract class AbstractPrivateObjectHelper<H extends NativeStreamHandlerA
     return Uni.createFrom().emitter(em -> {
       final var finalBucketName = getTechnicalBucketName(clientId, bucketName, false);
       final var finalObjectName = ParametersChecker.getSanitizedName(pathDirectoryOrObject);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
       try {
         final var storageType = service.objectOrDirectoryExists(finalBucketName, finalObjectName, fullCheck);
         if (storageType.equals(StorageType.NONE)) {
@@ -122,7 +121,7 @@ public abstract class AbstractPrivateObjectHelper<H extends NativeStreamHandlerA
     return Uni.createFrom().emitter(em -> {
       final var finalBucketName = getTechnicalBucketName(clientId, bucketName, false);
       final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
       try {
         final var object = service.getObjectInfo(finalBucketName, finalObjectName);
         em.complete(object);
@@ -146,10 +145,9 @@ public abstract class AbstractPrivateObjectHelper<H extends NativeStreamHandlerA
                                  final HttpServerRequest request, @Context final Closer closer) {
     final var finalBucketName = getTechnicalBucketName(clientId, bucketName, false);
     final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
     final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName);
-    // TODO choose compression model
-    return readObject(request, closer, object, false);
+    return readObject(request, closer, object);
   }
 
   /**

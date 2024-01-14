@@ -83,7 +83,6 @@ abstract class ObjectClientGoogleBase {
             LOG.error(e.getMessage());
           }
         }
-        ;
         apiClient.bucketDelete(bucket.bucket());
       }
     } catch (final Exception e) {
@@ -402,6 +401,7 @@ abstract class ObjectClientGoogleBase {
       var time = (to - from) / 1000000000.0;
       LOG.info("Time Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
+      Thread.sleep(100);
       // Create Object 2
       from = System.nanoTime();
       inputStreamSrc =
@@ -499,7 +499,7 @@ abstract class ObjectClientGoogleBase {
       apiClient.objectDelete(bucket, object + 2);
       LOG.info("Time Delete: " + time);
       apiClient.bucketDelete(bucket);
-    } catch (final DriverException e) {
+    } catch (final DriverException | InterruptedException e) {
       fail(e);
     }
   }

@@ -71,6 +71,7 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
   private I businessIn;
   private boolean isUpload;
   private boolean keepInputStreamCompressed;
+  private boolean responseCompressed;
   private String originalHash;
   private long inputStreamLength;
   private boolean shallDecompress;
@@ -99,7 +100,7 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
    * @param optionalHash              Hash optional (might be null); if POST InputStream, if empty, Hash will be
    *                                  computed
    * @param keepInputStreamCompressed True means the stream will be kept compressed if source (from client) is
-   *                                  compressed or do not recompress getInputStream
+   *                                  compressed (for push only)
    * @param isUpload                  True for incoming InputStream, False for outgoing InputStream
    */
   public void setup(final HttpServerRequest request, final Closer closer, final boolean isUpload, final I businessIn,
@@ -212,29 +213,30 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     if (!isKeepAlive()) {
       map.put(CONNECTION, CLOSE);
     }
-    if (shallCompress()) {
+    if (shallCompress() || (!shallCompress() && isResponseCompressed())) {
       map.put(HttpHeaders.CONTENT_ENCODING, COMPRESSION_ZSTD);
     }
     for (final var entry : map.entrySet()) {
       response.header(entry.getKey(), entry.getValue());
     }
-    LOGGER.debugf("Status (%s) shallCompress %b isKeepInputStreamCompressed %b", businessIn, shallCompress(),
-        isKeepInputStreamCompressed());
-    if (shallCompress() && !isKeepInputStreamCompressed()) {
+    LOGGER.debugf("Status (%s) shallCompress %b responseCompressed %b", businessIn, shallCompress(),
+        isResponseCompressed());
+    if (shallCompress() && !isResponseCompressed()) {
+      LOGGER.debugf("Status compress %s", businessIn);
       if (inputStream instanceof MultipleActionsInputStream mai) {
         try {
-          mai.decompress();
+          mai.compress();
         } catch (final IOException e) {
           throw new CcsOperationException(e);
         }
       } else {
         try {
           inputStream = new ZstdCompressInputStream(inputStream);
+          closer.add(inputStream);
         } catch (final IOException e) {
           throw new CcsOperationException(e);
         }
       }
-      closer.add(inputStream);
     }
     response.entity(inputStream);
     return response.build();
@@ -391,7 +393,7 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
   /**
    * @return True if the InputStream shall be compressed (GET)
    */
-  protected boolean shallCompress() {
+  public boolean shallCompress() {
     return shallCompress;
   }
 
@@ -417,12 +419,27 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     return keepAlive;
   }
 
+  /**
+   * True means the stream will be kept compressed if source (from client) is
+   * compressed or do not recompress getInputStream
+   */
   public boolean isKeepInputStreamCompressed() {
     return keepInputStreamCompressed;
   }
 
   public void setKeepInputStreamCompressed(final boolean change) {
     keepInputStreamCompressed = change;
+  }
+
+  /**
+   * True means the incoming stream is compressed (ZSTD)
+   */
+  public boolean isResponseCompressed() {
+    return responseCompressed;
+  }
+
+  public void setResponseCompressed(final boolean change) {
+    responseCompressed = change;
   }
 
   public String getOriginalHash() {

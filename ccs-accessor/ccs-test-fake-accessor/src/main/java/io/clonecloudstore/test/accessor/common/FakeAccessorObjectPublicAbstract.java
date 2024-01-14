@@ -26,16 +26,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.Dependent;
-import jakarta.inject.Inject;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 
 @Dependent
 public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStreamHandlerAbstract>
     extends AbstractAccessorPublicObjectResource<H> {
-  @Inject
-  HttpHeaders httpHeaders;
-
   protected FakeAccessorObjectPublicAbstract() {
     super((AccessorObjectServiceInterface) null);
   }
@@ -107,8 +102,7 @@ public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStrea
     final var accessorObject =
         FakeCommonObjectResourceHelper.getAccessorObjectForCreate(request, bucketName, objectName, clientId,
             xObjectSize, isPublic);
-    // TODO choose compression model
-    return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(), false,
+    return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(),
         inputStream);
   }
 
@@ -117,7 +111,7 @@ public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStrea
                                      final boolean isPublic, final HttpServerRequest request, final Closer closer) {
     final var accessorObject =
         FakeCommonObjectResourceHelper.getAccessorObjectForGetObject(bucketName, objectName, clientId, isPublic);
-    return readObject(request, closer, accessorObject, false);
+    return readObject(request, closer, accessorObject);
   }
 
 }

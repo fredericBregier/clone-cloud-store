@@ -129,7 +129,7 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
    */
   private AccessorBucket createBucketFromDto(final AccessorBucket bucket) throws CcsOperationException {
 
-    LOGGER.infof("Create bucket %s in database and in object storage", bucket.getId());
+    LOGGER.debugf("Create bucket %s in database and in object storage", bucket.getId());
     try {
       //Insert in Database
       // Since it can be in DELETED status, it might be updated (creation + status)

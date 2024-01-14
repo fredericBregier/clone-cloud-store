@@ -331,7 +331,7 @@ public class FakeObjectService extends StreamServiceAbstract<AccessorObject, Acc
     if (errorCode > 0) {
       throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
     }
-    return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(), false,
+    return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(),
         inputStream);
   }
 
@@ -389,6 +389,6 @@ public class FakeObjectService extends StreamServiceAbstract<AccessorObject, Acc
       throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
     }
     // use InputStream abstract implementation
-    return readObject(request, closer, accessorObject, false);
+    return readObject(request, closer, accessorObject);
   }
 }

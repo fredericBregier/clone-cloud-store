@@ -49,18 +49,6 @@ public abstract class FakeObjectPrivateAbstract<H extends FakeNativeStreamHandle
         clientId, isPublic, request, closer);
   }
 
-  protected Uni<Response> listObjects0(final String bucketName, final String acceptHeader,
-                                       final String acceptEncodingHeader, final String clientId, final String opId,
-                                       final String xNamePrefix, final String xStatuses, final String xCreationBefore,
-                                       final String xCreationAfter, final String xExpiresBefore,
-                                       final String xExpiresAfter, final long xSizeLt, final long xSizeGt,
-                                       final String xMetadataEq, final boolean isPublic,
-                                       final HttpServerRequest request, final Closer closer) {
-    return FakeCommonObjectResourceHelper.listObjects0Helper(bucketName, acceptHeader, acceptEncodingHeader, clientId,
-        opId, xNamePrefix, xStatuses, xCreationBefore, xCreationAfter, xExpiresBefore, xExpiresAfter, xSizeLt, xSizeGt,
-        xMetadataEq, isPublic, request, closer);
-  }
-
   protected void checkObjectOrDirectory(final UniEmitter<? super Response> em, final String bucketName,
                                         final String pathDirectoryOrObject, final boolean fullCheck,
                                         final String clientId, final boolean isPublic) {
@@ -80,17 +68,12 @@ public abstract class FakeObjectPrivateAbstract<H extends FakeNativeStreamHandle
     FakeCommonObjectResourceHelper.getObjectInfoHelper(em, bucketName, objectName, clientId, isPublic);
   }
 
-  protected Uni<AccessorObject> getObjectInfo0(final String bucketName, final String objectName, final String clientId,
-                                               final boolean isPublic) {
-    return FakeCommonObjectResourceHelper.getObjectInfo0Helper(bucketName, objectName, clientId, isPublic);
-  }
-
   protected Uni<Response> getObject0(final String bucketName, final String objectName, final String acceptHeader,
                                      final String acceptEncodingHeader, final String clientId, final String opId,
                                      final boolean isPublic, final HttpServerRequest request, final Closer closer) {
     final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
     final var accessorObject = new AccessorObject().setName(ParametersChecker.getSanitizedName(objectName))
         .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName);
-    return readObject(request, closer, accessorObject, false);
+    return readObject(request, closer, accessorObject);
   }
 }

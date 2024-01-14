@@ -172,7 +172,6 @@ class AccessorObjectResourceNoS3Test {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     try (final var client = factory.newClient()) {

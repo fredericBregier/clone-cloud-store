@@ -152,7 +152,6 @@ class AccessorObjectInternalResourceNoS3Test {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
   }

@@ -289,6 +289,8 @@ public class AccessorClient implements Closeable {
   }
 
   /**
+   * Note: Compression is only between client and server, result InputStream is uncompressed
+   *
    * @return both InputStream and Object DTO
    */
   public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,

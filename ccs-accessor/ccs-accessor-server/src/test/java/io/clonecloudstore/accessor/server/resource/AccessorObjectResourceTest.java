@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
+import io.clonecloudstore.accessor.client.internal.AccessorObjectInternalApiFactory;
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
@@ -33,6 +34,7 @@ import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketReposi
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
+import io.clonecloudstore.common.quarkus.modules.AccessorPropertiesChangeValues;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.DriverApiFactory;
@@ -78,6 +80,8 @@ class AccessorObjectResourceTest {
   @Inject
   AccessorObjectApiFactory factory;
   @Inject
+  AccessorObjectInternalApiFactory internalApiFactory;
+  @Inject
   Instance<DaoAccessorObjectRepository> repositoryInstance;
   DaoAccessorObjectRepository repository;
   @Inject
@@ -112,7 +116,7 @@ class AccessorObjectResourceTest {
   }
 
   @BeforeEach
-  void beforeEach() {
+  void beforeEach() throws CcsWithStatusException {
     repository = repositoryInstance.get();
   }
 
@@ -127,6 +131,19 @@ class AccessorObjectResourceTest {
     final var finalBucketName = DaoAccessorBucketRepository.getPrefix(clientId) + BUCKET_NAME;
     createBucketAndObject(BUCKET_NAME, finalBucketName, OBJECT);
     createBucketAndObject(BUCKET_NAME, finalBucketName, '/' + OBJECT);
+  }
+
+  @Test
+  void createBucketAndObjectWithActiveCompression() throws CcsWithStatusException {
+    final var compression = AccessorProperties.isInternalCompression();
+    try {
+      AccessorPropertiesChangeValues.changeInternalCompression(true);
+      final var finalBucketName = DaoAccessorBucketRepository.getPrefix(clientId) + BUCKET_NAME;
+      createBucketAndObject(BUCKET_NAME, finalBucketName, OBJECT);
+      createBucketAndObject(BUCKET_NAME, finalBucketName, '/' + OBJECT);
+    } finally {
+      AccessorPropertiesChangeValues.changeInternalCompression(compression);
+    }
   }
 
   void createBucketAndObject(final String bucketName, final String finalBucketName, final String objectName)
@@ -195,7 +212,6 @@ class AccessorObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     // Try delete Bucket not empty
@@ -266,7 +282,8 @@ class AccessorObjectResourceTest {
   }
 
   @Test
-  void checkTryCreateWhileAlreadyInCreation() throws CcsWithStatusException, CcsDbException {
+  void checkTryCreateWhileAlreadyInCreation() throws CcsWithStatusException, CcsDbException, InterruptedException {
+    FakeCommonObjectResourceHelper.errorCode = 404;
     final var bucketName = "retry-create";
     final var finalBucketName = DaoAccessorBucketRepository.getPrefix(clientId) + bucketName;
     // Create Bucket
@@ -288,15 +305,10 @@ class AccessorObjectResourceTest {
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertEquals(accessorObject.getHash(), original.getHash());
     }
-    // Now change status to IN_PROGRESS to check concurrency
+    // Now change status to UPLOAD to check concurrency
     repository.updateObjectStatus(finalBucketName, ParametersChecker.getSanitizedName(OBJECT), AccessorStatus.UPLOAD,
         null);
     // Check existence
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId);
-      LOG.infof("ObjectType: %s", objectType);
-      assertEquals(StorageType.NONE, objectType);
-    }
     try (final var client = factory.newClient()) {
       final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId);
       LOG.infof("ObjectType: %s", objectType);
@@ -442,7 +454,23 @@ class AccessorObjectResourceTest {
   }
 
   @Test
-  void createBucketAndObjectRemote() throws CcsWithStatusException {
+  void createBucketAndObjectRemote() throws CcsWithStatusException, CcsDbException {
+    baseCreateBucketAndObjectRemote();
+  }
+
+  @Test
+  void createBucketAndObjectRemoteWithCompression() throws CcsWithStatusException, CcsDbException {
+    final var compression = AccessorProperties.isInternalCompression();
+    try {
+      AccessorPropertiesChangeValues.changeInternalCompression(true);
+      baseCreateBucketAndObjectRemote();
+    } finally {
+      AccessorPropertiesChangeValues.changeInternalCompression(compression);
+    }
+  }
+
+  @Test
+  void baseCreateBucketAndObjectRemote() throws CcsWithStatusException, CcsDbException {
     final var bucketName = "change-remote";
     final var finalBucketName = DaoAccessorBucketRepository.getPrefix(clientId) + bucketName;
     // Create Bucket
@@ -474,13 +502,13 @@ class AccessorObjectResourceTest {
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId);
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId);
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
@@ -508,7 +536,6 @@ class AccessorObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
 
@@ -529,22 +556,47 @@ class AccessorObjectResourceTest {
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId);
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, true);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.NONE, objectType);
+    }
+    var dao = repository.getObject(finalBucketName, OBJECT);
+    assertEquals(AccessorStatus.READY, dao.getStatus());
     try (final var client = factory.newClient()) {
       final var object = client.getObjectInfo(bucketName, OBJECT, clientId);
       LOG.infof("Object: %s", object);
       Assertions.assertEquals(original, object);
     }
     LOG.infof("Remote Read %b", AccessorProperties.isRemoteRead());
-    // Try getting content on physically DELETED object, so try remote
+    // Try getting content on physically DELETED object, so try remote but physically not there either
     try (final var client = factory.newClient()) {
       assertEquals(404,
           assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
+    // Fix remote content
+    FakeCommonObjectResourceHelper.errorCode = 204;
+    FakeCommonObjectResourceHelper.length = 100;
+    repository.updateObjectStatus(finalBucketName, OBJECT, AccessorStatus.ERR_UPL, null);
+    try (final var client = factory.newClient()) {
+      final var inputStreamObject = client.getObject(bucketName, OBJECT, clientId);
+      LOG.infof("Object: %s", inputStreamObject.dtoOut());
+      final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
+      assertEquals(100, len);
+    } catch (final IOException e) {
+      LOG.error(e, e);
+      fail(e);
+    } finally {
+      FakeCommonObjectResourceHelper.errorCode = 0;
+      FakeCommonObjectResourceHelper.length = 100;
+    }
+    // Restore status
+    repository.updateObjectStatus(finalBucketName, OBJECT, AccessorStatus.READY, null);
     // Delete Object
     try (final var client = factory.newClient()) {
       final var deleted = client.deleteObject(bucketName, OBJECT, clientId);
@@ -616,7 +668,6 @@ class AccessorObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(10, cpt.get());
     }
     // Delete 10 Objects

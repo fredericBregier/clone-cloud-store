@@ -137,7 +137,7 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
 # 0.8.0 2024/02
 - Add Apache http client for Accessor Public client (no Quarkus dependency)
-- 
+- Refactorization of Server side
 
 # 0.7.0 2024/01
 - Support of MongoDB and Kafka

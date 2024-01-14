@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.common.quarkus.client;
+package io.clonecloudstore.test.accessor;
 
 import java.util.Optional;
 

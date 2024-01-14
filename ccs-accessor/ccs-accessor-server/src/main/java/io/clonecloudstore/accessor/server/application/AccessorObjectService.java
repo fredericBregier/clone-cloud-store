@@ -108,14 +108,22 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
                                              final boolean external) throws CcsOperationException {
     try {
       // Check in DB and associated status
-      final var daoAccessorObjectIterator =
-          objectRepository.getObjectPrefix(bucketName, objectOrDirectoryName, AccessorStatus.READY);
       var found = false;
-      if (daoAccessorObjectIterator != null && (daoAccessorObjectIterator.hasNext())) {
-        found = true;
-        final var daoAccessorObject = daoAccessorObjectIterator.next();
-        if (!daoAccessorObject.getName().equals(objectOrDirectoryName)) {
-          return StorageType.DIRECTORY;
+      var dao = objectRepository.getObject(bucketName, objectOrDirectoryName, AccessorStatus.READY);
+      found = dao != null;
+      if (!found) {
+        final var daoAccessorObjectIterator =
+            objectRepository.getObjectPrefix(bucketName, objectOrDirectoryName, AccessorStatus.READY);
+        try {
+          if (daoAccessorObjectIterator != null && (daoAccessorObjectIterator.hasNext())) {
+            found = true;
+            final var daoAccessorObject = daoAccessorObjectIterator.next();
+            if (!daoAccessorObject.getName().equals(objectOrDirectoryName)) {
+              return StorageType.DIRECTORY;
+            }
+          }
+        } finally {
+          SystemTools.consumeAll(daoAccessorObjectIterator);
         }
       }
       if (!found) {
@@ -126,7 +134,6 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
         }
         return response.response();
       }
-      SystemTools.consumeAll(daoAccessorObjectIterator);
       if (fullCheck) {
         // Check in S3
         return getStorageType(bucketName, objectOrDirectoryName);
@@ -199,7 +206,6 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
                                                           final boolean external, final String clientId,
                                                           final String opId)
       throws CcsNotExistException, CcsOperationException {
-    // TODO shall check if bucket is also available
     try {
       // Search objectName in database and check status
       final var daoAccessorObject = objectRepository.getObject(bucketName, objectName, AccessorStatus.READY);
@@ -351,7 +357,7 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
       // Check existence first in DB
       final var daoAccessorObject = objectRepository.getObject(bucketName, objectName);
       if (daoAccessorObject != null) {
-        LOGGER.infof("Dao: %s", daoAccessorObject);
+        LOGGER.debugf("Dao: %s", daoAccessorObject);
         if (daoAccessorObject.getStatus() != AccessorStatus.READY) {
           if (daoAccessorObject.getStatus().equals(AccessorStatus.DELETED)) {
             throw new CcsDeletedException(mesg(bucketName, objectName) + STATUS_STRING + daoAccessorObject.getStatus());

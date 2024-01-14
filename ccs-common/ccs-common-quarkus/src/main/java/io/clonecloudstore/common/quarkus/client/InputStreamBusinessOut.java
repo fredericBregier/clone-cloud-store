@@ -23,7 +23,8 @@ import java.io.InputStream;
  *
  * @param dtoOut      the Business Out or null if none
  * @param inputStream the InputStream or null if none
+ * @param compressed  True if the InputStream is present and compressed (ZSTD)
  * @param <O>         the type for Business Output request (in GET or POST)
  */
-public record InputStreamBusinessOut<O>(O dtoOut, InputStream inputStream) {
+public record InputStreamBusinessOut<O>(O dtoOut, InputStream inputStream, boolean compressed) {
 }

@@ -105,6 +105,7 @@ public class LocalReplicatorNativeStreamHandler extends NativeStreamHandlerAbstr
           replicatorObject.clientId(), getOpId(), 0);
       fromInputStream = result.dtoOut();
       getCloser().add(client);
+      setResponseCompressed(result.compressed());
       return result.inputStream();
     } catch (final CcsServerGenericException | CcsClientGenericException e) {
       LOGGER.errorf(COULD_NOT_REMOTE_READ, e.getMessage());

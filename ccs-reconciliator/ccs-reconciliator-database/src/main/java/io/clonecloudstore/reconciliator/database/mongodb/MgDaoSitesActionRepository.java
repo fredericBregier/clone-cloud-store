@@ -50,7 +50,7 @@ public class MgDaoSitesActionRepository extends ExtendedPanacheMongoRepositoryBa
   }
 
   public void createIndex() throws CcsDbException {
-    //TODO: index à spécialiser
+    //TODO: index to specialize
     try {
       mongoCollection().createIndex(Indexes.ascending(REQUESTID, BUCKET),
           new IndexOptions().name(getTable() + "_filter_idx"));

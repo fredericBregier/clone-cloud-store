@@ -23,6 +23,7 @@ import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.StorageType;
@@ -95,10 +96,10 @@ public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, A
     final var request =
         new ReplicatorOrder(opId, ServiceProperties.getAccessorSite(), null, clientId, bucket, object, len, null,
             ReplicatorConstants.Action.UNKNOWN);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, request);
-    final var uni = getService().remoteReadObject(false, bucket, object, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), request);
+    final var uni =
+        getService().remoteReadObject(AccessorProperties.isInternalCompression(), bucket, object, clientId, getOpId());
+    return getInputStreamBusinessOutFromUni(true, uni);
   }
 
   public Uni<Response> createOrder(final ReplicatorOrder replicatorOrder) {
@@ -110,7 +111,7 @@ public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, A
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
     // No Push
     return null;
   }

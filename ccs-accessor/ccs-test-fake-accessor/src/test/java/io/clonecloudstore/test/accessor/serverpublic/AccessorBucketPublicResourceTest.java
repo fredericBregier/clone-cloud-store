@@ -114,7 +114,8 @@ class AccessorBucketPublicResourceTest {
   void getBucket() {
     final var bucketName = "testgetbucket1";
     try (final var client = factory.newClient()) {
-      client.createBucket(bucketName, clientId);
+      var bucket0 = client.createBucket(bucketName, clientId);
+      assertEquals(bucketName, bucket0.getName());
       final var bucket = client.getBucket(bucketName, clientId);
       assertEquals(bucketName, bucket.getName());
 

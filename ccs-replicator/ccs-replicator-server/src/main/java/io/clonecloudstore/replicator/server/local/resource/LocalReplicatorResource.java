@@ -146,9 +146,7 @@ public class LocalReplicatorResource
     final var replicatorObject =
         new ReplicatorOrder(xOpId, ServiceProperties.getAccessorSite(), xTargetId, xClientId, bucketName, decodedName,
             0, null, ReplicatorConstants.Action.UNKNOWN);
-    // TODO Handle compression parameter, currently set to false
-    // TODO choose compression model
-    return readObject(request, closer, replicatorObject, false);
+    return readObject(request, closer, replicatorObject);
   }
 
   @HEAD

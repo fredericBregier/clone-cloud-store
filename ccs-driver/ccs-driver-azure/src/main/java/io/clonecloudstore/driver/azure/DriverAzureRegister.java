@@ -33,6 +33,5 @@ public class DriverAzureRegister {
   public DriverAzureRegister(final DriverAzureApiFactory driverAzureApiFactory) {
     this.driverAzureApiFactory = driverAzureApiFactory;
     DriverApiRegistry.setDriverApiFactory(this.driverAzureApiFactory);
-    //TODO QuarkusProperties.setCcsModule(Module.DRIVER)
   }
 }

@@ -141,7 +141,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     businessIn.name = name;
     businessIn.len = len;
     // proxy to next API
-    return createObject(request, closer, businessIn, businessIn.len, null, false, inputStream);
+    return createObject(request, closer, businessIn, businessIn.len, null, inputStream);
   }
 
   // REST API for sending InputStream back to client
@@ -157,7 +157,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     // Fake LEN
     businessIn.len = len > 0 ? len : LEN;
     var futureAlreadyCompressed = business.startsWith(PROXY_COMP_TEST);
-    return readObject(request, closer, businessIn, futureAlreadyCompressed);
+    return readObject(request, closer, businessIn);
   }
 
   // REST API for sending InputStream back to client
@@ -173,7 +173,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     businessIn.name = business;
     businessIn.len = len > 0 ? len : LEN;
     var futureAlreadyCompressed = business.startsWith(PROXY_COMP_TEST);
-    return readObject(request, closer, businessIn, futureAlreadyCompressed);
+    return readObject(request, closer, businessIn);
   }
 
   // REST API for sending InputStream back to client
@@ -188,7 +188,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     final var businessIn = new ApiBusinessIn();
     businessIn.name = business;
     businessIn.len = len > 0 ? len : LEN;
-    return readObject(request, closer, businessIn, false);
+    return readObject(request, closer, businessIn);
   }
 
   // Example of REST API out of any InputStream usage but same URI (different accept through Produces annotation)

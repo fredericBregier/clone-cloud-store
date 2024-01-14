@@ -65,6 +65,8 @@ ccs:
       fixOnAbsent: true
   db:
     type: mongo
+  internal:
+    compression: false
 
 mp:
   messaging:

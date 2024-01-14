@@ -26,6 +26,7 @@ import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
@@ -127,18 +128,26 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
   public InputStreamBusinessOut<AccessorObject> readRemoteObject(final String bucket, final String object,
                                                                  final String clientId, final String targetId,
                                                                  final String opId) throws CcsWithStatusException {
+    return readRemoteObject(bucket, object, clientId, targetId, opId, true);
+  }
+
+  public InputStreamBusinessOut<AccessorObject> readRemoteObject(final String bucket, final String object,
+                                                                 final String clientId, final String targetId,
+                                                                 final String opId, final boolean decompress)
+      throws CcsWithStatusException {
     this.setOpId(opId);
     final var request =
         new ReplicatorOrder(opId, ServiceProperties.getAccessorSite(), targetId, clientId, bucket, object, 0, null,
             ReplicatorConstants.Action.UNKNOWN);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, request);
-    final var uni = getService().remoteReadObject(false, bucket, object, clientId, getOpId(), targetId);
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), request);
+    final var uni =
+        getService().remoteReadObject(AccessorProperties.isInternalCompression(), bucket, object, clientId, getOpId(),
+            targetId);
+    return getInputStreamBusinessOutFromUni(decompress, uni);
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
     // No Push
     return null;
   }

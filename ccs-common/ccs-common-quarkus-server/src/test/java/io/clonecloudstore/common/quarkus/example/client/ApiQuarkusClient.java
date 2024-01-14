@@ -105,7 +105,7 @@ public class ApiQuarkusClient extends ClientAbstract<ApiBusinessIn, ApiBusinessO
     businessIn.len = len;
     prepareInputStreamToReceive(acceptCompressed, businessIn);
     final var uni = getService().readObject(name);
-    return getInputStreamBusinessOutFromUni(acceptCompressed, shallDecompress, uni);
+    return getInputStreamBusinessOutFromUni(shallDecompress, uni);
   }
 
   public InputStreamBusinessOut<ApiBusinessOut> putAsGetInputStream(final String name, final long len,
@@ -118,7 +118,7 @@ public class ApiQuarkusClient extends ClientAbstract<ApiBusinessIn, ApiBusinessO
     businessIn.len = len;
     prepareInputStreamToReceive(acceptCompressed, businessIn);
     final var uni = getService().readObjectPut(name);
-    return getInputStreamBusinessOutFromUni(acceptCompressed, shallDecompress, uni);
+    return getInputStreamBusinessOutFromUni(shallDecompress, uni);
   }
 
   public InputStreamBusinessOut<ApiBusinessOut> getInputStreamThrough(final String name, final long len,
@@ -131,7 +131,7 @@ public class ApiQuarkusClient extends ClientAbstract<ApiBusinessIn, ApiBusinessO
     businessIn.len = len;
     prepareInputStreamToReceive(acceptCompressed, businessIn);
     final var uni = getService().readObjectThrough(name);
-    return getInputStreamBusinessOutFromUni(acceptCompressed, shallDecompress, uni);
+    return getInputStreamBusinessOutFromUni(shallDecompress, uni);
   }
 
   // Example of service out of any InputStream operations, including using the same URI but not same Accept header
@@ -152,7 +152,7 @@ public class ApiQuarkusClient extends ClientAbstract<ApiBusinessIn, ApiBusinessO
 
 
   @Override
-  protected ApiBusinessOut getApiBusinessOutFromResponse(final Response response) {
+  protected ApiBusinessOut getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var businessOut = response.readEntity(ApiBusinessOut.class);
       if (businessOut != null) {

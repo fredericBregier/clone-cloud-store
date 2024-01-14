@@ -97,6 +97,7 @@ public class ObjectNativeStreamHandler extends AbstractObjectNativeStreamHandler
             ((AccessorObjectService) service).getRemotePullInputStream(object.getBucket(), object.getName(), clientId,
                 remoteTargetId.get(), getOpId());
         checked.set(inputStreamBusinessOut.dtoOut());
+        setResponseCompressed(inputStreamBusinessOut.compressed());
         if (AccessorProperties.isFixOnAbsent()) {
           ((AccessorObjectService) service).generateReplicationOrderForObject(checked.get().getBucket(),
               checked.get().getName(), clientId, getOpId(), remoteTargetId.get(), checked.get().getSize(),

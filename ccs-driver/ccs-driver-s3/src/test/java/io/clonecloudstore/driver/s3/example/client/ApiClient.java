@@ -47,19 +47,15 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
 
   public List<StorageBucket> bucketList() throws DriverException {
     final var uni = getService().bucketList();
-    var businessIn = new StorageObject(null, null, null, 0, null);
     try {
       return (List<StorageBucket>) exceptionMapper.handleUniObject(this, uni);
-    } catch (CcsWithStatusException e) {
-      throw new DriverException(e);
-    } catch (final CcsClientGenericException | CcsServerGenericException e) {
+    } catch (CcsWithStatusException | CcsClientGenericException | CcsServerGenericException e) {
       throw new DriverException(e);
     }
   }
 
   public boolean bucketExists(String bucket) throws DriverException {
     final var uni = getService().bucketExists(bucket);
-    var businessIn = new StorageObject(bucket, null, null, 0, null);
     try (final var response = exceptionMapper.handleUniResponse(uni)) {
       switch (response.getStatus()) {
         case 200, 204 -> {
@@ -83,7 +79,6 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
   public StorageBucket bucketCreate(String bucket)
       throws DriverException, DriverAlreadyExistException, DriverNotAcceptableException {
     final var uni = getService().bucketCreate(bucket);
-    var businessIn = new StorageObject(bucket, null, null, 0, null);
     try {
       return (StorageBucket) exceptionMapper.handleUniObject(this, uni);
     } catch (CcsWithStatusException e) {
@@ -104,7 +99,6 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
   public void bucketDelete(String bucket)
       throws DriverNotFoundException, DriverException, DriverNotAcceptableException {
     final var uni = getService().bucketDelete(bucket);
-    var businessIn = new StorageObject(bucket, null, null, 0, null);
     try (final var response = exceptionMapper.handleUniResponse(uni)) {
       if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
         throw new DriverNotFoundException("Bucket not found: " + bucket);
@@ -129,7 +123,6 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
 
   public StorageType objectOrDirectoryExists(String bucket, String objectOrDirectory) throws DriverException {
     final var uni = getService().objectOrDirectoryExists(bucket, objectOrDirectory);
-    var businessIn = new StorageObject(bucket, objectOrDirectory, null, 0, null);
     try (final var response = exceptionMapper.handleUniResponse(uni)) {
       var type = (String) response.getHeaders().get(ApiConstants.X_TYPE).get(0);
       if (ParametersChecker.isNotEmpty(type)) {
@@ -153,7 +146,6 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
   public StorageObject getObjectMetadata(final String bucket, final String name)
       throws DriverNotFoundException, DriverException {
     // Business code should come here
-    var businessIn = new StorageObject(bucket, name, null, 0, null);
     final var uni = getService().getObjectMetadata(bucket, name);
     try {
       return (StorageObject) exceptionMapper.handleUniObject(this, uni);
@@ -203,7 +195,6 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     // Business code should come here
     var businessIn = new StorageObject(bucket, name, hash, len, null);
     try {
-      // TODO choose compression model
       final var inputStream = prepareInputStreamToSend(content, false, false, businessIn);
       final var uni = getService().createObject(bucket, name, len, hash, content);
       return getResultFromPostInputStreamUni(uni, inputStream);
@@ -230,10 +221,9 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     // Business code should come here
     var businessIn = new StorageObject(bucket, name, null, 0, null);
     try {
-      // TODO choose compression model
       prepareInputStreamToReceive(false, businessIn);
       final var uni = getService().readObject(bucket, name);
-      return getInputStreamBusinessOutFromUni(false, false, uni);
+      return getInputStreamBusinessOutFromUni(true, uni);
     } catch (CcsWithStatusException e) {
       if (e.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
         throw new DriverNotFoundException(e);
@@ -258,7 +248,7 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
   }
 
   @Override
-  protected StorageObject getApiBusinessOutFromResponse(final Response response) {
+  protected StorageObject getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var storageObject = response.readEntity(StorageObject.class);
       if (storageObject != null) {

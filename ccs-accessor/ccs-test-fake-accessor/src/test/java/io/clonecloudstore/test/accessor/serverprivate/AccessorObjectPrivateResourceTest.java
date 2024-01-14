@@ -187,7 +187,6 @@ public class AccessorObjectPrivateResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     try (final var client = factoryExternal.newClient()) {
@@ -292,7 +291,6 @@ public class AccessorObjectPrivateResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
 

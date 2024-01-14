@@ -75,7 +75,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
     businessIn.len = len;
     prepareInputStreamToReceive(false, businessIn);
     final var uni = getService().readObject(name, len);
-    return getInputStreamBusinessOutFromUni(false, false, uni);
+    return getInputStreamBusinessOutFromUni(true, uni);
   }
 
   public ApiBusinessOut getObjectMetadata(final String name) throws CcsWithStatusException {
@@ -93,7 +93,7 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
   }
 
   @Override
-  protected ApiBusinessOut getApiBusinessOutFromResponse(final Response response) {
+  protected ApiBusinessOut getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var businessOut = response.readEntity(ApiBusinessOut.class);
       if (businessOut != null) {

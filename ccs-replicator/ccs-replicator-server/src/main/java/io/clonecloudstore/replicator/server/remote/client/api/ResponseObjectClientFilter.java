@@ -17,28 +17,25 @@
 package io.clonecloudstore.replicator.server.remote.client.api;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
+import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
-import jakarta.ws.rs.HttpMethod;
+import io.clonecloudstore.common.quarkus.client.utils.AbstractResponseClientFilter;
+import io.clonecloudstore.common.standard.system.ParametersChecker;
 import jakarta.ws.rs.client.ClientResponseContext;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
-import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;
 
-import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
-
-public class ResponseObjectClientFilter implements ResteasyReactiveClientResponseFilter {
+public class ResponseObjectClientFilter extends AbstractResponseClientFilter<AccessorObject> {
 
   @Override
-  public void filter(final ResteasyReactiveClientRequestContext requestContext,
-                     final ClientResponseContext responseContext) {
-    SimpleClientAbstract.setMdcOpId((String) requestContext.getHeaders().getFirst(X_OP_ID));
-    final var method = requestContext.getMethod();
-    if (HttpMethod.GET.equalsIgnoreCase(method)) {
-      final var object = new AccessorObject();
-      if (responseContext.getHeaders() != null) {
-        AccessorHeaderDtoConverter.objectFromMap(object, responseContext.getHeaders());
-      }
-      SimpleClientAbstract.setDtoFromHeaders(object);
+  protected AccessorObject getOutFromHeader(final ResteasyReactiveClientRequestContext requestContext,
+                                            final ClientResponseContext responseContext,
+                                            final MultivaluedMap<String, String> headers) {
+    if (ParametersChecker.isEmpty(headers.getFirst(AccessorConstants.HeaderObject.X_OBJECT_SITE))) {
+      return null;
     }
+    final var object = new AccessorObject();
+    AccessorHeaderDtoConverter.objectFromMap(object, headers);
+    return object;
   }
 }

@@ -75,7 +75,6 @@ public class AccessorProperties extends ServiceProperties {
   /**
    * @return True if the internal compression is active
    */
-  // FIXME
   public static boolean isInternalCompression() {
     return internalCompression;
   }

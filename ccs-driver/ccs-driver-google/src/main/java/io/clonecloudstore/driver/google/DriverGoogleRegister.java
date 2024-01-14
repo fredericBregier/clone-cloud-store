@@ -33,6 +33,5 @@ public class DriverGoogleRegister {
   public DriverGoogleRegister(final DriverGoogleApiFactory driverGoogleApiFactory) {
     this.driverGoogleApiFactory = driverGoogleApiFactory;
     DriverApiRegistry.setDriverApiFactory(this.driverGoogleApiFactory);
-    // TODO QuarkusProperties.setCcsModule(Module.DRIVER)
   }
 }

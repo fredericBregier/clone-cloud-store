@@ -33,6 +33,5 @@ public class DriverS3Register {
   public DriverS3Register(final DriverS3ApiFactory driverS3ApiFactory) {
     this.driverS3ApiFactory = driverS3ApiFactory;
     DriverApiRegistry.setDriverApiFactory(driverS3ApiFactory);
-    // TODO QuarkusProperties.setCcsModule(Module.DRIVER)
   }
 }

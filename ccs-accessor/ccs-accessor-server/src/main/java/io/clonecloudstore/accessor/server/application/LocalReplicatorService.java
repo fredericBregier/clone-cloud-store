@@ -21,6 +21,7 @@ import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.client.LocalReplicatorApiClientFactory;
@@ -144,7 +145,8 @@ public class LocalReplicatorService {
                                                                  final String opId) throws CcsOperationException {
     try (final var client = localReplicatorApiClientFactory.newClient()) {
       client.setOpId(opId);
-      return client.readRemoteObject(bucketName, objectName, clientId, targetId, opId);
+      return client.readRemoteObject(bucketName, objectName, clientId, targetId, opId,
+          !AccessorProperties.isInternalCompression());
     } catch (final CcsWithStatusException e) {
       throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), "Relicator Object Read error", e);
     }

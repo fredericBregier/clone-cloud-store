@@ -144,9 +144,7 @@ public class RemoteReplicatorResource
     final var replicatorObject =
         new ReplicatorOrder(xOpId, ServiceProperties.getAccessorSite(), ServiceProperties.getAccessorSite(), xClientId,
             bucketName, decodedName, 0, null, ReplicatorConstants.Action.UNKNOWN);
-    // TODO Handle compression parameter, currently set to false
-    // TODO choose compression model
-    return readObject(request, closer, replicatorObject, false);
+    return readObject(request, closer, replicatorObject);
   }
 
   @HEAD

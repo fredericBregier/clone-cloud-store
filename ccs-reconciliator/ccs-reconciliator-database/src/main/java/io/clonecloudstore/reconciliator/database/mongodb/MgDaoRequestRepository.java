@@ -42,7 +42,7 @@ public class MgDaoRequestRepository extends ExtendedPanacheMongoRepositoryBase<D
   }
 
   public void createIndex() throws CcsDbException {
-    //TODO: index à spécialiser
+    //TODO: index to specialize
     try {
       mongoCollection().createIndex(Indexes.ascending(ID, BUCKET), new IndexOptions().name(getTable() + "_filter_idx"));
     } catch (final MongoException e) {

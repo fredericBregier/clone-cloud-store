@@ -28,7 +28,6 @@ Missing or In Progress Functionalities
 
   - Allowing specific access on all or part of CRUD options to a Bucket owned by an application to another one
     (for instance, to allow producer / consumer of files)
-  - Compression of HTTPS link is functional but not yet activated (and will be based on a property)
   - Bandwidth limitation is moved to Quarkus normal configuration (see https://quarkus.io/guides/http-reference#configure-traffic-shaping)
 
     - It shall be useful only for Replicator and in particular in outbound global mode per site

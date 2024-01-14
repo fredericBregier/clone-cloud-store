@@ -262,6 +262,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
       }
       setResultFromRemote(inputStreamBusinessOut.dtoOut());
       setKeepInputStreamCompressed(shallCompress());
+      setResponseCompressed(inputStreamBusinessOut.compressed());
       return inputStreamBusinessOut.inputStream();
     } else if (apiBusinessIn.name.startsWith(PROXY_TEST)) {
       final var finalName = apiBusinessIn.name.substring(PROXY_TEST.length());
@@ -276,6 +277,7 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
       }
       setResultFromRemote(inputStreamBusinessOut.dtoOut());
       setKeepInputStreamCompressed(shallCompress());
+      setResponseCompressed(inputStreamBusinessOut.compressed());
       return inputStreamBusinessOut.inputStream();
     }
     var len = apiBusinessIn.len;

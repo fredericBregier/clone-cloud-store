@@ -224,3 +224,12 @@ Here are the specific global Clouod Clone Store parameters.
      - mongo or postgre
      - Empty, so Mongo by default
      - Property to define which implementations to use between MongoDB or PostgreSQL
+   * - ``ccs.internal.compression``
+     - Boolean
+     - false
+     - Property to define if internal services use ZSTD compression for streams
+
+Note that ZSTD compression is efficient both in cpu and memory while still having a nice compression,
+but if most of the streams are incompressible (such as compressed image, video or ZIP files), it might be better
+to not activate this option. Files in Storage Driver will not be stored compressed whatever (except if
+Cloud Storage compressed them, but this is out of CCS).

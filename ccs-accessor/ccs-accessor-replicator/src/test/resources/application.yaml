@@ -76,6 +76,8 @@ ccs:
       read: true
   db:
     type: mongo
+  internal:
+    compression: false
 
 mp:
   messaging:

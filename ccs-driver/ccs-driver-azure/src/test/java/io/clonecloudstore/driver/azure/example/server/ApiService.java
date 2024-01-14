@@ -211,8 +211,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
     final var sHash = ParametersChecker.isEmpty(hash) ? null : hash;
     final var businessIn = new StorageObject(bucket, decodedName, sHash, len, null);
     // use InputStream abstract implementation
-    // TODO choose compression model
-    return createObject(request, closer, businessIn, businessIn.size(), businessIn.hash(), false, inputStream);
+    return createObject(request, closer, businessIn, businessIn.size(), businessIn.hash(), inputStream);
   }
 
   // REST API for sending InputStream back to client
@@ -228,8 +227,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
     // Business code should come here
     final var businessIn = new StorageObject(bucket, decodedName, null, len, null);
     // use InputStream abstract implementation
-    // TODO choose compression model
-    return readObject(request, closer, businessIn, false);
+    return readObject(request, closer, businessIn);
   }
 
   @Path("/{bucket}/{object:.+}")

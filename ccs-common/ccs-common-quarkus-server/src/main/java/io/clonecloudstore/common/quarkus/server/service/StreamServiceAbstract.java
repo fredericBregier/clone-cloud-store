@@ -58,6 +58,15 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   /**
    * Method to use within the POST query definition with a @Blocking annotation.
    * This method should be called by the REST API to handle the received InputStream.
+   */
+  protected Uni<Response> createObject(final HttpServerRequest request, final Closer closer, final I businessIn,
+                                       final long len, final String optionalHash, final InputStream inputStream) {
+    return createObject(request, closer, businessIn, len, optionalHash, false, inputStream);
+  }
+
+  /**
+   * Method to use within the POST query definition with a @Blocking annotation.
+   * This method should be called by the REST API to handle the received InputStream.
    *
    * @param keepInputStreamCompressed If True, and if the InputStream is compressed, will be kept as is; else will
    *                                  decompress the InputStream if it is compressed
@@ -82,14 +91,10 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   /**
    * Method to use within the GET query definition with a @Blocking annotation.
    * Usually len is 0 but might be a hint on expected InputStream size.
-   *
-   * @param alreadyCompressed If True, and if the InputStream is to be compressed, will be kept as is; else will
-   *                          compress the InputStream if it has to be
    */
-  protected Uni<Response> readObject(final HttpServerRequest request, final Closer closer, final I businessIn,
-                                     final boolean alreadyCompressed) {
+  protected Uni<Response> readObject(final HttpServerRequest request, final Closer closer, final I businessIn) {
     LOGGER.debugf("GET start");
-    nativeStream.setup(request, closer, false, businessIn, 0, null, alreadyCompressed);
+    nativeStream.setup(request, closer, false, businessIn, 0, null, false);
     return Uni.createFrom().emitter(em -> {
       try {
         em.complete(nativeStream.pull());

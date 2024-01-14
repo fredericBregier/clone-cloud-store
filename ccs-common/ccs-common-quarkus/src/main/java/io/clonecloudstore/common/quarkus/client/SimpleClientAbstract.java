@@ -42,6 +42,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   public static final String MDC_QUERY_HEADERS = "mdc-query-headers";
   protected static final ClientResponseExceptionMapper exceptionMapper = new ClientResponseExceptionMapper();
   private static final Map<String, Object> INPUTSTREAM_OBJECT_MAP = new ConcurrentHashMap<>();
+  private static final Map<String, Boolean> INPUTSTREAM_COMPRESSED_MAP = new ConcurrentHashMap<>();
   private S service;
   private final SimpleClientFactoryAbstract<S> factory;
   private final URI uri;
@@ -163,23 +164,49 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
+   * Set Compression status received from headers
+   */
+  public static void setCompressionStatusFromHeaders(final Boolean compressed) {
+    LOGGER.debugf("Set Compression %s %b", getMdcOpId(), compressed);
+    if (compressed != null) {
+      INPUTSTREAM_COMPRESSED_MAP.put(getMdcOpId(), compressed);
+    }
+  }
+
+  /**
    * @return received Object from Headers
    */
   public static Object getDtoFromHeaders() {
-    LOGGER.debugf("Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
+    LOGGER.debugf("Status Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
     return INPUTSTREAM_OBJECT_MAP.remove(getMdcOpId());
+  }
+
+  /**
+   * @return received Compression status from Headers
+   */
+  public static boolean getCompressionStatusFromHeaders() {
+    LOGGER.debugf("Status Contains Compression %s %b", getMdcOpId(),
+        INPUTSTREAM_COMPRESSED_MAP.containsKey(getMdcOpId()));
+    var compressed = INPUTSTREAM_COMPRESSED_MAP.remove(getMdcOpId());
+    if (compressed != null) {
+      return compressed;
+    }
+    return false;
   }
 
   /**
    * Clean all Query context
    */
   public void resetQueryContext() {
-    LOGGER.debugf("Clear Query Context");
+    LOGGER.debugf("Clear Query Status and Context (%s)", INPUTSTREAM_COMPRESSED_MAP);
     MDC.remove(MDC_COMPRESSED_CONTENT);
     MDC.remove(MDC_COMPRESSED_RESPONSE);
     MDC.removeObject(MDC_QUERY_HEADERS);
     if (opId.get() != null) {
       INPUTSTREAM_OBJECT_MAP.remove(opId.get());
+      if (!INPUTSTREAM_COMPRESSED_MAP.isEmpty()) {
+        LOGGER.infof("Compression Status not empty: %s", INPUTSTREAM_COMPRESSED_MAP);
+      }
     }
     MDC.remove(ApiConstants.X_OP_ID);
   }

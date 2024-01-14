@@ -63,6 +63,8 @@ Notes of versions
 ==============
 
 - Add Apache http client for Accessor Public client (no Quarkus dependency)
+- Refactorization of Server side
+- Compression configurable for internal services
 
 
 0.7.0 2024/01

@@ -99,14 +99,22 @@ public class AccessorObjectInternalApiClient
 
   public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
                                                           final String clientId) throws CcsWithStatusException {
+    return getObject(bucketName, objectName, clientId, true);
+  }
+
+  /**
+   * Returns the InputStream and the AccessorObject
+   */
+  public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
+                                                          final String clientId, final boolean decompress)
+      throws CcsWithStatusException {
     this.filter = null;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName).setName(objectName);
-    // TODO choose compression model
     prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
     final var uni =
         getService().getObject(AccessorProperties.isInternalCompression(), bucketName, objectName, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni);
+    return getInputStreamBusinessOutFromUni(decompress, uni);
   }
 
   /**
@@ -117,17 +125,15 @@ public class AccessorObjectInternalApiClient
     this.filter = filter == null ? new AccessorFilter() : filter;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName);
-    // TODO choose compression model
     prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
     final var uni =
         getService().listObjects(AccessorProperties.isInternalCompression(), bucketName, clientId, getOpId());
-    final var inputStream =
-        getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni).inputStream();
+    final var inputStream = getInputStreamBusinessOutFromUni(true, uni).inputStream();
     return StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
     // No PUSH
     return null;
   }

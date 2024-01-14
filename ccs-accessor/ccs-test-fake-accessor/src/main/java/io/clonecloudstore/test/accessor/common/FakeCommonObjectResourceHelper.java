@@ -88,7 +88,7 @@ public class FakeCommonObjectResourceHelper {
     if (shallCompress) {
       if (inputStream instanceof MultipleActionsInputStream mai) {
         try {
-          mai.decompress();
+          mai.compress();
         } catch (final IOException e) {
           throw new CcsOperationException(e);
         }

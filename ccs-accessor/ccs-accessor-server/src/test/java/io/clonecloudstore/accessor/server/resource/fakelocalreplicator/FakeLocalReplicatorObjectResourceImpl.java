@@ -16,14 +16,25 @@
 
 package io.clonecloudstore.accessor.server.resource.fakelocalreplicator;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.config.AccessorConstants;
+import io.clonecloudstore.accessor.model.AccessorObject;
+import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
+import io.clonecloudstore.common.standard.inputstream.ZstdCompressInputStream;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeObjectPrivateAbstract;
+import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
@@ -64,6 +75,9 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SITE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SIZE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_STATUS;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CHUNKED;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.TRANSFER_ENCODING;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.BASE;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.COLL_BUCKETS;
@@ -169,6 +183,48 @@ public class FakeLocalReplicatorObjectResourceImpl
     final var decoded = ParametersChecker.getSanitizedName(objectName);
     return getObject0(bucketName, decoded, acceptHeader, acceptEncodingHeader, xClientId, xOpId, isPublic(), request,
         closer);
+  }
+
+  @Override
+  protected Uni<Response> getObject0(final String bucketName, final String objectName, final String acceptHeader,
+                                     final String acceptEncodingHeader, final String clientId, final String opId,
+                                     final boolean isPublic, final HttpServerRequest request, final Closer closer) {
+    if (FakeCommonObjectResourceHelper.errorCode > 0) {
+      return Uni.createFrom().emitter(em -> {
+        if (FakeCommonObjectResourceHelper.errorCode >= 400 && FakeCommonObjectResourceHelper.errorCode != 404) {
+          em.fail(CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode));
+        } else if (FakeCommonObjectResourceHelper.errorCode == 404) {
+          em.complete((Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build()));
+        } else {
+          final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+          final var accessorObject = new AccessorObject().setName(ParametersChecker.getSanitizedName(objectName))
+              .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName)
+              .setSize(FakeCommonObjectResourceHelper.length);
+          InputStream inputStream = new FakeInputStream(FakeCommonObjectResourceHelper.length, (byte) 'A');
+          final Map<String, String> map = new HashMap<>();
+          AccessorHeaderDtoConverter.objectToMap(accessorObject, map);
+          final var response = Response.ok();
+          map.put(TRANSFER_ENCODING, CHUNKED);
+          if (acceptEncodingHeader.equalsIgnoreCase(COMPRESSION_ZSTD)) {
+            map.put(HttpHeaders.CONTENT_ENCODING, COMPRESSION_ZSTD);
+            try {
+              inputStream = new ZstdCompressInputStream(inputStream);
+            } catch (final IOException e) {
+              throw new CcsOperationException(e);
+            }
+          }
+          closer.add(inputStream);
+          for (final var entry : map.entrySet()) {
+            response.header(entry.getKey(), entry.getValue());
+          }
+          response.entity(inputStream);
+          em.complete((response.build()));
+        }
+      });
+    } else {
+      return super.getObject0(bucketName, objectName, acceptHeader, acceptEncodingHeader, clientId, opId, isPublic,
+          request, closer);
+    }
   }
 }
 

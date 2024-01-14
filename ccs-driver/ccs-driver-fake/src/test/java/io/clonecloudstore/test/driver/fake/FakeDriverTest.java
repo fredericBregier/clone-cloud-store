@@ -76,14 +76,12 @@ class FakeDriverTest {
             LOG.error(e.getMessage());
           }
         }
-        ;
         try {
           driver.bucketDelete(bucket.bucket());
         } catch (final Exception e) {
           LOG.error(e.getMessage());
         }
       }
-      ;
       FakeDriverFactory.cleanUp();
     } catch (final Exception e) {
       LOG.error(e.getMessage());

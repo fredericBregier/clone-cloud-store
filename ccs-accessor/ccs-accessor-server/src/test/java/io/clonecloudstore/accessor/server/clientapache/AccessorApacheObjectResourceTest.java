@@ -191,7 +191,6 @@ class AccessorApacheObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     // Try delete Bucket not empty
@@ -501,7 +500,6 @@ class AccessorApacheObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
 
@@ -608,7 +606,6 @@ class AccessorApacheObjectResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(10, cpt.get());
     }
     // Delete 10 Objects

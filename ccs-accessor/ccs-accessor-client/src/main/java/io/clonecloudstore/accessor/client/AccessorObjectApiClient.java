@@ -103,6 +103,8 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
   }
 
   /**
+   * Note: Compression is only between client and server, result InputStream is uncompressed
+   *
    * @return both InputStream and Object DTO
    */
   public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
@@ -111,9 +113,9 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
     this.filter = null;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName).setName(objectName);
-    prepareInputStreamToReceive(false, accessorObject);
+    prepareInputStreamToReceive(compressed, accessorObject);
     final var uni = getService().getObject(compressed, bucketName, objectName, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(compressed, true, uni);
+    return getInputStreamBusinessOutFromUni(true, uni);
   }
 
   /**
@@ -124,12 +126,10 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
     this.filter = filter == null ? new AccessorFilter() : filter;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName);
-    // TODO choose compression model
     prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
     final var uni =
         getService().listObjects(AccessorProperties.isInternalCompression(), bucketName, clientId, getOpId());
-    final var inputStream =
-        getInputStreamBusinessOutFromUni(AccessorProperties.isInternalCompression(), true, uni).inputStream();
+    final var inputStream = getInputStreamBusinessOutFromUni(true, uni).inputStream();
     return StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
   }
 
@@ -178,7 +178,7 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var accessorObject = response.readEntity(AccessorObject.class);
       if (accessorObject != null) {
