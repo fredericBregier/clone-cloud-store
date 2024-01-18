@@ -76,18 +76,16 @@ class AccessorObjectInternalResourceTest {
 
   @Test
   void createBucketAndObjectReplicator() throws CcsWithStatusException {
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_NAME + "2", true);
-    createBucketAndObject(finalBucketName, BUCKET_NAME + "2", OBJECT);
-    createBucketAndObject(finalBucketName, BUCKET_NAME + "2", '/' + OBJECT);
+    createBucketAndObject(BUCKET_NAME + "2", OBJECT);
+    createBucketAndObject(BUCKET_NAME + "2", '/' + OBJECT);
   }
 
-  void createBucketAndObject(final String finalBucketName, final String bucketName, final String objectName)
-      throws CcsWithStatusException {
+  void createBucketAndObject(final String bucketName, final String objectName) throws CcsWithStatusException {
     // Create Bucket
     try (final var client = factoryBucketExternal.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object
     AccessorObject original;
@@ -95,41 +93,42 @@ class AccessorObjectInternalResourceTest {
       final var accessorObject = new AccessorObject().setBucket(bucketName).setName(objectName).setSize(100);
       original = client.createObject(accessorObject, clientId, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(objectName), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(objectName), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertNotNull(original.getHash());
+      original.setBucket(bucketName);
     }
     // Check existence
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, objectName, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, objectName, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var object = client.getObjectInfo(finalBucketName, objectName, clientId);
+      final var object = client.getObjectInfo(bucketName, objectName, clientId);
       LOG.infof("Object: %s", object);
       Assertions.assertEquals(original, object);
     }
     // Get both Object and content
     try (final var client = factory.newClient()) {
-      final var inputStreamObject = client.getObject(finalBucketName, objectName, clientId);
+      final var inputStreamObject = client.getObject(bucketName, objectName, clientId);
       LOG.infof("Object: %s", inputStreamObject.dtoOut());
       Assertions.assertEquals(original, inputStreamObject.dtoOut());
       final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
@@ -140,7 +139,7 @@ class AccessorObjectInternalResourceTest {
     }
     // List objects
     try (final var client = factory.newClient()) {
-      final var iterator = client.listObjects(finalBucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
+      final var iterator = client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
       final var cpt = new AtomicLong(0);
       while (iterator.hasNext()) {
         final var accessorObject = iterator.next();
@@ -172,39 +171,39 @@ class AccessorObjectInternalResourceTest {
     }
     // Test existence on non-existing Object
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, objectName, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, objectName, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
     // Get MD Object with DELETED status
     try (final var client = factory.newClient()) {
       assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.getObjectInfo(finalBucketName, objectName, clientId)).getStatus());
+          () -> client.getObjectInfo(bucketName, objectName, clientId)).getStatus());
     }
     // Try getting MD and content on DELETED object
     try (final var client = factory.newClient()) {
       assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.getObject(finalBucketName, objectName, clientId)).getStatus());
+          () -> client.getObject(bucketName, objectName, clientId)).getStatus());
     }
     // Get MD Object with non-existing object
     try (final var client = factory.newClient()) {
       assertThrows(CcsWithStatusException.class,
-          () -> client.getObjectInfo(finalBucketName, objectName + "NotFound", clientId));
+          () -> client.getObjectInfo(bucketName, objectName + "NotFound", clientId));
     }
     // Finally delete bucket
     try (final var client = factoryBucketExternal.newClient()) {
@@ -214,14 +213,13 @@ class AccessorObjectInternalResourceTest {
 
   @Test
   void checkTryCreateWhileAlreadyInCreation() throws CcsWithStatusException {
-    final var bucketName = "retry-create";
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
+    final var bucketName = "retrycreate";
     // Create Bucket
     try (final var client = factoryBucketExternal.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object with fake Hash
     AccessorObject original;
@@ -230,8 +228,8 @@ class AccessorObjectInternalResourceTest {
           new AccessorObject().setBucket(bucketName).setName(OBJECT).setSize(100).setHash("fakeHash");
       original = client.createObject(accessorObject, clientId, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(OBJECT), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertEquals(accessorObject.getHash(), original.getHash());
@@ -248,13 +246,12 @@ class AccessorObjectInternalResourceTest {
 
   @Test
   void createBucketAndObjectRemote() throws CcsWithStatusException {
-    final var bucketName = "change-remote";
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
+    final var bucketName = "changeremote";
     // Create Bucket
     try (final var client = factoryBucketExternal.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object
     AccessorObject original;
@@ -262,41 +259,42 @@ class AccessorObjectInternalResourceTest {
       final var accessorObject = new AccessorObject().setBucket(bucketName).setName(OBJECT).setSize(100);
       original = client.createObject(accessorObject, clientId, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(OBJECT), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertNotNull(original.getHash());
+      original.setBucket(bucketName);
     }
     // Check existence
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, DIR_NAME, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.DIRECTORY, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var object = client.getObjectInfo(finalBucketName, OBJECT, clientId);
+      final var object = client.getObjectInfo(bucketName, OBJECT, clientId);
       LOG.infof("Object: %s", object);
       Assertions.assertEquals(original, object);
     }
     // Get both Object and content
     try (final var client = factory.newClient()) {
-      final var inputStreamObject = client.getObject(finalBucketName, OBJECT, clientId);
+      final var inputStreamObject = client.getObject(bucketName, OBJECT, clientId);
       LOG.infof("Object: %s", inputStreamObject.dtoOut());
       final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
       assertEquals(100, len);
@@ -306,7 +304,7 @@ class AccessorObjectInternalResourceTest {
     }
     // List objects
     try (final var client = factory.newClient()) {
-      final var iterator = client.listObjects(finalBucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
+      final var iterator = client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
       final var cpt = new AtomicLong(0);
       while (iterator.hasNext()) {
         final var accessorObject = iterator.next();
@@ -318,30 +316,30 @@ class AccessorObjectInternalResourceTest {
 
     // Now delete locally the Object
     try (final var driver = driverApiFactory.getInstance()) {
-      driver.objectDeleteInBucket(finalBucketName, OBJECT);
+      driver.objectDeleteInBucket(bucketName, OBJECT);
     } catch (final DriverException e) {
       fail(e);
     }
     // Try check existence
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, false);
+      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
       // No DB
       assertEquals(StorageType.NONE, objectType);
     }
     try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT, clientId, true);
+      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
     try (final var client = factory.newClient()) {
       assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.getObjectInfo(finalBucketName, OBJECT, clientId)).getStatus());
+          () -> client.getObjectInfo(bucketName, OBJECT, clientId)).getStatus());
     }
     // Try getting MD and content on DELETED object
     try (final var client = factory.newClient()) {
-      assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.getObject(finalBucketName, OBJECT, clientId)).getStatus());
+      assertEquals(404,
+          assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
     // Delete Object
     try (final var client = factoryExternal.newClient()) {
@@ -356,24 +354,20 @@ class AccessorObjectInternalResourceTest {
 
   @Test
   void createBucketAndMultipleObject() throws CcsWithStatusException {
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME, true);
-    createBucketAndMultipleObject(BUCKET_MULTI_NAME, finalBucketName, true);
+    createBucketAndMultipleObject(BUCKET_MULTI_NAME, true);
   }
 
   @Test
   void createBucketAndMultipleObjectNoSize() throws CcsWithStatusException {
-    final var finalBucketName =
-        AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME + "2", true);
-    createBucketAndMultipleObject(BUCKET_MULTI_NAME + "2", finalBucketName, false);
+    createBucketAndMultipleObject(BUCKET_MULTI_NAME + "2", false);
   }
 
-  void createBucketAndMultipleObject(final String bucketName, final String finalBucketName, final boolean useLen)
-      throws CcsWithStatusException {
+  void createBucketAndMultipleObject(final String bucketName, final boolean useLen) throws CcsWithStatusException {
     // Create Bucket
     try (final var client = factoryBucketExternal.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     AccessorObject original;
     // Will create, check, read 10 objects
@@ -383,19 +377,19 @@ class AccessorObjectInternalResourceTest {
             new AccessorObject().setBucket(bucketName).setName(OBJECT + i).setSize(useLen ? 100 + i : 0);
         original = client.createObject(accessorObject, clientId, new FakeInputStream(100 + i));
         LOG.infof("Object: %s", original);
-        assertEquals(finalBucketName, original.getBucket());
-        assertEquals(ParametersChecker.getSanitizedName(OBJECT + i), original.getName());
+        assertEquals(bucketName, original.getBucket());
+        assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT + i), original.getName());
         assertEquals(100 + i, original.getSize());
         assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
         assertNotNull(original.getHash());
       }
       try (final var client = factory.newClient()) {
-        final var objectType = client.checkObjectOrDirectory(finalBucketName, OBJECT + i, clientId, false);
+        final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT + i, clientId, false);
         LOG.infof("ObjectType: %s", objectType);
         assertEquals(StorageType.OBJECT, objectType);
       }
       try (final var client = factory.newClient()) {
-        final var inputStreamObject = client.getObject(finalBucketName, OBJECT + i, clientId);
+        final var inputStreamObject = client.getObject(bucketName, OBJECT + i, clientId);
         LOG.infof("Object: %s", inputStreamObject.dtoOut());
         final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
         assertEquals(100 + i, len);
@@ -406,7 +400,7 @@ class AccessorObjectInternalResourceTest {
     }
     // List Objects
     try (final var client = factory.newClient()) {
-      final var iterator = client.listObjects(finalBucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
+      final var iterator = client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
       final var cpt = new AtomicLong(0);
       while (iterator.hasNext()) {
         final var accessorObject = iterator.next();

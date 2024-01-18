@@ -26,13 +26,16 @@ import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.replicator.test.FakeReplicatorProducer;
-import io.clonecloudstore.accessor.replicator.test.fake.FakeNativeStreamHandlerImpl;
+import io.clonecloudstore.accessor.replicator.test.fake.FakeStreamHandlerImpl;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObject;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
+import io.clonecloudstore.administration.client.OwnershipApiClientFactory;
+import io.clonecloudstore.administration.model.ClientOwnership;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
+import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.inputstream.DigestAlgo;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
@@ -74,6 +77,7 @@ class RequestActionConsumerTest {
   public static final String FROM = "from";
   public static final String TO = "to";
   public static final String OBJECT_NAME = "directory/objectname";
+  public static final String OBJECT_NAME2 = "directory/objectname2";
   public static final int WAIT_FOR_CONSUME = 300;
   @Inject
   FakeReplicatorProducer emitter;
@@ -88,6 +92,8 @@ class RequestActionConsumerTest {
   @Inject
   Instance<DaoAccessorObjectRepository> objectRepositoryInstance;
   DaoAccessorObjectRepository objectRepository;
+  @Inject
+  OwnershipApiClientFactory ownershipApiClientFactory;
 
   private Counter createBucket;
   private Counter createObject;
@@ -100,15 +106,11 @@ class RequestActionConsumerTest {
     assertNotNull(bucketRepository);
     objectRepository = objectRepositoryInstance.get();
     assertNotNull(objectRepository);
+    createBucket = bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+    createObject = bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_CREATE);
+    deleteBucket = bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_DELETE);
+    deleteObject = bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_DELETE);
     if (initDone.compareAndSet(false, true)) {
-      createBucket =
-          bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, RequestActionConsumer.TAG_CREATE);
-      createObject =
-          bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, RequestActionConsumer.TAG_CREATE);
-      deleteBucket =
-          bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, RequestActionConsumer.TAG_DELETE);
-      deleteObject =
-          bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, RequestActionConsumer.TAG_DELETE);
       // Warm up Topic
       final var order = new ReplicatorOrder(OP_ID, TO, FROM, CLIENTID, CLIENTID_BUCKET0, null, 0, null,
           ReplicatorConstants.Action.CREATE);
@@ -126,8 +128,8 @@ class RequestActionConsumerTest {
         assertEquals(1.0, createBucket.count());
       }
     }
-    FakeNativeStreamHandlerImpl.fakeInputStream = null;
-    FakeNativeStreamHandlerImpl.fakeAnswer = null;
+    FakeStreamHandlerImpl.fakeInputStream = null;
+    FakeStreamHandlerImpl.fakeAnswer = null;
   }
 
   private DaoAccessorObject getObject(final String bucket, final String name)
@@ -200,16 +202,16 @@ class RequestActionConsumerTest {
       assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME));
       checkObject(CLIENTID_BUCKET, OBJECT_NAME, AccessorStatus.ERR_UPL);
       // Virtually Create Object on Remote
-      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(120L, (byte) 'A'));
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+      final var digestInputStream =
+          new MultipleActionsInputStream(new FakeInputStream(120L, (byte) 'A'), DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       final var hash = digestInputStream.getDigestBase32();
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
-      FakeNativeStreamHandlerImpl.fakeAnswer = new HashMap<>();
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeAnswer = new HashMap<>();
       final var accessorObject =
           new AccessorObject().setBucket(CLIENTID_BUCKET).setCreation(Instant.now()).setId(GuidLike.getGuid())
               .setSize(120).setHash(hash).setName(OBJECT_NAME).setSite(FROM).setStatus(AccessorStatus.READY);
-      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeNativeStreamHandlerImpl.fakeAnswer);
+      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeStreamHandlerImpl.fakeAnswer);
       // Change status of Object
       objectRepository.updateObjectStatus(CLIENTID_BUCKET, OBJECT_NAME, AccessorStatus.DELETED, Instant.now());
       emitter.send(orderObject);
@@ -220,7 +222,7 @@ class RequestActionConsumerTest {
       checkObject(CLIENTID_BUCKET, OBJECT_NAME, AccessorStatus.READY);
       assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME));
       // Try recreate
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       emitter.send(orderObject);
       Thread.yield();
       temp = MetricsCheck.waitForValueTest(createObject, creObject, 300);
@@ -259,7 +261,7 @@ class RequestActionConsumerTest {
     // Check delete for Bucket
     try (final var driver = storageDriverFactory.getInstance()) {
       // First recreate Object to check nonempty bucket
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       final var orderObject2 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.CREATE);
       emitter.send(orderObject2);
       Thread.yield();
@@ -326,7 +328,7 @@ class RequestActionConsumerTest {
     try (final var driver = storageDriverFactory.getInstance()) {
       final var orderObject2 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.DELETE);
       final var orderBucket2 = new ReplicatorOrder(orderBucket, ReplicatorConstants.Action.DELETE);
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       emitter.send(orderBucket);
       emitter.send(orderObject);
       emitter.send(orderObject2);
@@ -347,6 +349,138 @@ class RequestActionConsumerTest {
       assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME));
       Assertions.assertEquals(AccessorStatus.DELETED,
           objectRepository.getObject(CLIENTID_BUCKET, OBJECT_NAME).getStatus());
+      assertFalse(driver.bucketExists(CLIENTID_BUCKET));
+      Assertions.assertEquals(AccessorStatus.DELETED, bucketRepository.findBucketById(CLIENTID_BUCKET).getStatus());
+    }
+  }
+
+  @Test
+  void testReplicatorOrdersWithOwnership()
+      throws DriverException, InterruptedException, NoSuchAlgorithmException, CcsDbException, IOException {
+    LOG.info("Check Creation of Bucket");
+    final var clientIdOther = GuidLike.getGuid();
+    // Check creation of Bucket
+    final var orderBucket =
+        new ReplicatorOrder(OP_ID, TO, FROM, CLIENTID, CLIENTID_BUCKET, ReplicatorConstants.Action.CREATE);
+    double delObject = deleteObject.count();
+    double delBucket = deleteBucket.count();
+    double creObject = createObject.count();
+    double creBucket = createBucket.count();
+    double temp = 0;
+    try (final var driver = storageDriverFactory.getInstance()) {
+      assertFalse(driver.bucketExists(CLIENTID_BUCKET));
+      emitter.send(orderBucket);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(createBucket, creBucket + 1, 300);
+      assertEquals(creBucket + 1, temp);
+      creBucket = temp;
+      assertTrue(driver.bucketExists(CLIENTID_BUCKET));
+      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById(CLIENTID_BUCKET).getStatus());
+      // Try recreate
+      emitter.send(orderBucket);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(createBucket, creBucket, 300);
+      assertEquals(creBucket, temp);
+      creBucket = temp;
+      assertTrue(driver.bucketExists(CLIENTID_BUCKET));
+      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById(CLIENTID_BUCKET).getStatus());
+    }
+    // Check with wrong Ownership
+    final var orderBucketOtherClient =
+        new ReplicatorOrder(OP_ID, TO, FROM, clientIdOther, CLIENTID_BUCKET, ReplicatorConstants.Action.CREATE);
+    emitter.send(orderBucketOtherClient);
+    temp = MetricsCheck.waitForValueTest(createBucket, creBucket, 300);
+    assertEquals(creBucket, temp);
+
+    LOG.info("Check Creation of Object");
+    // Check creation of Object
+    final var orderObject =
+        new ReplicatorOrder(OP_ID, TO, FROM, clientIdOther, CLIENTID_BUCKET, OBJECT_NAME2, 120, null,
+            ReplicatorConstants.Action.CREATE);
+    try (final var driver = storageDriverFactory.getInstance()) {
+      assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+      assertNull(objectRepository.getObject(CLIENTID_BUCKET, OBJECT_NAME2));
+      emitter.send(orderObject);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(createObject, creObject, 300);
+      assertEquals(creObject, temp);
+      creObject = temp;
+      assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+      // Virtually Create Object on Remote
+      final var digestInputStream =
+          new MultipleActionsInputStream(new FakeInputStream(120L, (byte) 'A'), DigestAlgo.SHA256);
+      FakeInputStream.consumeAll(digestInputStream);
+      final var hash = digestInputStream.getDigestBase32();
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeAnswer = new HashMap<>();
+      final var accessorObject =
+          new AccessorObject().setBucket(CLIENTID_BUCKET).setCreation(Instant.now()).setId(GuidLike.getGuid())
+              .setSize(120).setHash(hash).setName(OBJECT_NAME2).setSite(FROM).setStatus(AccessorStatus.READY);
+      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeStreamHandlerImpl.fakeAnswer);
+      emitter.send(orderObject);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(createObject, creObject, 300);
+      assertEquals(creObject, temp);
+      creObject = temp;
+      // Now set the Write Access
+      try (final var ownerClient = ownershipApiClientFactory.newClient()) {
+        ownerClient.add(clientIdOther, CLIENTID_BUCKET, ClientOwnership.WRITE);
+      } catch (CcsWithStatusException e) {
+        fail(e);
+      }
+      emitter.send(orderObject);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(createObject, creObject + 1, 300);
+      assertEquals(creObject + 1, temp);
+      creObject = temp;
+      checkObject(CLIENTID_BUCKET, OBJECT_NAME2, AccessorStatus.READY);
+      assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+    }
+    LOG.info("Check Delete of Object");
+    // Check delete for Object
+    try (final var driver = storageDriverFactory.getInstance()) {
+      Assertions.assertEquals(AccessorStatus.READY,
+          objectRepository.getObject(CLIENTID_BUCKET, OBJECT_NAME2).getStatus());
+      assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+      final var orderObject2 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.DELETE);
+      emitter.send(orderObject2);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(deleteObject, delObject, 300);
+      assertEquals(delObject, temp);
+      delObject = temp;
+      assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+      // Now give the Delete access
+      try (final var ownerClient = ownershipApiClientFactory.newClient()) {
+        ownerClient.update(clientIdOther, CLIENTID_BUCKET, ClientOwnership.DELETE);
+      } catch (CcsWithStatusException e) {
+        fail(e);
+      }
+      emitter.send(orderObject2);
+      Thread.yield();
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(deleteObject, delObject + 1, 2000);
+      assertEquals(delObject + 1, temp);
+      assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
+      Assertions.assertEquals(AccessorStatus.DELETED,
+          objectRepository.getObject(CLIENTID_BUCKET, OBJECT_NAME2).getStatus());
+    }
+    LOG.info("Check Delete of Bucket");
+    // Check delete for Bucket
+    try (final var driver = storageDriverFactory.getInstance()) {
+      final var orderBucket2 = new ReplicatorOrder(orderBucketOtherClient, ReplicatorConstants.Action.DELETE);
+      emitter.send(orderBucket2);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(deleteBucket, delBucket, 300);
+      assertEquals(delBucket, temp);
+      delBucket = temp;
+      assertTrue(driver.bucketExists(CLIENTID_BUCKET));
+      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById(CLIENTID_BUCKET).getStatus());
+      final var orderBucket3 = new ReplicatorOrder(orderBucket, ReplicatorConstants.Action.DELETE);
+      emitter.send(orderBucket3);
+      Thread.yield();
+      temp = MetricsCheck.waitForValueTest(deleteBucket, delBucket + 1, 300);
+      assertEquals(delBucket + 1, temp);
+      assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
       assertFalse(driver.bucketExists(CLIENTID_BUCKET));
       Assertions.assertEquals(AccessorStatus.DELETED, bucketRepository.findBucketById(CLIENTID_BUCKET).getStatus());
     }
@@ -378,51 +512,51 @@ class RequestActionConsumerTest {
       assertNull(bucketRepository.findBucketById("WrongBucketName"));
     }
     final var orderBucket3 =
-        new ReplicatorOrder(OP_ID, TO, FROM, "clientid2", "clientid3-bucket", ReplicatorConstants.Action.DELETE);
+        new ReplicatorOrder(OP_ID, TO, FROM, "clientid2", "clientid2-bucket", ReplicatorConstants.Action.DELETE);
     try (final var driver = storageDriverFactory.getInstance()) {
       LOG.info("Check Delete non existing");
       // Delete non existing
       emitter.send(orderBucket3);
       Thread.sleep(WAIT_FOR_CONSUME);
-      assertFalse(driver.bucketExists("clientid3-bucket"));
-      assertNull(bucketRepository.findBucketById("clientid3-bucket"));
+      assertFalse(driver.bucketExists("clientid2-bucket"));
+      assertNull(bucketRepository.findBucketById("clientid2-bucket"));
       LOG.info("Check Delete non existing S3 but Db");
       // Create but remove Storage then try to delete
       final var orderBucket4 = new ReplicatorOrder(orderBucket3, ReplicatorConstants.Action.CREATE);
       emitter.send(orderBucket4);
       Thread.sleep(WAIT_FOR_CONSUME);
-      driver.bucketDelete("clientid3-bucket");
-      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById("clientid3-bucket").getStatus());
+      driver.bucketDelete("clientid2-bucket");
+      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById("clientid2-bucket").getStatus());
       emitter.send(orderBucket3);
       Thread.sleep(WAIT_FOR_CONSUME);
-      assertFalse(driver.bucketExists("clientid3-bucket"));
-      Assertions.assertEquals(AccessorStatus.ERR_DEL, bucketRepository.findBucketById("clientid3-bucket").getStatus());
+      assertFalse(driver.bucketExists("clientid2-bucket"));
+      Assertions.assertEquals(AccessorStatus.ERR_DEL, bucketRepository.findBucketById("clientid2-bucket").getStatus());
       LOG.info("Check Retry Delete");
       // Retry to delete already in Error Delete
       emitter.send(orderBucket3);
       Thread.sleep(WAIT_FOR_CONSUME);
-      assertFalse(driver.bucketExists("clientid3-bucket"));
-      Assertions.assertEquals(AccessorStatus.ERR_DEL, bucketRepository.findBucketById("clientid3-bucket").getStatus());
+      assertFalse(driver.bucketExists("clientid2-bucket"));
+      Assertions.assertEquals(AccessorStatus.ERR_DEL, bucketRepository.findBucketById("clientid2-bucket").getStatus());
     }
     final var orderBucket4 =
-        new ReplicatorOrder(OP_ID, TO, FROM, "clientid2", "clientid3-bucket2", ReplicatorConstants.Action.DELETE);
+        new ReplicatorOrder(OP_ID, TO, FROM, "clientid2", "clientid2-bucket2", ReplicatorConstants.Action.DELETE);
     try (final var driver = storageDriverFactory.getInstance()) {
       LOG.info("Create a bucket that already exists");
       // Create first
       final var orderBucket5 = new ReplicatorOrder(orderBucket4, ReplicatorConstants.Action.CREATE);
       emitter.send(orderBucket5);
       Thread.sleep(WAIT_FOR_CONSUME);
-      assertTrue(driver.bucketExists("clientid3-bucket2"));
-      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById("clientid3-bucket2").getStatus());
+      assertTrue(driver.bucketExists("clientid2-bucket2"));
+      Assertions.assertEquals(AccessorStatus.READY, bucketRepository.findBucketById("clientid2-bucket2").getStatus());
       // Now delete DB entry
-      bucketRepository.deleteWithPk("clientid3-bucket2");
-      assertTrue(driver.bucketExists("clientid3-bucket2"));
-      assertNull(bucketRepository.findBucketById("clientid3-bucket2"));
+      bucketRepository.deleteWithPk("clientid2-bucket2");
+      assertTrue(driver.bucketExists("clientid2-bucket2"));
+      assertNull(bucketRepository.findBucketById("clientid2-bucket2"));
       // And try to recreate it
       emitter.send(orderBucket5);
       Thread.sleep(WAIT_FOR_CONSUME);
-      assertTrue(driver.bucketExists("clientid3-bucket2"));
-      Assertions.assertEquals(AccessorStatus.ERR_UPL, bucketRepository.findBucketById("clientid3-bucket2").getStatus());
+      assertTrue(driver.bucketExists("clientid2-bucket2"));
+      Assertions.assertEquals(AccessorStatus.ERR_UPL, bucketRepository.findBucketById("clientid2-bucket2").getStatus());
     }
   }
 
@@ -439,13 +573,13 @@ class RequestActionConsumerTest {
       LOG.info("Check Create with non existing bucket");
       final var orderObject0 = new ReplicatorOrder(OP_ID, TO, FROM, "clientidok", "notexist", OBJECT_NAME, 120, null,
           ReplicatorConstants.Action.CREATE);
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
-      FakeNativeStreamHandlerImpl.fakeAnswer = new HashMap<>();
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeAnswer = new HashMap<>();
       final var accessorObject =
           new AccessorObject().setBucket(orderObject0.bucketName()).setCreation(Instant.now()).setId(GuidLike.getGuid())
               .setSize(120).setHash(null).setName(orderObject0.objectName()).setSite(FROM)
               .setStatus(AccessorStatus.READY);
-      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeNativeStreamHandlerImpl.fakeAnswer);
+      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeStreamHandlerImpl.fakeAnswer);
       // Bucket not exists
       assertFalse(driver.bucketExists("notexist"));
       emitter.send(orderObject0);
@@ -465,10 +599,10 @@ class RequestActionConsumerTest {
       assertNull(objectRepository.getObject(orderObject1.bucketName(), orderObject1.objectName()));
       LOG.info("Check ReCreate with non existing object in Db but in S3");
       // Object created, then delete from Repository before trying to recreate
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       accessorObject.setBucket(orderObject.bucketName()).setCreation(Instant.now()).setId(GuidLike.getGuid())
           .setSize(120).setHash(null).setName(orderObject.objectName()).setSite(FROM).setStatus(AccessorStatus.READY);
-      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeNativeStreamHandlerImpl.fakeAnswer);
+      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeStreamHandlerImpl.fakeAnswer);
       emitter.send(orderObject);
       Thread.sleep(WAIT_FOR_CONSUME);
       assertEquals(StorageType.OBJECT,
@@ -477,7 +611,7 @@ class RequestActionConsumerTest {
       Assertions.assertEquals(AccessorStatus.READY, dao.getStatus());
       objectRepository.deleteWithPk(dao.getId());
       assertNull(objectRepository.getObject(orderObject.bucketName(), orderObject.objectName()));
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       LOG.info("Final check on recreate");
       emitter.send(orderObject);
       Thread.sleep(WAIT_FOR_CONSUME);
@@ -485,9 +619,9 @@ class RequestActionConsumerTest {
           driver.directoryOrObjectExistsInBucket(orderObject.bucketName(), orderObject.objectName()));
       final var dao2 = objectRepository.getObject(orderObject.bucketName(), orderObject.objectName());
       Assertions.assertEquals(AccessorStatus.ERR_UPL, dao2.getStatus());
-      // Object IN Progress while creating again
-      LOG.info("Object IN Progress while creating again");
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      // Object UPLOAD while creating again
+      LOG.info("Object UPLOAD while creating again");
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       objectRepository.updateObjectStatus(orderObject.bucketName(), orderObject.objectName(), AccessorStatus.UPLOAD,
           Instant.now());
       emitter.send(orderObject);
@@ -496,10 +630,10 @@ class RequestActionConsumerTest {
           driver.directoryOrObjectExistsInBucket(orderObject.bucketName(), orderObject.objectName()));
       final var dao3 = objectRepository.getObject(orderObject.bucketName(), orderObject.objectName());
       Assertions.assertEquals(AccessorStatus.UPLOAD, dao3.getStatus());
-      // Try to delete while in progress
+      // Try to delete while UPLOAD
       final var orderObject2 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.DELETE);
       final var orderBucket2 = new ReplicatorOrder(orderBucket, ReplicatorConstants.Action.DELETE);
-      LOG.info("Try to delete while in progress");
+      LOG.info("Try to delete while UPLOAD");
       Thread.sleep(WAIT_FOR_CONSUME);
       assertEquals(StorageType.OBJECT,
           driver.directoryOrObjectExistsInBucket(orderObject2.bucketName(), orderObject2.objectName()));
@@ -518,7 +652,7 @@ class RequestActionConsumerTest {
       Assertions.assertEquals(AccessorStatus.DELETED, dao5.getStatus());
       // Recreate then delete
       LOG.info("Recreate then delete");
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       emitter.send(orderObject);
       emitter.send(orderObject2);
       Thread.sleep(WAIT_FOR_CONSUME);

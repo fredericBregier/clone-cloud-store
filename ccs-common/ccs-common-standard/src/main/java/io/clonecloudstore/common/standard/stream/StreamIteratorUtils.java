@@ -46,7 +46,8 @@ import io.clonecloudstore.common.standard.system.SystemTools;
 import static io.clonecloudstore.common.standard.properties.StandardProperties.DEFAULT_PIPED_BUFFER_SIZE;
 
 /**
- * Utility class to help to create an InputStream of serialized objects from a Stream of Objects and reverse
+ * Utility class to help to create an InputStream of serialized objects from a Stream of Objects and reverse.
+ * Note that DTO class must have an empty constructor or being a record.
  */
 public class StreamIteratorUtils {
   /**

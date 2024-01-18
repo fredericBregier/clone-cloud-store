@@ -27,28 +27,27 @@ import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
 
 public interface AccessorBucketServiceInterface {
   /**
-   * Create bucket from client Id and technicalBucketName
+   * Create bucket from client Id and bucketName
    *
-   * @param clientId            Format client ID use to identify client
-   * @param technicalBucketName Technical Bucket Name
-   * @param isPublic            True means replicate with replicator module
+   * @param bucketName Bucket Name
+   * @param clientId   Format client ID use to identify client
+   * @param isPublic   True means replicate with replicator module
    * @return AccessorBucket add on Database and in object storage
    */
-  AccessorBucket createBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
+  AccessorBucket createBucket(final String bucketName, final String clientId, final boolean isPublic)
       throws CcsAlreadyExistException, CcsOperationException;
 
   /**
-   * Get Bucket information from bucket technical name
+   * Get Bucket information from bucket name
    *
-   * @param technicalBucketName Bucket technical name
-   * @return AccessorBucket found with technical name
+   * @param bucketName Bucket name
+   * @return AccessorBucket found
    */
-  AccessorBucket getBucket(final String technicalBucketName, final String clientId, final String opId,
-                           final boolean isPublic)
+  AccessorBucket getBucket(final String bucketName, final String clientId, final String opId, final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException;
 
   /**
-   * Get All buckets in Storgate
+   * Get All buckets
    *
    * @return the list of Buckets
    */
@@ -57,24 +56,24 @@ public interface AccessorBucketServiceInterface {
   /**
    * Check if Bucket exists
    *
-   * @param technicalBucketName Bucket technical name
-   * @param fullCheck           True to check Object Storage
-   * @param clientId            the clientId
-   * @param opId                the OperationId
-   * @param isPublic            True to check remotely if not found locally
+   * @param bucketName Bucket name
+   * @param fullCheck  True to check Object Storage
+   * @param clientId   the clientId
+   * @param opId       the OperationId
+   * @param isPublic   True to check remotely if not found locally
    * @return True if it exists
    */
-  boolean checkBucket(final String technicalBucketName, final boolean fullCheck, final String clientId,
-                      final String opId, final boolean isPublic) throws CcsOperationException;
+  boolean checkBucket(final String bucketName, final boolean fullCheck, final String clientId, final String opId,
+                      final boolean isPublic) throws CcsOperationException;
 
   /**
-   * Delete bucket from technical bucket name
+   * Delete bucket from bucket name
    *
-   * @param clientId            Client ID used to identify client
-   * @param technicalBucketName Bucket technical name
-   * @param isPublic            true to send replication message on replicator
+   * @param bucketName Bucket name
+   * @param clientId   Client ID used to identify client
+   * @param isPublic   true to send replication message on replicator
    * @return the associated DTO- deleted
    */
-  AccessorBucket deleteBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
+  AccessorBucket deleteBucket(final String bucketName, final String clientId, final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException;
 }

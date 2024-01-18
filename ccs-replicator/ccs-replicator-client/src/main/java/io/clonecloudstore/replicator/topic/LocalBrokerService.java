@@ -18,6 +18,7 @@ package io.clonecloudstore.replicator.topic;
 
 import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.replicator.config.ReplicatorConstants.Action;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
@@ -37,30 +38,37 @@ public class LocalBrokerService {
   private static final Logger logger = Logger.getLogger(LocalBrokerService.class);
 
   private final Emitter<ReplicatorOrder> replicatorOrderEmitter;
+  private final BulkMetrics bulkMetrics;
 
-  public LocalBrokerService(@Channel(REPLICATOR_REQUEST_OUT) Emitter<ReplicatorOrder> replicatorOrderEmitter) {
+  public LocalBrokerService(@Channel(REPLICATOR_REQUEST_OUT) Emitter<ReplicatorOrder> replicatorOrderEmitter,
+                            final BulkMetrics bulkMetrics) {
     this.replicatorOrderEmitter = replicatorOrderEmitter;
+    this.bulkMetrics = bulkMetrics;
   }
 
   public void createBucket(final String bucket, final String clientId) {
     logger.debugf("Send create bucket event to broadcast bucket replication topic : %s", bucket);
     broadcastBucket(bucket, clientId, CREATE);
+    bulkMetrics.incrementCounter(1, LocalBrokerService.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
   }
 
   public void deleteBucket(final String bucket, final String clientId) {
     logger.debugf("Send delete bucket event to broadcast bucket replication topic : %s", bucket);
     broadcastBucket(bucket, clientId, DELETE);
+    bulkMetrics.incrementCounter(1, LocalBrokerService.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_DELETE);
   }
 
   public void createObject(final String bucket, final String object, final String clientId, final long size,
                            final String hash) {
     logger.debugf("Send create object event to broadcast object replication topic :%s / %s", bucket, object);
     broadcastObject(bucket, object, clientId, size, hash, CREATE);
+    bulkMetrics.incrementCounter(1, LocalBrokerService.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_CREATE);
   }
 
   public void deleteObject(final String bucket, final String object, final String clientId) {
     logger.debugf("Send delete object event to broadcast object replication topic ::%s / %s", bucket, object);
     broadcastObject(bucket, object, clientId, 0, null, DELETE);
+    bulkMetrics.incrementCounter(1, LocalBrokerService.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_DELETE);
   }
 
   private void broadcastObject(final String bucket, final String object, final String clientId, final long size,

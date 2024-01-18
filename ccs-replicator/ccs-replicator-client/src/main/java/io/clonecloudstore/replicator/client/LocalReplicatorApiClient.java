@@ -19,13 +19,14 @@ package io.clonecloudstore.replicator.client;
 import java.util.Map;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
+import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
@@ -59,7 +60,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
     try {
       return (ReplicatorResponse<AccessorBucket>) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -72,7 +73,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
   }
 
   private static String getTargetFromResponse(final Response response) {
-    var target = response.getHeaderString(ReplicatorConstants.Api.X_TARGET_ID);
+    var target = response.getHeaderString(AccessorConstants.Api.X_TARGET_ID);
     if (ParametersChecker.isEmpty(target)) {
       return null;
     }
@@ -92,7 +93,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -119,7 +120,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }

@@ -37,7 +37,12 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import org.bson.BsonDocument;
+import org.bson.BsonDocumentWriter;
+import org.bson.BsonWriter;
 import org.bson.Document;
+import org.bson.codecs.Codec;
+import org.bson.codecs.EncoderContext;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -153,6 +158,143 @@ class DbMongoNoCodecInjectTest {
     final var dtoExample = new DtoExample();
     dtoExample.setField1("field1").setField2("field2").setTimeField(Instant.now());
     List<MgDaoExample2> example2List = new ArrayList<>(1500);
+    final var start0 = System.nanoTime();
+    for (var i = 0; i < 1500; i++) {
+      final var mgDbDtoExample = new MgDaoExample2(dtoExample).setGuid(GuidLike.getGuid());
+      repository.addToInsertBulk(mgDbDtoExample);
+      example2List.add(mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop0 = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("field1", daoExample2.getField1());
+        });
+    LOG.info("Bulk Insert: " + (stop0 - start0) / 1000000);
+    final var start = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      mgDbDtoExample.setField1("value2");
+      repository.updateFull(mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value2", daoExample2.getField1());
+        });
+    LOG.info("Standard Update: " + (stop - start) / 1000000);
+    final var start2 = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      final var guid = mgDbDtoExample.getGuid();
+      mgDbDtoExample.setField1("value3");
+      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop2 = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value3", daoExample2.getField1());
+        });
+    LOG.info("Bulk Update: " + (stop2 - start2) / 1000000);
+    final var start2A = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      final var guid = mgDbDtoExample.getGuid();
+      mgDbDtoExample.setField1("value0");
+      final var update = getDocumentFromObject(mgDbDtoExample);
+      var document = new Document("$set", update);
+      ((MgDaoExample2Repository) repository).addToUpdateBulk(new Document("_id", guid), document);
+    }
+    repository.flushAll();
+    final var stop2A = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value0", daoExample2.getField1());
+        });
+
+    LOG.info("Bulk UpdateBson: " + (stop2A - start2A) / 1000000);
+
+    final var start2B = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      final var guid = mgDbDtoExample.getGuid();
+      mgDbDtoExample.setField1("value4");
+      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop2B = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value4", daoExample2.getField1());
+        });
+
+    LOG.info("Bulk Upsert: " + (stop2B - start2B) / 1000000);
+
+    var firstGuid = example2List.getFirst().getGuid();
+    final var start3 = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      final var guid = GuidLike.getGuid();
+      mgDbDtoExample.setField1("value5");
+      mgDbDtoExample.setGuid(guid);
+      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop3 = System.nanoTime();
+    var temp2 = repository.findOne(DbQuery.idEquals(firstGuid));
+    assertEquals("value4", temp2.getField1());
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value5", daoExample2.getField1());
+        });
+
+    LOG.info("Bulk Update Insert: " + (stop3 - start3) / 1000000);
+
+    repository.deleteAllDb();
+    repository.flushAll();
+
+    final var start4 = System.nanoTime();
+    for (final var mgDbDtoExample : example2List) {
+      final var guid = GuidLike.getGuid();
+      mgDbDtoExample.setField1("value6");
+      mgDbDtoExample.setGuid(guid);
+      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
+    }
+    repository.flushAll();
+    final var stop4 = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value6", daoExample2.getField1());
+        });
+    LOG.info("Bulk Update Insert2: " + (stop4 - start4) / 1000000);
+    repository.deleteAllDb();
+
+    assertTrue(stop - start > stop2 - start2);
+  }
+
+  private Document getDocumentFromObject(final MgDaoExample2 update) {
+    BsonDocument unwrapped = new BsonDocument();
+    BsonWriter jsonWriter = new BsonDocumentWriter(unwrapped);
+    final var encoder =
+        (Codec<MgDaoExample2>) ((MgDaoExample2Repository) repository).mongoCollection().getCodecRegistry()
+            .get(update.getClass());
+    encoder.encode(jsonWriter, update, EncoderContext.builder().build());
+    final var json = unwrapped.toJson();
+    return Document.parse(json);
+  }
+
+  @Test
+  void dbUpdateBsonBulk() throws CcsDbException {
+    assertEquals("tbl_ex2", repository.getTable());
+    assertEquals(ID, repository.getPkName());
+    assertEquals(0, repository.countAll());
+    final var dtoExample = new DtoExample();
+    dtoExample.setField1("field1").setField2("field2").setTimeField(Instant.now());
+    List<MgDaoExample2> example2List = new ArrayList<>(1500);
     for (var i = 0; i < 1500; i++) {
       final var mgDbDtoExample = new MgDaoExample2(dtoExample).setGuid(GuidLike.getGuid());
       repository.addToInsertBulk(mgDbDtoExample);
@@ -166,39 +308,31 @@ class DbMongoNoCodecInjectTest {
     }
     repository.flushAll();
     final var stop = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value2", daoExample2.getField1());
+        });
+    LOG.info("Standard Update: " + (stop - start) / 1000000);
     final var start2 = System.nanoTime();
     for (final var mgDbDtoExample : example2List) {
       final var guid = mgDbDtoExample.getGuid();
-      mgDbDtoExample.setField1("value2");
-      ((MgDaoExample2Repository) repository).addToUpdateBulk(new Document("_id", guid), mgDbDtoExample);
+      mgDbDtoExample.setField1("value3");
+      final var update = getDocumentFromObject(mgDbDtoExample);
+      var document = new Document("$set", update);
+      ((MgDaoExample2Repository) repository).addToUpdateBulk(new Document("_id", guid), document);
     }
     repository.flushAll();
     final var stop2 = System.nanoTime();
-    final var start2B = System.nanoTime();
-    for (final var mgDbDtoExample : example2List) {
-      final var guid = mgDbDtoExample.getGuid();
-      mgDbDtoExample.setField1("value2B");
-      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
-    }
-    repository.flushAll();
-    final var stop2B = System.nanoTime();
+    repository.findStream(
+            new DbQuery(RestQuery.QUERY.IN, ID, example2List.stream().map(MgDaoExample2::getGuid).toList()))
+        .forEach(daoExample2 -> {
+          assertEquals("value3", daoExample2.getField1());
+        });
 
-    LOG.info("Standard Update: " + (stop - start) / 1000000);
-    LOG.info("Bulk Update: " + (stop2 - start2) / 1000000);
-    LOG.info("Bulk Upsert: " + (stop2B - start2B) / 1000000);
+    LOG.info("Bulk Update Bson: " + (stop2 - start2) / 1000000);
     repository.deleteAllDb();
     repository.flushAll();
-
-    final var start3 = System.nanoTime();
-    for (final var mgDbDtoExample : example2List) {
-      final var guid = GuidLike.getGuid();
-      mgDbDtoExample.setField1("value3");
-      ((MgDaoExample2Repository) repository).addToUpsertBulk(new Document("_id", guid), mgDbDtoExample);
-    }
-    repository.flushAll();
-    final var stop3 = System.nanoTime();
-
-    LOG.info("Bulk Update Insert: " + (stop3 - start3) / 1000000);
     repository.deleteAllDb();
 
     assertTrue(stop - start > stop2 - start2);

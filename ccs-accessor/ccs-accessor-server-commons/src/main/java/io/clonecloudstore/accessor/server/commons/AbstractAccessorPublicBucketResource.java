@@ -20,6 +20,7 @@ import io.clonecloudstore.accessor.client.api.AccessorBucketApi;
 
 public abstract class AbstractAccessorPublicBucketResource extends AbstractPublicBucketHelper
     implements AccessorBucketApi {
+  //TODO : Security check and get Client ID
   protected AbstractAccessorPublicBucketResource(final AccessorBucketServiceInterface service) {
     super(service);
   }

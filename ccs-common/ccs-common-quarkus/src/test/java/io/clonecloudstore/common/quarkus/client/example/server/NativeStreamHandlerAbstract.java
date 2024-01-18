@@ -24,12 +24,11 @@ import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.guid.GuidLike;
-import io.clonecloudstore.common.standard.inputstream.DigestAlgo;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
 import io.clonecloudstore.common.standard.inputstream.ZstdCompressInputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
@@ -149,10 +148,8 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     try {
       closer.add(inputStream);
       LOG.debugf("DEBUG START UPLOAD %s", businessIn);
-      final var inputStreamFinal = prepareUpload(inputStream);
-      if (ParametersChecker.isEmpty(getOriginalHash()) && checkDigestToCumpute(businessIn)) {
-        inputStreamFinal.computeDigest(DigestAlgo.SHA256);
-      }
+      final var inputStreamFinal =
+          prepareUpload(inputStream, ParametersChecker.isEmpty(getOriginalHash()) && checkDigestToCumpute(businessIn));
       getCloser().add(inputStreamFinal);
       waitForAllReadInputStream = inputStreamFinal;
       checkPushAble(getBusinessIn(), getInputStreamLength(), waitForAllReadInputStream);
@@ -241,9 +238,10 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
     return responseBuilder.build();
   }
 
-  private MultipleActionsInputStream prepareUpload(final InputStream inputStream) throws NativeServerResponseException {
+  private MultipleActionsInputStream prepareUpload(final InputStream inputStream, final boolean digestNeeded)
+      throws NativeServerResponseException {
     try {
-      MultipleActionsInputStream newInputStream = MultipleActionsInputStream.create(inputStream);
+      MultipleActionsInputStream newInputStream = MultipleActionsInputStream.create(inputStream, digestNeeded);
       if (shallDecompress()) {
         // Decompress before computing digest if any
         newInputStream.decompress();
@@ -284,7 +282,7 @@ public abstract class NativeStreamHandlerAbstract<I, O> {
       responseBuilder.header(entry.getKey(), entry.getValue());
     }
     return new NativeServerResponseException(responseBuilder.build(),
-        CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode()));
+        CcsServerExceptionMapper.getCcsException(status.getStatusCode()));
   }
 
   /**

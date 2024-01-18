@@ -1,0 +1,4 @@
+quarkus:
+  scheduler:
+    metrics:
+      enabled: true

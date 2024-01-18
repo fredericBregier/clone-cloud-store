@@ -54,6 +54,10 @@ public abstract class ExtendedPanacheRepositoryBase<F, E extends F>
     helper.changeBulkSize(bulkSize);
   }
 
+  protected int getBulkSize() {
+    return helper.getBulkSize();
+  }
+
   /**
    * SHall be in an enclosing Transactional to enforce bulk effects
    */

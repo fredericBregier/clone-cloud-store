@@ -22,9 +22,7 @@ import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.NoResourceProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
@@ -54,12 +52,10 @@ class AccessorObjectResourceNoS3Test {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-    DriverS3Properties.setDynamicS3Parameters("http://127.0.0.1:9999", "AccessKey", "SecretKey", "Region");
   }
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_NAME, true);
     createBucketAndObject(BUCKET_NAME);
   }
 

@@ -5,3 +5,4 @@ Architecture
 
   Description
   InProgress
+  CommonConfiguration

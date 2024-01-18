@@ -29,7 +29,6 @@ public class ReplicatorProperties extends ServiceProperties {
   // TODO Add Replicator-specific properties here
 
   protected ReplicatorProperties() {
-    super();
     // Nothing
   }
 }

@@ -41,6 +41,10 @@ public class PostgreBulkHelper {
     }
   }
 
+  protected int getBulkSize() {
+    return maxBatch;
+  }
+
   /**
    * @return True if bulk operation reaches the limit
    */

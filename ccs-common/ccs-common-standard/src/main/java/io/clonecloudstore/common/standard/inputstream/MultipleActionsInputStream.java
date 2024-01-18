@@ -56,11 +56,28 @@ public class MultipleActionsInputStream extends InputStream {
     return new MultipleActionsInputStream(inputStream);
   }
 
+  public static MultipleActionsInputStream create(final InputStream inputStream, final boolean digestNeeded)
+      throws NoSuchAlgorithmException {
+    if (inputStream instanceof MultipleActionsInputStream mai) {
+      return mai;
+    }
+    if (digestNeeded) {
+      return new MultipleActionsInputStream(inputStream, DigestAlgo.SHA256);
+    }
+    return new MultipleActionsInputStream(inputStream);
+  }
+
   public MultipleActionsInputStream(final InputStream inputStream) {
     this(inputStream, StandardProperties.getMaxWaitMs());
   }
 
-  public MultipleActionsInputStream(final InputStream inputStream, final long maxWaitMs) {
+  public MultipleActionsInputStream(final InputStream inputStream, final DigestAlgo digestAlgo)
+      throws NoSuchAlgorithmException {
+    this(inputStream, StandardProperties.getMaxWaitMs());
+    computeDigest(digestAlgo);
+  }
+
+  MultipleActionsInputStream(final InputStream inputStream, final long maxWaitMs) {
     ParametersChecker.checkParameter("Parameters cannot be null or empty", inputStream);
     this.inputStream = inputStream;
     this.maxWaitMs = maxWaitMs;
@@ -84,7 +101,7 @@ public class MultipleActionsInputStream extends InputStream {
     }
   }
 
-  public void computeDigest(final DigestAlgo digestAlgo) throws NoSuchAlgorithmException {
+  void computeDigest(final DigestAlgo digestAlgo) throws NoSuchAlgorithmException {
     ParametersChecker.checkParameter("Parameters cannot be null or empty", digestAlgo);
     try {
       digest = MessageDigest.getInstance(digestAlgo.algoName);
@@ -213,10 +230,6 @@ public class MultipleActionsInputStream extends InputStream {
       }
       inputStream.close();
     } finally {
-      if (digest != null) {
-        getDigestValue();
-        digest.reset();
-      }
       closed = true;
       countDownLatch.countDown();
     }

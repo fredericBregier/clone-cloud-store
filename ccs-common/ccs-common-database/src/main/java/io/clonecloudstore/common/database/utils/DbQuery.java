@@ -28,6 +28,12 @@ import io.quarkus.runtime.annotations.IgnoreProperty;
 import jakarta.persistence.Transient;
 import org.bson.conversions.Bson;
 
+import static io.clonecloudstore.common.database.utils.RestQuery.QUERY.EQ;
+import static io.clonecloudstore.common.database.utils.RestQuery.QUERY.GTE;
+import static io.clonecloudstore.common.database.utils.RestQuery.QUERY.LTE;
+import static io.clonecloudstore.common.database.utils.RestQuery.QUERY.NEQ;
+import static io.clonecloudstore.common.database.utils.RestQuery.QUERY.START_WITH;
+
 /**
  * DbQuery (Where Condition) for both SQL and NoSQL.
  * A DbQuery is not ready to use as is. It must be used through PostgreSqlHelper or
@@ -121,11 +127,8 @@ public class DbQuery extends RestQuery {
         // Nothing
       }
     }
-    switch (query) {
-      case EQ, NEQ, GTE, LTE, START_WITH -> setMgFromSql();
-      default -> {
-        // Nothing
-      }
+    if (EQ.equals(query) || NEQ.equals(query) || GTE.equals(query) || LTE.equals(query) || START_WITH.equals(query)) {
+      setMgFromSql();
     }
   }
 
@@ -483,7 +486,7 @@ public class DbQuery extends RestQuery {
    * @return the DbQuery
    */
   public static DbQuery idEquals(final String id) {
-    return new DbQuery(QUERY.EQ, IS_DB_TYPE_MONGODB ? RepositoryBaseInterface.ID : RepositoryBaseInterface.ID_PG, id);
+    return new DbQuery(EQ, IS_DB_TYPE_MONGODB ? RepositoryBaseInterface.ID : RepositoryBaseInterface.ID_PG, id);
   }
 
   private void conjunctionArray(final CONJUNCTION conjunction, final DbQuery[] queries) {

@@ -33,7 +33,6 @@ public abstract class ServiceProperties extends QuarkusProperties {
       QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_SITE, DEFAULT_ACCESSOR_SITE);
 
   protected ServiceProperties() {
-    super();
     // Nothing
   }
 

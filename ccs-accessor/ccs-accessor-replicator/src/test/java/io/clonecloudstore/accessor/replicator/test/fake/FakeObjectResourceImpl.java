@@ -20,12 +20,12 @@ import io.clonecloudstore.test.accessor.server.resource.internal.FakeObjectPriva
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.HttpHeaders;
 
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.BASE;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.COLL_BUCKETS;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_BUCKETS;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.REPLICATOR_ROOT;
 
-@Path(BASE + LOCAL + COLL_BUCKETS)
-public class FakeObjectResourceImpl extends FakeObjectPrivateResourceAbstract<FakeNativeStreamHandlerImpl> {
+@Path(REPLICATOR_ROOT + LOCAL + COLL_BUCKETS)
+public class FakeObjectResourceImpl extends FakeObjectPrivateResourceAbstract<FakeStreamHandlerImpl> {
   protected FakeObjectResourceImpl(final HttpHeaders httpHeaders) {
     super(httpHeaders);
   }

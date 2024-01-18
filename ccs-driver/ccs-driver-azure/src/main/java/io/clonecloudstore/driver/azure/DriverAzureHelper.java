@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -40,6 +41,9 @@ import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.blob.options.BlobInputStreamOptions;
 import com.azure.storage.blob.options.BlockBlobOutputStreamOptions;
+import com.azure.storage.blob.sas.BlobSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
@@ -53,6 +57,7 @@ import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
+import static io.clonecloudstore.driver.azure.DriverAzureProperties.CLIENT_ID;
 import static io.clonecloudstore.driver.azure.DriverAzureProperties.EXPIRY;
 import static io.clonecloudstore.driver.azure.DriverAzureProperties.SHA_256;
 
@@ -60,13 +65,19 @@ import static io.clonecloudstore.driver.azure.DriverAzureProperties.SHA_256;
 @Unremovable
 public class DriverAzureHelper {
   private static final Logger LOGGER = Logger.getLogger(DriverAzureHelper.class);
+  private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
+  private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
   private final BlobServiceClient blobServiceClient;
 
-  public DriverAzureHelper(final BlobServiceClient blobServiceClient) {
+  DriverAzureHelper(final BlobServiceClient blobServiceClient) {
     this.blobServiceClient = blobServiceClient;
   }
 
-  public PagedIterable<BlobContainerItem> getBuckets() throws DriverException {
+  BlobServiceClient getBlobServiceClient() {
+    return blobServiceClient;
+  }
+
+  PagedIterable<BlobContainerItem> getBuckets() throws DriverException {
     try {
       return blobServiceClient.listBlobContainers();
     } catch (final BlobStorageException e) {
@@ -74,32 +85,76 @@ public class DriverAzureHelper {
     }
   }
 
-  public StorageBucket fromBlobContainerItem(final BlobContainerItem bucket) {
-    return new StorageBucket(bucket.getName(), bucket.getProperties().getLastModified().toInstant());
+  StorageBucket fromBlobContainerItem(final BlobContainerItem bucket) {
+    final var clientId = bucket.getMetadata().get(CLIENT_ID);
+    return new StorageBucket(bucket.getName(), clientId, bucket.getProperties().getLastModified().toInstant());
   }
 
-  public StorageBucket createBucket(final StorageBucket bucket) throws DriverException {
+  StorageBucket createBucket(final StorageBucket bucket) throws DriverException {
     try {
-      blobServiceClient.createBlobContainer(bucket.bucket());
-      return new StorageBucket(bucket.bucket(), Instant.now());
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      final var map = Map.of(CLIENT_ID, bucket.clientId());
+      blobServiceClient.createBlobContainer(bucket.bucket()).setMetadata(map);
+      return getBucket(bucket.bucket());
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public void deleteBucket(final String bucket) throws DriverException {
+  StorageBucket importBucket(final StorageBucket bucket) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      if (existBucket(bucket.bucket())) {
+        final var map = Map.of(CLIENT_ID, bucket.clientId());
+        blobServiceClient.getBlobContainerClient(bucket.bucket()).setMetadata(map);
+        return getBucket(bucket.bucket());
+      }
+      throw new DriverNotFoundException("Bucket Not Found");
+    } catch (final BlobStorageException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  void deleteBucket(final String bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       if (countObjectsInBucket(bucket) > 0) {
         throw new DriverNotAcceptableException("Bucket not empty");
       }
       blobServiceClient.deleteBlobContainer(bucket);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public boolean existBucket(final String bucket) throws DriverException {
+  StorageBucket getBucket(final String bucket) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      final var blobClient = blobServiceClient.getBlobContainerClient(bucket);
+      if (blobClient.exists()) {
+        final var clientId = blobClient.getProperties().getMetadata().get(CLIENT_ID);
+        return new StorageBucket(bucket, clientId, blobClient.getProperties().getLastModified().toInstant());
+      }
+      throw new DriverNotFoundException("Bucket Not Found");
+    } catch (final BlobStorageException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final IllegalStateException e) {
+      LOGGER.warn(e);
+      throw new DriverException(e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  boolean existBucket(final String bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       return blobServiceClient.getBlobContainerClient(bucket)
           .existsWithResponse(Duration.ofMillis(StandardProperties.getMaxWaitMs()), Context.NONE).getValue();
     } catch (final BlobStorageException e) {
@@ -107,22 +162,27 @@ public class DriverAzureHelper {
     } catch (final IllegalStateException e) {
       LOGGER.warn(e, e);
       return false;
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public long countObjectsInBucket(final String bucket) throws DriverException {
+  long countObjectsInBucket(final String bucket) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       return client.listBlobs().stream().count();
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public Iterator<BlobItem> getObjectsIteratorFilteredInBucket(final String bucket, final String prefix,
-                                                               final Instant from, final Instant to)
-      throws DriverException {
+  Iterator<BlobItem> getObjectsIteratorFilteredInBucket(final String bucket, final String prefix, final Instant from,
+                                                        final Instant to) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       ListBlobsOptions options = new ListBlobsOptions().setDetails(new BlobListDetails().setRetrieveMetadata(true));
       if (ParametersChecker.isNotEmpty(prefix)) {
@@ -135,11 +195,13 @@ public class DriverAzureHelper {
       return iterator;
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public Stream<BlobItem> getObjectsStreamFilteredInBucket(final String bucket, final String prefix, final Instant from,
-                                                           final Instant to) throws DriverException {
+  Stream<BlobItem> getObjectsStreamFilteredInBucket(final String bucket, final String prefix, final Instant from,
+                                                    final Instant to) throws DriverException {
     return getObjectsStreamFilteredInBucket(bucket, prefix, from, to, false);
   }
 
@@ -147,6 +209,7 @@ public class DriverAzureHelper {
                                                             final Instant from, final Instant to,
                                                             final boolean existOnly) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       ListBlobsOptions options = new ListBlobsOptions();
       if (!existOnly) {
@@ -171,47 +234,57 @@ public class DriverAzureHelper {
       return stream;
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public StorageObject fromBlobItem(final String bucket, final BlobItem object) throws DriverException {
+  private String removeSha256(final Map<String, String> map) {
+    return map.remove(SHA_256);
+  }
+
+  private Instant removeExpiry(final Map<String, String> map) {
+    final var expiry = map.remove(EXPIRY);
+    Instant expiryInstant = null;
+    if (ParametersChecker.isNotEmpty(expiry)) {
+      expiryInstant = Instant.parse(expiry);
+    }
+    return expiryInstant;
+  }
+
+  private Instant getLastModified(final OffsetDateTime lastModified) {
+    return lastModified != null ? lastModified.toInstant() : Instant.now();
+  }
+
+  StorageObject fromBlobItem(final String bucket, final BlobItem object) throws DriverException {
     try {
-      final var map = getMetadata(object);
-      final var sha256 = map.remove(SHA_256);
-      final var expiry = map.remove(EXPIRY);
-      Instant expryInstant = null;
-      if (ParametersChecker.isNotEmpty(expiry)) {
-        expryInstant = Instant.parse(expiry);
-      }
-      var lastModified = object.getProperties().getLastModified();
-      var instantLastModified = lastModified != null ? lastModified.toInstant() : Instant.now();
+      final var map = new HashMap<>(getMetadata(object));
+      final var sha256 = removeSha256(map);
+      final var expiryInstant = removeExpiry(map);
+      var lastModified = getLastModified(object.getProperties().getLastModified());
       return new StorageObject(bucket, object.getName(), sha256, object.getProperties().getContentLength(),
-          instantLastModified, expryInstant, map);
+          lastModified, expiryInstant, map);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
     }
   }
 
-  public StorageObject fromBlobProperties(final String bucket, final String name, final BlobProperties properties)
+  StorageObject fromBlobProperties(final String bucket, final String name, final BlobProperties properties)
       throws DriverException {
     try {
-      final var map = getMetadata(properties);
-      final var sha256 = map.remove(SHA_256);
-      final var expiry = map.remove(EXPIRY);
-      Instant expryInstant = null;
-      if (ParametersChecker.isNotEmpty(expiry)) {
-        expryInstant = Instant.parse(expiry);
-      }
-      var lastModified = properties.getLastModified();
-      var instantLastModified = lastModified != null ? lastModified.toInstant() : Instant.now();
-      return new StorageObject(bucket, name, sha256, properties.getBlobSize(), instantLastModified, expryInstant, map);
+      final var map = new HashMap<>(getMetadata(properties));
+      final var sha256 = removeSha256(map);
+      final var expiryInstant = removeExpiry(map);
+      var lastModified = getLastModified(properties.getLastModified());
+      return new StorageObject(bucket, name, sha256, properties.getBlobSize(), lastModified, expiryInstant, map);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
     }
   }
 
-  public boolean existObjectInBucket(final String bucket, final String object) throws DriverException {
+  boolean existObjectInBucket(final String bucket, final String object) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       return client.getBlobClient(object).exists();
     } catch (final BlobStorageException e) {
@@ -219,12 +292,15 @@ public class DriverAzureHelper {
         return false;
       }
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public StorageType existDirectoryOrObjectInBucket(final String bucket, final String directoryOrObject)
+  StorageType existDirectoryOrObjectInBucket(final String bucket, final String directoryOrObject)
       throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, directoryOrObject);
       if (existObjectInBucket(bucket, directoryOrObject)) {
         return StorageType.OBJECT;
       }
@@ -240,12 +316,15 @@ public class DriverAzureHelper {
         return StorageType.NONE;
       }
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public long objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
+  long objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, object, inputStream);
       final var blobClient = blobServiceClient.getBlobContainerClient(object.bucket()).getBlobClient(object.name());
       if (object.size() > 0 && object.size() < DriverAzureProperties.getMaxPartSize()) {
         blobClient.upload(inputStream, object.size());
@@ -258,6 +337,8 @@ public class DriverAzureHelper {
       }
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -302,31 +383,39 @@ public class DriverAzureHelper {
     }
   }
 
-  public StorageObject finalizeObject(final String bucket, final String object, final String sha256, final long realLen)
+  StorageObject finalizeObject(final String bucket, final String object, final String sha256, final long realLen)
       throws DriverException {
     try {
-      final var storageObject = getObjectInBucket(bucket, object);
-      if (ParametersChecker.isNotEmpty(sha256) && ParametersChecker.isEmpty(storageObject.hash())) {
-        final var map = new HashMap<>(storageObject.metadata());
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
+      final var client = blobServiceClient.getBlobContainerClient(bucket).getBlobClient(object);
+      final var properties = client.getProperties();
+      if (ParametersChecker.isNotEmpty(sha256)) {
+        final var map = new HashMap<>(properties.getMetadata());
         map.put(SHA_256, sha256);
-        final var blobClient = blobServiceClient.getBlobContainerClient(bucket).getBlobClient(object);
-        blobClient.setMetadata(map);
-        return new StorageObject(bucket, object, sha256, realLen, storageObject.creationDate(),
-            storageObject.expiresDate(), storageObject.metadata());
+        client.setMetadata(map);
+        var expiry = removeExpiry(map);
+        removeSha256(map);
+        var lastModified = getLastModified(properties.getLastModified());
+        return new StorageObject(bucket, object, sha256, realLen, lastModified, expiry, map);
       }
-      return storageObject;
+      return fromBlobProperties(bucket, object, properties);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public InputStream getObjectBodyInBucket(final String bucket, final String object) throws DriverException {
+  InputStream getObjectBodyInBucket(final String bucket, final String object) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       var options = new BlobInputStreamOptions().setBlockSize(DriverAzureProperties.getMaxPartSizeForUnknownLength());
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       return client.getBlobClient(object).openInputStream(options);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -344,22 +433,55 @@ public class DriverAzureHelper {
     return new HashMap<>(properties.getMetadata());
   }
 
-  public StorageObject getObjectInBucket(final String bucket, final String object) throws DriverException {
+  StorageObject getObjectInBucket(final String bucket, final String object) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       final var client = blobServiceClient.getBlobContainerClient(bucket).getBlobClient(object);
       final var properties = client.getProperties();
       return fromBlobProperties(bucket, object, properties);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public void deleteObjectInBucket(final String bucket, final String object) throws DriverException {
+  StorageObject objectCopyToAnother(final StorageObject source, final StorageObject target)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
+      ParametersChecker.checkParameter("Source and Target cannot be null", source, target);
+      final BlobClient sourceBlob =
+          blobServiceClient.getBlobContainerClient(source.bucket()).getBlobClient(source.name());
+      final BlobClient targetBlob =
+          blobServiceClient.getBlobContainerClient(target.bucket()).getBlobClient(target.name());
+      StorageObject targetUpdated =
+          new StorageObject(target.bucket(), target.name(), source.hash(), source.size(), Instant.now(),
+              target.expiresDate(), target.metadata());
+      // Setup Sas Token to allow copy between Container
+      OffsetDateTime expiryTime = OffsetDateTime.now().plusDays(1);
+      BlobSasPermission permission = new BlobSasPermission().setReadPermission(true);
+      BlobServiceSasSignatureValues values =
+          new BlobServiceSasSignatureValues(expiryTime, permission).setStartTime(OffsetDateTime.now());
+      String sasToken = sourceBlob.generateSas(values);
+      targetBlob.copyFromUrl(sourceBlob.getBlobUrl() + "?" + sasToken);
+      writeMetadata(targetUpdated, targetBlob);
+      return fromBlobProperties(target.bucket(), target.name(), targetBlob.getProperties());
+    } catch (final BlobStorageException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  void deleteObjectInBucket(final String bucket, final String object) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       final var client = blobServiceClient.getBlobContainerClient(bucket);
       client.getBlobClient(object).delete();
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -369,7 +491,7 @@ public class DriverAzureHelper {
     private final Instant end;
     private BlobItem blobItem;
 
-    public BlobItemIterator(final Iterator<BlobItem> iterator, final Instant start, final Instant end) {
+    BlobItemIterator(final Iterator<BlobItem> iterator, final Instant start, final Instant end) {
       this.iterator = iterator;
       this.start = start;
       this.end = end;

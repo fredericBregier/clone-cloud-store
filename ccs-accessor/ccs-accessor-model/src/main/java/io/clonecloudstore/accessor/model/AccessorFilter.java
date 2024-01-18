@@ -21,10 +21,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -36,14 +36,41 @@ import jakarta.persistence.Transient;
  */
 @RegisterForReflection
 public class AccessorFilter {
+  /**
+   * Optional Prefix for the name, including path
+   */
   private String namePrefix;
+  /**
+   * Optional list of status to filter on
+   */
   private AccessorStatus[] statuses;
+  /**
+   * Optional datetime for creation before this date
+   */
   private Instant creationBefore;
+  /**
+   * Optional datetime for creation after this date
+   */
   private Instant creationAfter;
+  /**
+   * Optional datetime for expiry before this date
+   */
   private Instant expiresBefore;
+  /**
+   * Optional datetime for expiry after this date
+   */
   private Instant expiresAfter;
+  /**
+   * Optional length filter less than this length
+   */
   private long sizeLessThan;
+  /**
+   * Optional length filter greater than this length
+   */
   private long sizeGreaterThan;
+  /**
+   * Optional metadata filter based on equality
+   */
   private final Map<String, String> metadataFilter = new HashMap<>();
 
   public AccessorFilter() {
@@ -128,9 +155,7 @@ public class AccessorFilter {
   }
 
   public AccessorFilter setMetadataFilter(final Map<String, String> metadataFilter) {
-    for (final var entry : metadataFilter.entrySet()) {
-      ParametersChecker.checkSanityString(entry.getKey(), entry.getValue());
-    }
+    ParametersChecker.checkSanityMap(metadataFilter);
     this.metadataFilter.putAll(metadataFilter);
     return this;
   }
@@ -139,6 +164,7 @@ public class AccessorFilter {
   @JsonIgnore
   public AccessorFilter addMetadata(final String key, final String value) {
     ParametersChecker.checkSanityString(key, value);
+    ParametersChecker.checkSanityMapKey(key);
     metadataFilter.put(key, value);
     return this;
   }
@@ -148,9 +174,7 @@ public class AccessorFilter {
     try {
       return StandardProperties.getObjectMapper().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{" + "\"namePrefix\":\"" + namePrefix + ", \"metadataFilter\": {" +
-          metadataFilter.entrySet().stream().map(d -> "\"%s\": \"%s\",".formatted(d.getKey(), d.getValue()))
-              .collect(Collectors.joining()) + "}}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 

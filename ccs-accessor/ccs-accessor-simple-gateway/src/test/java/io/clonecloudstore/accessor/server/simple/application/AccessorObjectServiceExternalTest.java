@@ -24,7 +24,6 @@ import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
-import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotAcceptableException;
@@ -33,28 +32,27 @@ import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.common.standard.system.SystemTools;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.DriverApi;
 import io.clonecloudstore.driver.api.DriverApiRegistry;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
-import io.clonecloudstore.test.resource.s3.MinioProfile;
+import io.clonecloudstore.driver.azure.DriverAzureProperties;
+import io.clonecloudstore.test.resource.azure.AzureProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.driver.s3.DriverS3Properties.DEFAULT_MAX_SIZE_NOT_PART;
+import static io.clonecloudstore.driver.azure.DriverAzureProperties.DEFAULT_MAX_SIZE_NOT_PART;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioProfile.class)
+@TestProfile(AzureProfile.class)
 class AccessorObjectServiceExternalTest {
   @Inject
   AccessorBucketService service;
@@ -62,56 +60,43 @@ class AccessorObjectServiceExternalTest {
   AccessorObjectService serviceObject;
   String clientId = null;
 
-  @BeforeAll
-  static void setup() {
-    // Setup Minio S3 Driver
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
-  }
-
   @AfterAll
   static void endTests() {
-    DriverS3Properties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
+    DriverAzureProperties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
   }
 
   @BeforeEach
   public void cleanBeforeTest() {
     //Generate fake client id
     clientId = UUID.randomUUID().toString();
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
   void checkCreationToDeletionObject() {
-    final var bucketName = "bucket-name";
+    final var bucketName = "bucketname";
     final var objectName = "dir/objectName";
     final var prefix = "dir/";
     final AccessorBucket bucket;
     final DriverApi driverApi = DriverApiRegistry.getDriverApiFactory().getInstance();
-    final var bucketTechnicalName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
     // First create bucket
     try {
-      bucket = service.createBucket(clientId, bucketTechnicalName, true);
-      assertEquals(bucketName, bucket.getName());
-      assertEquals(bucketTechnicalName, bucket.getId());
+      bucket = service.createBucket(bucketName, clientId, true);
+      assertEquals(bucketName, bucket.getId());
       Assertions.assertEquals(AccessorStatus.READY, bucket.getStatus());
     } catch (final CcsAlreadyExistException | CcsServerGenericException e) {
       fail(e);
     }
-    final var create = new AccessorObject().setBucket(bucketTechnicalName).setName(objectName);
+    final var create = new AccessorObject().setBucket(bucketName).setName(objectName);
     AccessorObject object;
     try {
       // Assert object is not existing
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId));
       assertThrows(CcsNotExistException.class,
-          () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
+          () -> serviceObject.deleteObject(bucketName, objectName, clientId, true));
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName, null, driverApi);
+        final var inputStream = serviceObject.filterObjects(bucketName, null, driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -121,7 +106,7 @@ class AccessorObjectServiceExternalTest {
       }
       {
         final var inputStream =
-            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setNamePrefix(prefix), driverApi);
+            serviceObject.filterObjects(bucketName, new AccessorFilter().setNamePrefix(prefix), driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -131,17 +116,17 @@ class AccessorObjectServiceExternalTest {
       }
 
       // Pseudo Create object
-      object = serviceObject.createObject(create, "hash", 100);
-      assertEquals(bucketTechnicalName, object.getBucket());
+      object = serviceObject.createObject(create, "hash", 100, clientId);
+      assertEquals(bucketName, object.getBucket());
       assertEquals(objectName, object.getName());
       assertEquals(AccessorStatus.UPLOAD, object.getStatus());
       serviceObject.createObjectFinalize(object, "hash", 100, clientId, true);
       // Assert object is existing
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
 
       // Check listing
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName, null, driverApi);
+        final var inputStream = serviceObject.filterObjects(bucketName, null, driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -151,7 +136,7 @@ class AccessorObjectServiceExternalTest {
       }
       {
         final var inputStream =
-            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setNamePrefix(prefix), driverApi);
+            serviceObject.filterObjects(bucketName, new AccessorFilter().setNamePrefix(prefix), driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -161,8 +146,7 @@ class AccessorObjectServiceExternalTest {
       }
       {
         final var inputStream =
-            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setNamePrefix("badprefix"),
-                driverApi);
+            serviceObject.filterObjects(bucketName, new AccessorFilter().setNamePrefix("badprefix"), driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -172,7 +156,7 @@ class AccessorObjectServiceExternalTest {
       }
       // Full filter test
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
+        final var inputStream = serviceObject.filterObjects(bucketName,
             new AccessorFilter().setNamePrefix(prefix).setSizeGreaterThan(object.getSize() - 10)
                 .setSizeLessThan(object.getSize() + 10), driverApi);
         try {
@@ -183,7 +167,7 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
+        final var inputStream = serviceObject.filterObjects(bucketName,
             new AccessorFilter().setStatuses(new AccessorStatus[]{object.getStatus()}), driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
@@ -193,7 +177,7 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
+        final var inputStream = serviceObject.filterObjects(bucketName,
             new AccessorFilter().setNamePrefix(prefix).setCreationAfter(object.getCreation().minusSeconds(10))
                 .setCreationBefore(object.getCreation().plusSeconds(10)), driverApi);
         try {
@@ -204,7 +188,7 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
+        final var inputStream = serviceObject.filterObjects(bucketName,
             new AccessorFilter().setNamePrefix(prefix).setCreationAfter(object.getCreation().minusSeconds(10))
                 .setCreationBefore(object.getCreation().plusSeconds(10)).setSizeGreaterThan(object.getSize() - 10)
                 .setSizeLessThan(object.getSize() + 10).setStatuses(new AccessorStatus[]{object.getStatus()}),
@@ -218,8 +202,7 @@ class AccessorObjectServiceExternalTest {
       }
       {
         final var inputStream =
-            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setMetadataFilter(new HashMap<>()),
-                driverApi);
+            serviceObject.filterObjects(bucketName, new AccessorFilter().setMetadataFilter(new HashMap<>()), driverApi);
         try {
           final var iterator = StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, SystemTools.consumeAll(iterator));
@@ -232,7 +215,7 @@ class AccessorObjectServiceExternalTest {
         final var map = new HashMap<String, String>();
         map.put("key", "value");
         final var inputStream =
-            serviceObject.filterObjects(bucketTechnicalName, new AccessorFilter().setMetadataFilter(map), driverApi);
+            serviceObject.filterObjects(bucketName, new AccessorFilter().setMetadataFilter(map), driverApi);
         try {
           final var stream = StreamIteratorUtils.getStreamFromInputStream(inputStream, AccessorObject.class);
           assertEquals(0, stream.count());
@@ -241,7 +224,7 @@ class AccessorObjectServiceExternalTest {
         }
       }
       {
-        final var inputStream = serviceObject.filterObjects(bucketTechnicalName,
+        final var inputStream = serviceObject.filterObjects(bucketName,
             new AccessorFilter().setExpiresAfter(Instant.ofEpochMilli(Long.MIN_VALUE))
                 .setExpiresBefore(Instant.ofEpochMilli(Long.MAX_VALUE)), driverApi);
         try {
@@ -253,27 +236,25 @@ class AccessorObjectServiceExternalTest {
       }
 
       // Object not in S3 so NONE
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/", true));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, "dir2/", true, clientId));
       // Throw since Object not in S3
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
     } catch (final CcsAlreadyExistException | CcsServerGenericException | CcsNotExistException |
                    CcsNotAcceptableException e) {
       fail(e);
     }
     // Delete object
-    assertThrows(CcsNotExistException.class,
-        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
+    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketName, objectName, clientId, true));
     // Retry Delete object
-    assertThrows(CcsNotExistException.class,
-        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
-    assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketName, objectName, clientId, true));
+    assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
 
     // Delete Bucket
     try {
-      final var bucketDeleted = service.deleteBucket(clientId, bucketTechnicalName, true);
+      final var bucketDeleted = service.deleteBucket(bucketName, clientId, true);
       Assertions.assertEquals(AccessorStatus.DELETED, bucketDeleted.getStatus());
-      assertThrows(CcsDeletedException.class, () -> service.deleteBucket(clientId, bucketTechnicalName, true));
+      assertThrows(CcsDeletedException.class, () -> service.deleteBucket(bucketName, clientId, true));
     } catch (final CcsNotExistException | CcsDeletedException | CcsServerGenericException |
                    CcsNotAcceptableException e) {
       throw new RuntimeException(e);
@@ -283,31 +264,29 @@ class AccessorObjectServiceExternalTest {
 
   @Test
   void checkWithInvalidBucket() {
-    final var bucketName = "bucket-not-created";
+    final var bucketName = "bucketnotcreated";
     final var objectName = "dir/objectName";
-    final var bucketTechnicalName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
-    final var create = new AccessorObject().setBucket(bucketTechnicalName).setName(objectName);
+    final var create = new AccessorObject().setBucket(bucketName).setName(objectName);
     AccessorObject object;
     try {
       // Assert object is not existing
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
       // Create object
-      assertThrows(CcsNotExistException.class, () -> serviceObject.createObject(create, "hash", 100));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.createObject(create, "hash", 100, clientId));
       // Assert object is existing
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir/", true));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, "dir/", true, clientId));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId));
       // Object not in S3 so NONE
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, objectName, true));
-      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketTechnicalName, "dir2/", true));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId));
+      assertEquals(StorageType.NONE, serviceObject.objectOrDirectoryExists(bucketName, "dir2/", true, clientId));
       // Throw since Object not in S3
-      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+      assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
     } catch (final CcsServerGenericException e) {
       fail(e);
     }
     // Delete object
-    assertThrows(CcsNotExistException.class,
-        () -> serviceObject.deleteObject(bucketTechnicalName, objectName, clientId, true));
-    assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketTechnicalName, objectName));
+    assertThrows(CcsNotExistException.class, () -> serviceObject.deleteObject(bucketName, objectName, clientId, true));
+    assertThrows(CcsNotExistException.class, () -> serviceObject.getObjectInfo(bucketName, objectName, clientId));
   }
 }

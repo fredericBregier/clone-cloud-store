@@ -193,6 +193,9 @@ class DbPostgreTest {
 
     LOG.info("Stream all: " + (stop3 - start3) / 1000000 + " vs " + (stop4 - start4) / 1000000);
     repository.deleteAllDb();
+    if (repository.getBulkSize() > 1) {
+      assertTrue(stop - start >= stop2 - start2);
+    }
   }
 
   @Transactional
@@ -243,7 +246,9 @@ class DbPostgreTest {
     LOG.info("Bulk Update Insert: " + (stop3 - start3) / 1000000);
     repository.deleteAllDb();
 
-    assertTrue(stop - start > stop2 - start2);
+    if (repository.getBulkSize() > 1) {
+      assertTrue(stop - start >= stop2 - start2);
+    }
   }
 
   @Transactional

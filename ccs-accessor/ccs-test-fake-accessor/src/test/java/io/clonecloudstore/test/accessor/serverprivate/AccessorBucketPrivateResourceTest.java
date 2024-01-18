@@ -26,9 +26,11 @@ import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
+import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +55,11 @@ class AccessorBucketPrivateResourceTest {
   void beforeEach() {
     FakeCommonBucketResourceHelper.errorCode = 0;
     FakeCommonObjectResourceHelper.errorCode = 0;
+  }
+
+  @BeforeAll
+  static void beforeAll() {
+    FakeDriverFactory.cleanUp();
   }
 
   @Test
@@ -87,10 +94,10 @@ class AccessorBucketPrivateResourceTest {
     final var bucketName = "testgetbucket1";
     try (final var client = factory.newClient(); final var clientExternal = factoryExternal.newClient()) {
       clientExternal.createBucket(bucketName, clientId);
-      final var realBucketName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, true);
+      final var realBucketName = bucketName;
       final var bucket = client.getBucket(realBucketName, clientId);
       assertEquals(realBucketName, bucket.getId());
-      assertEquals(bucketName, bucket.getName());
+      assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
@@ -119,7 +126,7 @@ class AccessorBucketPrivateResourceTest {
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket17";
     try (final var client = factory.newClient(); final var clientExternal = factoryExternal.newClient()) {
       // check non-existing bucket
       var res = client.checkBucket(bucketName, clientId, false);
@@ -127,7 +134,7 @@ class AccessorBucketPrivateResourceTest {
       res = client.checkBucket(bucketName, clientId, true);
       assertEquals(StorageType.NONE, res);
 
-      final var realBucketName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, true);
+      final var realBucketName = bucketName;
       // simple check existing bucket
       clientExternal.createBucket(bucketName, clientId);
       res = client.checkBucket(realBucketName, clientId, true);
@@ -135,7 +142,7 @@ class AccessorBucketPrivateResourceTest {
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, true));
+        driverApi.bucketDelete(bucketName);
       } catch (DriverException e) {
         fail(e);
       }

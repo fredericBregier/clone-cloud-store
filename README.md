@@ -68,6 +68,7 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 - Common
   - Full support for InputStream within Quarkus (through a patch of Quarkus)
   - Full support of Database choice between MongoDB and PostgreSql (by configuration)
+  - Metrics available for Prometheus or equivalent
 - Accessor
   - Fully functional
   - Include remote checking if locally not present (by configuration)
@@ -75,15 +76,20 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
   - Include Public Client and Internal Client (Quarkus)
   - Include Public Client based on Apache httpclient 5 without need of Quarkus
   - Simple Gateway with no Database nor Remote access or cloning available
+  - Include optional Buffered Accessor relying on local space (only for unsteady Storage service)
 - Driver
   - Support of S3, Azure Blob Storage and Google Cloud Storage
 - Replicator
   - Fully functional for replication or preemptive remote action
 - Topology
   - Full support for remote Clone Cloud Store sites
+- Ownership
+  - Support for ownership based on Bucket
 - Quarkus patch client: patch until Quarkus validate PR 37308
 - Reconciliator
-  - Logic in place but not yet functional (so no Disaster Recovery or Cloud Migration yet)
+  - Logic in place but not yet API (so no Disaster Recovery or Cloud Migration yet)
+  - Initialization of a CCS site from a remote one or from an existing Driver Storage
+  - Missing API and Configurations
   - Will need extra API on Replicator
 
 
@@ -101,7 +107,8 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
 - Reconciliation
 
-  - First steps on Reconciliation computations are still in progress
+  - Reconciliation computations done
+  - Missing API and configurations
   - Note that replication is active and remote access if not locally present is possible (through configuration)
 
 - PostgreSQL full support
@@ -117,12 +124,10 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
   - Allowing specific access on all or part of CRUD options to a Bucket owned by an application to another one
     (for instance, to allow producer / consumer of files)
-  - Compression of HTTPS link is functional but not yet activated (and will be based on a property)
   - Bandwidth limitation is moved to Quarkus normal configuration (see https://quarkus.io/guides/http-reference#configure-traffic-shaping)
 
     - It shall be useful only for Replicator and in particular in outbound global mode per site
 
-  - Quarkus Metrics are available but not yet for actions within Clone Cloud Store. The work is on going.
   - Health check service to be done
 
 - Distribution according to various options is still in debate
@@ -136,8 +141,19 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 ## Notes of versions
 
 # 0.8.0 2024/02
+- Fully tested Reconciliation steps
+- Accessor buffered upload to limit side effect of unsteady Storage service
+- Accessor Ownership and CRUD rights support
+- Administration Topology and Ownership support
 - Add Apache http client for Accessor Public client (no Quarkus dependency)
-- Refactorization of Server side
+- Refactorization on Server side
+- Prepare import from existing Driver Storage without CCS before
+- Compression configurable for internal services
+- Optimize Azure Driver and MongoDb Bulk operations
+- Add Metrics on Topics and Driver
+- Fix Digest implementation and Proactive Replication implementation
+- Fix doc and API
+- Clean up Logs
 
 # 0.7.0 2024/01
 - Support of MongoDB and Kafka

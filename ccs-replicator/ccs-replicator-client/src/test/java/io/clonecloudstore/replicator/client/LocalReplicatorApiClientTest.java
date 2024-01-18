@@ -61,8 +61,8 @@ class LocalReplicatorApiClientTest {
   static void beforeAll()
       throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException, DriverNotFoundException {
     final var driver = DriverApiRegistry.getDriverApiFactory().getInstance();
-    driver.bucketCreate(new StorageBucket(BUCKET_NAME, null));
-    final var objectName = ParametersChecker.getSanitizedName(OBJECT_PATH);
+    driver.bucketCreate(new StorageBucket(BUCKET_NAME, CLIENT_ID, null));
+    final var objectName = ParametersChecker.getSanitizedObjectName(OBJECT_PATH);
     driver.objectPrepareCreateInBucket(
         new StorageObject(BUCKET_NAME, objectName, "hash", REMOTE_READ_STREAM_LEN, Instant.now()),
         new FakeInputStream(REMOTE_READ_STREAM_LEN));

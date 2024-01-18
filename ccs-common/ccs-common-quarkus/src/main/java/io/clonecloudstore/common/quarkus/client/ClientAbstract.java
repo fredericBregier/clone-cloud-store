@@ -120,7 +120,7 @@ public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleCl
       throw new CcsOperationException(e);
     } catch (final WebApplicationException e) {
       SystemTools.consumeWhileErrorInputStream(inputStream, StandardProperties.getMaxWaitMs());
-      exceptionMapper.responseToThrowable(e.getResponse());
+      exceptionMapper.responseToExceptionIfError(e.getResponse());
       return null;
     } finally {
       resetQueryContext();

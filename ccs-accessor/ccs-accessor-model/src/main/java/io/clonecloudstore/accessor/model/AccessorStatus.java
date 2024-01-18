@@ -23,12 +23,33 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  */
 @RegisterForReflection
 public enum AccessorStatus {
+  /**
+   * Unknown status
+   */
   UNKNOWN((short) 0),
+  /**
+   * Upload or Creation in action
+   */
   UPLOAD((short) 100),
+  /**
+   * Ready
+   */
   READY((short) 200),
+  /**
+   * Upload in error
+   */
   ERR_UPL((short) 500),
+  /**
+   * Deletion in action
+   */
   DELETING((short) 102),
+  /**
+   * Deletion done
+   */
   DELETED((short) 204),
+  /**
+   * Deletion in error
+   */
   ERR_DEL((short) 404);
 
   public static final int STATUS_LENGTH = 8;

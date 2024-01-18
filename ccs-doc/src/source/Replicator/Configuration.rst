@@ -1,7 +1,6 @@
 Configuration
 *************
 
-** TODO **
 
 Various Replicator services
 ================================
@@ -31,6 +30,7 @@ application.yaml configuration
 
 .. list-table:: Replicator Cloud Clone Store Client Configuration
    :header-rows: 1
+   :widths: 3 3 2
 
    * - Property/Yaml property or Environment variable
      - Possible Values
@@ -45,6 +45,7 @@ application.yaml configuration
 
 .. list-table:: Replicator Cloud Clone Store Service Configuration
    :header-rows: 1
+   :widths: 3 3 2
 
    * - Property/Yaml property or Environment variable
      - Possible Values
@@ -70,7 +71,7 @@ application.yaml configuration
    * - ``quarkus.rest-client."io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi".url``
      - Http(s) url of the remote service
      -
-   * - ``quarkus.rest-client."io.clonecloudstore.topology.client.api.TopologyApi".url``
+   * - ``quarkus.rest-client."io.clonecloudstore.administration.client.api.TopologyApi".url``
      - Http(s) url of the service
      -
 

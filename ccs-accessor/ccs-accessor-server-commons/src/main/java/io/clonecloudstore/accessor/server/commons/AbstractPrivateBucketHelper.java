@@ -21,6 +21,7 @@ import java.util.Collection;
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.common.quarkus.server.service.ServerResponseFilter;
+import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.Response;
@@ -52,8 +53,8 @@ public abstract class AbstractPrivateBucketHelper {
     LOGGER.debugf("Get Bucket %s ", bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        final var technicalName = AbstractPublicBucketHelper.getSanitizeBucketName(bucketName);
-        if (service.checkBucket(technicalName, fullCheck, clientId, opId, false)) {
+        final var santizedName = ParametersChecker.getSanitizedBucketName(bucketName);
+        if (service.checkBucket(santizedName, fullCheck, clientId, opId, false)) {
           em.complete(Response.ok().header(AccessorConstants.Api.X_TYPE, StorageType.BUCKET).build());
         } else {
           em.complete(Response.status(Response.Status.NOT_FOUND).header(AccessorConstants.Api.X_TYPE, StorageType.NONE)
@@ -69,8 +70,8 @@ public abstract class AbstractPrivateBucketHelper {
     LOGGER.debugf("Get Bucket %s - %s ", clientId, bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        final var technicalName = AbstractPublicBucketHelper.getSanitizeBucketName(bucketName);
-        final var bucket = service.getBucket(technicalName, clientId, opId, false);
+        final var santizedName = ParametersChecker.getSanitizedBucketName(bucketName);
+        final var bucket = service.getBucket(santizedName, clientId, opId, false);
         em.complete(bucket);
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleExceptionFail(em, e);

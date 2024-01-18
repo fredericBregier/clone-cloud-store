@@ -30,20 +30,20 @@ import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi;
-import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApiService;
+import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorClientApiService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.core.Response;
 
 public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, AccessorObject, RemoteReplicatorApi> {
-  private final RemoteReplicatorApiService apiService;
+  private final RemoteReplicatorClientApiService apiService;
 
   /**
    * Constructor used by the Factory
    */
   protected RemoteReplicatorApiClient(final RemoteReplicatorApiClientFactory factory) {
     super(factory, factory.getUri());
-    apiService = CDI.current().select(RemoteReplicatorApiService.class).get();
+    apiService = CDI.current().select(RemoteReplicatorClientApiService.class).get();
   }
 
   /**

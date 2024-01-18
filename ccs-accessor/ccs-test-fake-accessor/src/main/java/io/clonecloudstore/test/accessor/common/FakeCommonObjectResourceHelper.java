@@ -26,9 +26,10 @@ import java.util.stream.Stream;
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicObjectHelper;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
 import io.clonecloudstore.common.standard.inputstream.ZstdCompressInputStream;
@@ -58,22 +59,15 @@ public class FakeCommonObjectResourceHelper {
   public static long length = 100;
   public static int nbList = 0;
 
-  public static AccessorObject fromStorageObject(final StorageObject storageObject) {
-    return new AccessorObject().setBucket(storageObject.bucket()).setName(storageObject.name())
-        .setSite(FakeCommonBucketResourceHelper.site).setId(GuidLike.getGuid())
-        .setCreation(storageObject.creationDate()).setSize(storageObject.size()).setHash(storageObject.hash())
-        .setStatus(AccessorStatus.READY).setMetadata(storageObject.metadata());
-  }
-
   static StorageObject pseudoList(final AtomicInteger cpt, final String techName, final String namePrefix) {
     return new StorageObject(techName, namePrefix + cpt.incrementAndGet(), "hash", length, Instant.now());
   }
 
   static void computeList(final Iterator<StorageObject> stream, final UniEmitter<? super Response> em,
                           final HttpServerRequest request, final Closer closer) throws IOException {
-    final var inputStream =
-        StreamIteratorUtils.getInputStreamFromIterator(stream, source -> fromStorageObject((StorageObject) source),
-            AccessorObject.class);
+    final var inputStream = StreamIteratorUtils.getInputStreamFromIterator(stream,
+        source -> AbstractPublicObjectHelper.getFromStorageObject((StorageObject) source)
+            .setSite(FakeCommonBucketResourceHelper.site), AccessorObject.class);
     final var response = Response.ok();
     var map = new HashMap<String, String>();
     map.put(TRANSFER_ENCODING, CHUNKED);
@@ -107,14 +101,14 @@ public class FakeCommonObjectResourceHelper {
 
   public static void listObjectsHelper(final UniEmitter<? super Response> em, final String bucketName,
                                        final String xNamePrefix, final String xCreationAfter,
-                                       final String xCreationBefore, final String clientId, final boolean isPublic,
+                                       final String xCreationBefore, final String clientId,
                                        final HttpServerRequest request, final Closer closer) {
     var prefixHeader = xNamePrefix;
     if (ParametersChecker.isEmpty(prefixHeader)) {
       prefixHeader = "prefix";
     }
     final var namePrefix = ParametersChecker.getSanitizedName(prefixHeader);
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+    final var techName = bucketName;
     if (nbList > 0) {
       final var cpt = new AtomicInteger(0);
       final var iterator = Stream.generate(() -> pseudoList(cpt, techName, namePrefix)).limit(nbList).iterator();
@@ -143,30 +137,26 @@ public class FakeCommonObjectResourceHelper {
     }
   }
 
-  public static Uni<Response> listObjects0Helper(final String bucketName, final String acceptHeader,
-                                                 final String acceptEncodingHeader, final String clientId,
-                                                 final String opId, final String xNamePrefix, final String xStatuses,
+  public static Uni<Response> listObjects0Helper(final String bucketName, final String clientId,
+                                                 final String xNamePrefix, final String xStatuses,
                                                  final String xCreationBefore, final String xCreationAfter,
                                                  final String xExpiresBefore, final String xExpiresAfter,
                                                  final long xSizeLt, final long xSizeGt, final String xMetadataEq,
-                                                 final boolean isPublic, final HttpServerRequest request,
-                                                 final Closer closer) {
+                                                 final HttpServerRequest request, final Closer closer) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode >= 400) {
-        throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+        throw CcsServerExceptionMapper.getCcsException(errorCode);
       }
-      listObjectsHelper(em, bucketName, xNamePrefix, xCreationAfter, xCreationBefore, clientId, isPublic, request,
-          closer);
+      listObjectsHelper(em, bucketName, xNamePrefix, xCreationAfter, xCreationBefore, clientId, request, closer);
     });
   }
 
   public static void checkObjectOrDirectoryHelper(final UniEmitter<? super Response> em, final String bucketName,
-                                                  final String pathDirectoryOrObject, final boolean fullCheck,
-                                                  final String clientId, final boolean isPublic) {
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+                                                  final String pathDirectoryOrObject, final String clientId) {
+    final var techName = bucketName;
     try (final var fakeDriver = DriverApiRegistry.getDriverApiFactory().getInstance()) {
       final var storageType = fakeDriver.directoryOrObjectExistsInBucket(techName,
-          ParametersChecker.getSanitizedName(pathDirectoryOrObject));
+          ParametersChecker.getSanitizedObjectName(pathDirectoryOrObject));
       if (storageType.equals(StorageType.NONE)) {
         em.complete(Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build());
       } else {
@@ -178,30 +168,30 @@ public class FakeCommonObjectResourceHelper {
   }
 
   public static Uni<Response> checkObjectOrDirectory0Helper(final String bucketName, final String pathDirectoryOrObject,
-                                                            final boolean fullCheck, final String clientId,
-                                                            final boolean isPublic) {
+                                                            final String clientId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
         if (errorCode >= 400 && errorCode != 404) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(errorCode));
+          em.fail(CcsServerExceptionMapper.getCcsException(errorCode));
         } else if (errorCode == 404) {
           em.complete((Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build()));
         } else {
           em.complete((Response.status(Response.Status.NO_CONTENT).header(X_TYPE, StorageType.OBJECT).build()));
         }
       } else {
-        checkObjectOrDirectoryHelper(em, bucketName, pathDirectoryOrObject, fullCheck, clientId, isPublic);
+        checkObjectOrDirectoryHelper(em, bucketName, pathDirectoryOrObject, clientId);
       }
     });
   }
 
   public static void getObjectInfoHelper(final UniEmitter<? super AccessorObject> em, final String bucketName,
-                                         final String objectName, final String clientId, final boolean isPublic) {
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+                                         final String objectName, final String clientId) {
+    final var techName = bucketName;
     try (final var fakeDriver = DriverApiRegistry.getDriverApiFactory().getInstance()) {
       final var storageObject =
-          fakeDriver.objectGetMetadataInBucket(techName, ParametersChecker.getSanitizedName(objectName));
-      em.complete(fromStorageObject(storageObject));
+          fakeDriver.objectGetMetadataInBucket(techName, ParametersChecker.getSanitizedObjectName(objectName));
+      em.complete(
+          AbstractPublicObjectHelper.getFromStorageObject(storageObject).setSite(FakeCommonBucketResourceHelper.site));
     } catch (final DriverNotFoundException e) {
       em.fail(new CcsNotExistException(e.getMessage(), e));
     } catch (final DriverException e) {
@@ -210,27 +200,27 @@ public class FakeCommonObjectResourceHelper {
   }
 
   public static Uni<AccessorObject> getObjectInfo0Helper(final String bucketName, final String objectName,
-                                                         final String clientId, final boolean isPublic) {
+                                                         final String clientId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
         if (errorCode >= 400) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(errorCode));
+          em.fail(CcsServerExceptionMapper.getCcsException(errorCode));
         } else {
           final var object = new AccessorObject().setId(GuidLike.getGuid()).setBucket(bucketName).setName(objectName)
               .setCreation(Instant.now().minusSeconds(100)).setSize(100).setStatus(AccessorStatus.READY);
           em.complete(object);
         }
       } else {
-        getObjectInfoHelper(em, bucketName, objectName, clientId, isPublic);
+        getObjectInfoHelper(em, bucketName, objectName, clientId);
       }
     });
   }
 
   public static void deleteObjectHelper(final UniEmitter<? super Response> em, final String bucketName,
-                                        final String objectName, final String clientId, final boolean isPublic) {
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+                                        final String objectName, final String clientId) {
+    final var techName = bucketName;
     try (final var fakeDriver = DriverApiRegistry.getDriverApiFactory().getInstance()) {
-      fakeDriver.objectDeleteInBucket(techName, ParametersChecker.getSanitizedName(objectName));
+      fakeDriver.objectDeleteInBucket(techName, ParametersChecker.getSanitizedObjectName(objectName));
       em.complete(Response.noContent().build());
     } catch (final DriverNotFoundException e) {
       em.complete(Response.status(Response.Status.NOT_FOUND).build());
@@ -242,16 +232,16 @@ public class FakeCommonObjectResourceHelper {
   }
 
   public static Uni<Response> deleteObject0Helper(final String bucketName, final String objectName,
-                                                  final String clientId, final boolean isPublic) {
+                                                  final String clientId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
         if (errorCode >= 400) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(errorCode));
+          em.fail(CcsServerExceptionMapper.getCcsException(errorCode));
         } else {
           em.complete(Response.noContent().build());
         }
       } else {
-        deleteObjectHelper(em, bucketName, objectName, clientId, isPublic);
+        deleteObjectHelper(em, bucketName, objectName, clientId);
       }
     });
   }
@@ -262,8 +252,8 @@ public class FakeCommonObjectResourceHelper {
 
   public static AccessorObject getAccessorObjectForCreate(final HttpServerRequest request, final String bucketName,
                                                           final String objectName, final String clientId,
-                                                          final long xObjectSize, final boolean isPublic) {
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
+                                                          final long xObjectSize) {
+    final var techName = bucketName;
     var storeLength = xObjectSize;
     if (storeLength <= 0) {
       var headerLength = request.getHeader(CONTENT_LENGTH);
@@ -273,15 +263,14 @@ public class FakeCommonObjectResourceHelper {
     }
     final var accessorObject = new AccessorObject();
     AccessorHeaderDtoConverter.objectFromMap(accessorObject, request.headers());
-    accessorObject.setName(ParametersChecker.getSanitizedName(objectName)).setSite(FakeCommonBucketResourceHelper.site)
-        .setBucket(techName).setSize(storeLength);
+    accessorObject.setName(ParametersChecker.getSanitizedObjectName(objectName))
+        .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName).setSize(storeLength);
     return accessorObject;
   }
 
   public static AccessorObject getAccessorObjectForGetObject(final String bucketName, final String objectName,
-                                                             final String clientId, final boolean isPublic) {
-    final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
-    return new AccessorObject().setName(ParametersChecker.getSanitizedName(objectName))
-        .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName);
+                                                             final String clientId) {
+    return new AccessorObject().setName(ParametersChecker.getSanitizedObjectName(objectName))
+        .setSite(FakeCommonBucketResourceHelper.site).setBucket(bucketName);
   }
 }

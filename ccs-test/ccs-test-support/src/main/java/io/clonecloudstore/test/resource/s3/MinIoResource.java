@@ -53,7 +53,7 @@ public class MinIoResource implements QuarkusTestResourceLifecycleManager {
   }
 
   public static String getUrlString() {
-    return MINIO_CONTAINER.getS3URL();
+    return getUrlForTest();
   }
 
   public static String getRegion() {
@@ -65,7 +65,8 @@ public class MinIoResource implements QuarkusTestResourceLifecycleManager {
     if (!MINIO_CONTAINER.isRunning()) {
       MINIO_CONTAINER.start();
     }
-    conf.put(ResourcesConstants.QUARKUS_S_3_ENDPOINT_OVERRIDE, MINIO_CONTAINER.getS3URL());
+    final var finalUrl = getUrlForTest();
+    conf.put(ResourcesConstants.QUARKUS_S_3_ENDPOINT_OVERRIDE, finalUrl);
     for (final var entry : conf.entrySet()) {
       System.setProperty(entry.getKey(), entry.getValue());
     }
@@ -76,5 +77,16 @@ public class MinIoResource implements QuarkusTestResourceLifecycleManager {
   @Override
   public void stop() {
     MINIO_CONTAINER.stop();
+  }
+
+  /**
+   * Fix bug with "localhost"
+   */
+  private static String getUrlForTest() {
+    var url = MINIO_CONTAINER.getS3URL();
+    if (url.contains("localhost")) {
+      url = url.replace("localhost", "127.0.0.1");
+    }
+    return url;
   }
 }

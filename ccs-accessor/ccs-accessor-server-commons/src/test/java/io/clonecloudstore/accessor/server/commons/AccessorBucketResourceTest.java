@@ -55,7 +55,7 @@ class AccessorBucketResourceTest {
     final var bucketName = "testcreatebucket1";
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
       //Test already exist Exception
       assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName, clientId));
 
@@ -73,7 +73,7 @@ class AccessorBucketResourceTest {
     try (final var client = factory.newClient()) {
       client.createBucket(bucketName, clientId);
       final var bucket = client.getBucket(bucketName, clientId);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
@@ -90,9 +90,9 @@ class AccessorBucketResourceTest {
     try (final var client = factory.newClient()) {
       final var bucketsBeforeTest = client.getBuckets(clientId);
       final var numberBucketBeforeInsert = bucketsBeforeTest.size();
-      client.createBucket("testgetbuckets1", clientId);
-      client.createBucket("testgetbuckets2", clientId);
-      client.createBucket("testgetbuckets3", clientId);
+      client.createBucket("testcreatebuckets1", clientId);
+      client.createBucket("testcreatebuckets2", clientId);
+      client.createBucket("testcreatebuckets3", clientId);
       final var buckets = client.getBuckets(clientId);
       assertEquals(numberBucketBeforeInsert + 3, buckets.size());
     } catch (final CcsWithStatusException e) {
@@ -119,7 +119,7 @@ class AccessorBucketResourceTest {
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket11";
     try (final var client = factory.newClient()) {
       // check non-existing bucket
       var res = client.checkBucket(bucketName, clientId);
@@ -132,7 +132,7 @@ class AccessorBucketResourceTest {
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true));
+        driverApi.bucketDelete(bucketName);
       } catch (final DriverException e) {
         fail(e);
       }

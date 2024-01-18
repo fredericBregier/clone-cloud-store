@@ -20,11 +20,10 @@ import java.util.UUID;
 
 import io.clonecloudstore.accessor.client.internal.AccessorObjectInternalApiFactory;
 import io.clonecloudstore.accessor.model.AccessorFilter;
-import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
+import io.clonecloudstore.administration.client.OwnershipApiClientFactory;
+import io.clonecloudstore.administration.model.ClientOwnership;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
-import io.clonecloudstore.test.resource.s3.MinioProfile;
+import io.clonecloudstore.test.resource.google.GoogleProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -34,9 +33,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioProfile.class)
+@TestProfile(GoogleProfile.class)
 class AccessorObjectInternalResourceNoMongoTest {
   private static final Logger LOG = Logger.getLogger(AccessorObjectInternalResourceNoMongoTest.class);
   public static final String BUCKET_NAME = "testbucket";
@@ -45,25 +45,18 @@ class AccessorObjectInternalResourceNoMongoTest {
 
   @Inject
   AccessorObjectInternalApiFactory factory;
+  @Inject
+  OwnershipApiClientFactory ownershipApiClientFactory;
   private static String clientId = null;
 
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
   }
 
   @Test
   void createBucketAndObjectReplicator() throws CcsWithStatusException {
-    final var finalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, BUCKET_NAME + "2");
-    createBucketAndObject(finalBucketName);
+    createBucketAndObject(BUCKET_NAME + "2");
   }
 
   void createBucketAndObject(final String bucketName) {
@@ -94,8 +87,16 @@ class AccessorObjectInternalResourceNoMongoTest {
           assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
     try (final var client = factory.newClient()) {
+      assertEquals(403, assertThrows(CcsWithStatusException.class,
+          () -> client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME))).getStatus());
+    }
+    // Same but with ownership set
+    try (final var client = factory.newClient(); final var ownershipClient = ownershipApiClientFactory.newClient()) {
+      ownershipClient.add(clientId, bucketName, ClientOwnership.OWNER);
       assertEquals(500, assertThrows(CcsWithStatusException.class,
           () -> client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME))).getStatus());
+    } catch (CcsWithStatusException e) {
+      fail(e);
     }
   }
 }

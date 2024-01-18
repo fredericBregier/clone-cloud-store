@@ -19,13 +19,11 @@ package io.clonecloudstore.driver.google;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.DriverApi;
 import io.clonecloudstore.driver.api.StorageType;
@@ -36,9 +34,8 @@ import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.api.exception.DriverRuntimeException;
 import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
+import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
-
-import static io.clonecloudstore.common.standard.system.SystemTools.STANDARD_EXECUTOR_SERVICE;
 
 /**
  * Google Driver
@@ -47,17 +44,23 @@ public class DriverGoogle implements DriverApi {
   private static final Logger LOGGER = Logger.getLogger(DriverGoogle.class);
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
   static final String OBJECT_DOES_NOT_EXIST = "Object does not exist: ";
-  private static final Map<String, TransferStatus> storageObjectCreations = new ConcurrentHashMap<>();
   private final DriverGoogleHelper driverGoogleHelper;
+  private final BulkMetrics bulkMetrics;
 
   protected DriverGoogle(final DriverGoogleHelper driverGoogleHelper) throws DriverRuntimeException {
     this.driverGoogleHelper = driverGoogleHelper;
+    bulkMetrics = CDI.current().select(BulkMetrics.class).get();
+  }
+
+  DriverGoogleHelper getDriverGoogleHelper() {
+    return driverGoogleHelper;
   }
 
   @Override
   public long bucketsCount() throws DriverException {
     // Count  buckets
     final var response = driverGoogleHelper.getBuckets();
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_COUNT);
     return response.streamAll().count();
   }
 
@@ -65,29 +68,63 @@ public class DriverGoogle implements DriverApi {
   public Stream<StorageBucket> bucketsStream() throws DriverException {
     // List first level buckets from
     final var response = driverGoogleHelper.getBuckets();
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_STREAM);
     return response.streamAll().map(driverGoogleHelper::fromBucketInfo);
   }
 
   @Override
   public Iterator<StorageBucket> bucketsIterator() throws DriverException {
     final var response = driverGoogleHelper.getBuckets();
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_COUNT);
     return new StorageBucketIterator(response.iterateAll().iterator());
+  }
+
+  @Override
+  public StorageBucket bucketGet(final String bucket)
+      throws DriverNotFoundException, DriverException { // NOSONAR Exception details
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_READ);
+    return driverGoogleHelper.getBucket(bucket);
   }
 
   @Override
   public StorageBucket bucketCreate(final StorageBucket bucket)
       throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    return driverGoogleHelper.createBucket(bucket);
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+      return driverGoogleHelper.createBucket(bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageBucket bucketImport(final StorageBucket bucket)
+      throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+      return driverGoogleHelper.importBucket(bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
   }
 
   @Override
   public void bucketDelete(final String bucket)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
-    driverGoogleHelper.deleteBucket(bucket);
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_DELETE);
+      driverGoogleHelper.deleteBucket(bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
+    }
   }
 
   @Override
   public boolean bucketExists(final String bucket) throws DriverException {
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_EXISTS);
     return driverGoogleHelper.existBucket(bucket);
   }
 
@@ -95,6 +132,7 @@ public class DriverGoogle implements DriverApi {
   public long objectsCountInBucket(final String bucket)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     // Count  objects from  bucket if it exists
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
     return driverGoogleHelper.countObjectsInBucket(bucket);
   }
 
@@ -102,6 +140,7 @@ public class DriverGoogle implements DriverApi {
   public long objectsCountInBucket(final String bucket, final String prefix, final Instant from, final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     final var iterator = driverGoogleHelper.getObjectsIteratorFilteredInBucket(bucket, prefix, from, to);
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
     return SystemTools.consumeAll(iterator);
   }
 
@@ -115,15 +154,21 @@ public class DriverGoogle implements DriverApi {
   public Stream<StorageObject> objectsStreamInBucket(final String bucket, final String prefix, final Instant from,
                                                      final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    final var stream = driverGoogleHelper.getObjectsStreamFilteredInBucket(bucket, prefix, from, to);
-    return stream.map(object -> {
-      try {
-        return driverGoogleHelper.fromBlob(object);
-      } catch (final DriverException e) {
-        // Should not occur except if object is deleted in the middle
-        throw new DriverRuntimeException(e.getMessage(), e);
-      }
-    });
+    try {
+      final var stream = driverGoogleHelper.getObjectsStreamFilteredInBucket(bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
+      return stream.map(object -> {
+        try {
+          return driverGoogleHelper.fromBlob(object);
+        } catch (final DriverException e) {
+          // Should not occur except if object is deleted in the middle
+          throw new DriverRuntimeException(e.getMessage(), e);
+        }
+      });
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
@@ -136,100 +181,103 @@ public class DriverGoogle implements DriverApi {
   public Iterator<StorageObject> objectsIteratorInBucket(final String bucket, final String prefix, final Instant from,
                                                          final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    final var iterator = driverGoogleHelper.getObjectsIteratorFilteredInBucket(bucket, prefix, from, to);
-    return new StorageObjectIterator(iterator);
+    try {
+      final var iterator = driverGoogleHelper.getObjectsIteratorFilteredInBucket(bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
+      return new StorageObjectIterator(iterator);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
   public StorageType directoryOrObjectExistsInBucket(final String bucket, final String directoryOrObject)
       throws DriverException {
-    return driverGoogleHelper.existDirectoryOrObjectInBucket(bucket, directoryOrObject);
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_EXISTS);
+      return driverGoogleHelper.existDirectoryOrObjectInBucket(bucket, directoryOrObject);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
   public void objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    if (!driverGoogleHelper.existBucket(object.bucket())) {
-      throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + object.bucket());
-    }
-    if (driverGoogleHelper.existObjectInBucket(object.bucket(), object.name())) {
-      throw new DriverAlreadyExistException("Object exists: " + object.name());
-    }
-    final var countDownLatch = new CountDownLatch(1);
-    final var transferStatus = new TransferStatus();
-    transferStatus.countDownLatch = countDownLatch;
-    transferStatus.exception = null;
-    transferStatus.size = 0;
-    storageObjectCreations.put(object.bucket() + '/' + object.name(), transferStatus);
-    STANDARD_EXECUTOR_SERVICE.execute(() -> {
-      try {
-        transferStatus.size = driverGoogleHelper.objectPrepareCreateInBucket(object, inputStream);
-        SystemTools.silentlyCloseNoException(inputStream);
-      } catch (final DriverException e) {
-        transferStatus.exception = e;
-        LOGGER.error(e, e);
-      } finally {
-        countDownLatch.countDown();
+    try {
+      if (!driverGoogleHelper.existBucket(object.bucket())) {
+        throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + object.bucket());
       }
-    });
-    Thread.yield();
+      if (driverGoogleHelper.existObjectInBucket(object.bucket(), object.name())) {
+        throw new DriverAlreadyExistException("Object exists: " + object.name());
+      }
+      var size = driverGoogleHelper.objectPrepareCreateInBucket(object, inputStream);
+      LOGGER.infof("Imported object %s of size %d", object, size);
+      SystemTools.silentlyCloseNoException(inputStream);
+      Thread.yield();
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
   }
 
   @Override
   public StorageObject objectFinalizeCreateInBucket(final String bucket, final String object, final long realLen,
                                                     final String sha256)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    final var transferStatus = storageObjectCreations.remove(bucket + '/' + object);
-    if (transferStatus == null) {
-      throw new DriverException("Request not found while finishing creation request: " + bucket + '/' + object);
-    }
-    await(transferStatus);
-    final var exception = transferStatus.exception;
-    if (exception != null) {
-      if (exception instanceof DriverException e) {
-        throw e;
-      }
-      throw new DriverException("Issue during creation", exception);
-    }
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_CREATE);
     return driverGoogleHelper.finalizeObject(bucket, object, sha256);
-  }
-
-  private static void await(final TransferStatus transferStatus) {
-    try {
-      transferStatus.countDownLatch.await();
-    } catch (final InterruptedException e) {
-      transferStatus.exception = e;
-      Thread.currentThread().interrupt();
-    }
   }
 
   @Override
   public InputStream objectGetInputStreamInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    return driverGoogleHelper.getObjectBodyInBucket(bucket, object);
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ);
+      return driverGoogleHelper.getObjectBodyInBucket(bucket, object);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageObject objectCopy(final StorageObject objectSource, final StorageObject objectTarget)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      validCopy(objectSource, objectTarget);
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COPY);
+      return driverGoogleHelper.objectCopyToAnother(objectSource, objectTarget);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
   }
 
   @Override
   public StorageObject objectGetMetadataInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
+    bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ_MD);
     return driverGoogleHelper.getObjectInBucket(bucket, object);
   }
 
   @Override
   public void objectDeleteInBucket(final String bucket, final String object)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
-    driverGoogleHelper.deleteObjectInBucket(bucket, object);
+    try {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_DELETE);
+      driverGoogleHelper.deleteObjectInBucket(bucket, object);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverGoogle.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
+    }
   }
 
   @Override
   public void close() {
     // Empty
-  }
-
-  private static class TransferStatus {
-    CountDownLatch countDownLatch;
-    Exception exception;
-    long size;
   }
 
   private class StorageObjectIterator implements Iterator<StorageObject> {
@@ -271,7 +319,7 @@ public class DriverGoogle implements DriverApi {
     @Override
     public StorageBucket next() {
       final var item = iterator.next();
-      return driverGoogleHelper.fromBucketInfo(item.asBucketInfo());
+      return driverGoogleHelper.fromBucketInfo(item);
     }
   }
 }

@@ -19,10 +19,10 @@ package io.clonecloudstore.replicator.client.api;
 import java.io.Closeable;
 import java.io.InputStream;
 
+import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
-import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.NotBody;
@@ -54,6 +54,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.NoCache;
 
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.LOCAL;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_BUCKET;
@@ -67,11 +68,13 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SIZE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_STATUS;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
-@Path(ReplicatorConstants.Api.BASE + ReplicatorConstants.Api.LOCAL)
+@Path(AccessorConstants.Api.REPLICATOR_ROOT + AccessorConstants.Api.LOCAL)
 @RegisterRestClient
 @RegisterProvider(ClientResponseExceptionMapper.class)
 @RegisterClientHeaders(RequestHeaderFactory.class)
@@ -79,17 +82,34 @@ import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 @NoCache
 public interface LocalReplicatorApi extends Closeable {
   @GET
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
-  @Path(ReplicatorConstants.Api.COLL_BUCKETS + "/{bucketName}")
-  @Operation(summary = "Get bucket metadata", description = "Get bucket metadata")
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
+  @Path(AccessorConstants.Api.COLL_BUCKETS + "/{bucketName}")
+  @Operation(summary = "Get bucket metadata", description = "Get bucket metadata through topology")
   @Produces(MediaType.APPLICATION_JSON)
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
-      schema = @Schema(implementation = AccessorBucket.class)))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "410", description = "Bucket deleted")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      schema = @Schema(implementation = AccessorBucket.class)), headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Bucket not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "410", description = "Bucket deleted", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   Uni<ReplicatorResponse<AccessorBucket>> getBucket(@PathParam("bucketName") String bucketName,
                                                     @Parameter(name = X_CLIENT_ID, description = "Client ID", in =
                                                         ParameterIn.HEADER, schema =
@@ -97,22 +117,33 @@ public interface LocalReplicatorApi extends Closeable {
                                                     @Parameter(name = X_OP_ID, description = "Operation ID", in =
                                                         ParameterIn.HEADER, schema =
                                                     @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                                    @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID,
-                                                        description = "Target ID", in = ParameterIn.HEADER, schema =
-                                                    @Schema(type = SchemaType.STRING), required = false) @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) String targetId);
+                                                    @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description
+                                                        = "Target ID", in = ParameterIn.HEADER, schema =
+                                                    @Schema(type = SchemaType.STRING), required = false) @HeaderParam(AccessorConstants.Api.X_TARGET_ID) String targetId);
 
   @HEAD
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
-  @Path(ReplicatorConstants.Api.COLL_BUCKETS + "/{bucketName}")
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
+  @Path(AccessorConstants.Api.COLL_BUCKETS + "/{bucketName}")
   @APIResponse(responseCode = "204", description = "OK", headers = {
       @Header(name = X_TYPE, description = "Type as StorageType", schema = @Schema(type = SchemaType.STRING,
           enumeration = {
           "NONE", "BUCKET", "DIRECTORY", "OBJECT"})),
-      @Header(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema =
-      @Schema(type = SchemaType.STRING))})
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      @Header(name = AccessorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema = @Schema(type
+          = SchemaType.STRING)),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Bucket not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Operation(summary = "Check if bucket exists on a remote replicator", description = "Loops through the topology and" +
       " search for a remote replicator owning the bucket")
   Uni<Response> checkBucket(@PathParam("bucketName") String bucketName,
@@ -122,21 +153,32 @@ public interface LocalReplicatorApi extends Closeable {
                                 schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,
                             @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema
                                 = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                            @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Target ID", in =
-                                ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) String targetId);
+                            @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description = "Target ID", in =
+                                ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(AccessorConstants.Api.X_TARGET_ID) String targetId);
 
   @HEAD
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
-  @Path(ReplicatorConstants.Api.COLL_BUCKETS + "/{bucketName}/{pathDirectoryOrObject:.+}")
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
+  @Path(AccessorConstants.Api.COLL_BUCKETS + "/{bucketName}/{pathDirectoryOrObject:.+}")
   @APIResponse(responseCode = "204", description = "OK", headers = {
       @Header(name = X_TYPE, description = "Type as StorageType", schema = @Schema(type = SchemaType.STRING,
           enumeration = {
           "NONE", "BUCKET", "DIRECTORY", "OBJECT"})),
-      @Header(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema =
-      @Schema(type = SchemaType.STRING))})
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      @Header(name = AccessorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema = @Schema(type
+          = SchemaType.STRING)),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Object not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Operation(summary = "Check if object exists on a remote replicator", description = "Loops through the topology and" +
       " search for a remote replicator owning the object")
   Uni<Response> checkObjectOrDirectory(@PathParam("bucketName") String bucketName,
@@ -150,13 +192,13 @@ public interface LocalReplicatorApi extends Closeable {
                                        @Parameter(name = X_OP_ID, description = "Operation ID", in =
                                            ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required =
                                            false) @HeaderParam(X_OP_ID) final String opId,
-                                       @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Target " +
+                                       @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description = "Target " +
                                            "ID", in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                           required = false) @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) String targetId);
+                                           required = false) @HeaderParam(AccessorConstants.Api.X_TARGET_ID) String targetId);
 
   @GET
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
-  @Path(ReplicatorConstants.Api.COLL_BUCKETS + "/{bucketName}/{objectName:.+}")
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
+  @Path(AccessorConstants.Api.COLL_BUCKETS + "/{bucketName}/{objectName:.+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   @Parameters({
       @Parameter(name = ACCEPT, description = "Must contain application/octet-stream", in = ParameterIn.HEADER,
@@ -165,7 +207,7 @@ public interface LocalReplicatorApi extends Closeable {
           schema = @Schema(type = SchemaType.STRING), required = false),
       @Parameter(name = X_CLIENT_ID, description = "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
           SchemaType.STRING), required = true),
-      @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Target ID", in = ParameterIn.HEADER,
+      @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description = "Target ID", in = ParameterIn.HEADER,
           schema = @Schema(type = SchemaType.STRING), required = false),
       @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type =
           SchemaType.STRING), required = false)})
@@ -179,12 +221,23 @@ public interface LocalReplicatorApi extends Closeable {
       @Header(name = X_OBJECT_HASH, description = "Object Hash SHA-256", schema = @Schema(type = SchemaType.STRING)),
       @Header(name = X_OBJECT_METADATA, description = "Object Metadata", schema = @Schema(type = SchemaType.STRING)),
       @Header(name = X_OBJECT_STATUS, description = "Object Status", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_EXPIRES, description = "Expiration Date", schema = @Schema(type = SchemaType.STRING))},
-      content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM))
-  @APIResponse(responseCode = "200", description = "OK")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      @Header(name = X_OBJECT_EXPIRES, description = "Expiration Date", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))}, content =
+  @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format =
+      "binary")))
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Object not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Operation(summary = "Read Object from a remote replicator", description = "Loops through topology and search for a" +
       " remote replicator able to service the request. Open up a stream with remote replicator which reads from its " +
       "local accessor")
@@ -197,9 +250,9 @@ public interface LocalReplicatorApi extends Closeable {
                                         , schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) final String xClientId,
                                     @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
                                         schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String xOpId,
-                                    @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Target ID",
+                                    @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description = "Target ID",
                                         in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                        required = false) @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) final String xTargetId);
+                                        required = false) @HeaderParam(AccessorConstants.Api.X_TARGET_ID) final String xTargetId);
 
   default String computeCompressionModel(ComputedParamContext context) {
     int argPos = 0;

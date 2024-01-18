@@ -1,0 +1,14 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+  cache:
+    caffeine:
+      "ownership-cache":
+        initial-capacity: 10
+        maximum-size: 1000
+        expire-after-write: 10m
+      "topology-cache":
+        initial-capacity: 10
+        maximum-size: 100
+        expire-after-write: 5m

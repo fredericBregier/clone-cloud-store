@@ -24,6 +24,7 @@ import java.util.Objects;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
+import io.clonecloudstore.accessor.server.commons.AbstractPublicObjectHelper;
 import io.clonecloudstore.accessor.server.commons.AccessorObjectServiceInterface;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
@@ -44,7 +45,7 @@ import io.clonecloudstore.driver.api.model.StorageObject;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * Accessor Bucket Service
+ * Accessor Object Service
  */
 @ApplicationScoped
 public class AccessorObjectService implements AccessorObjectServiceInterface {
@@ -60,19 +61,13 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
     return "Bucket: " + bucketName + " Object: " + objectName;
   }
 
-  private static AccessorObject fromStorageObject(final StorageObject storageObject) {
-    return new AccessorObject().setBucket(storageObject.bucket()).setName(storageObject.name())
-        .setSite(ServiceProperties.getAccessorSite()).setCreation(storageObject.creationDate())
-        .setSize(storageObject.size()).setHash(storageObject.hash()).setStatus(AccessorStatus.READY)
-        .setMetadata(storageObject.metadata()).setExpires(storageObject.expiresDate());
-  }
-
   /**
    * Check if object or directory exists
    */
   @Override
   public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
-                                             final boolean fullCheck) throws CcsOperationException {
+                                             final boolean fullCheck, final String clientId)
+      throws CcsOperationException {
     try (final var client = storageDriverFactory.getInstance()) {
       return client.directoryOrObjectExistsInBucket(bucketName, objectOrDirectoryName);
     } catch (final DriverException e) {
@@ -84,7 +79,7 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
   public StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
                                              final boolean fullCheck, final String clientId, final String opId,
                                              final boolean external) throws CcsOperationException {
-    return objectOrDirectoryExists(bucketName, objectOrDirectoryName, fullCheck);
+    return objectOrDirectoryExists(bucketName, objectOrDirectoryName, fullCheck, clientId);
   }
 
   /**
@@ -105,10 +100,11 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
    * Get DB Object DTO
    */
   @Override
-  public AccessorObject getObjectInfo(final String bucketName, final String objectName)
+  public AccessorObject getObjectInfo(final String bucketName, final String objectName, final String clientId)
       throws CcsNotExistException, CcsOperationException {
     final var storageObject = getObjectMetadata(bucketName, objectName);
-    return fromStorageObject(storageObject).setStatus(AccessorStatus.READY);
+    // Test only so false
+    return AbstractPublicObjectHelper.getFromStorageObject(storageObject).setStatus(AccessorStatus.READY);
   }
 
   /**
@@ -117,7 +113,8 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
    * @throws CcsNotAcceptableException if already in creation step
    */
   @Override
-  public AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len)
+  public AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len,
+                                     final String clientId)
       throws CcsOperationException, CcsAlreadyExistException, CcsNotExistException, CcsNotAcceptableException {
     try {
       // Check non-existence in S3
@@ -127,10 +124,8 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
         }
         final var type = client.directoryOrObjectExistsInBucket(accessorObject.getBucket(), accessorObject.getName());
         if (type.equals(StorageType.NONE)) {
-          final var result = new AccessorObject();
-          result.setBucket(accessorObject.getBucket()).setName(accessorObject.getName())
-              .setExpires(accessorObject.getExpires()).setMetadata(accessorObject.getMetadata())
-              .setSite(ServiceProperties.getAccessorSite());
+          final var result = accessorObject.cloneInstance();
+          result.setSite(ServiceProperties.getAccessorSite());
           result.setStatus(AccessorStatus.UPLOAD).setHash(hash).setSize(len).setCreation(Instant.now());
           return result;
         }
@@ -229,7 +224,7 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
   }
 
   /**
-   * @param bucketName technical name
+   * @param bucketName name
    * @param filter     the filter to apply on Objects
    * @return a stream (InputStream) of AccessorObject line by line (newline separated)
    */
@@ -238,12 +233,14 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
       if (filter == null) {
         final var iterator = driver.objectsIteratorInBucket(bucketName);
         return StreamIteratorUtils.getInputStreamFromIterator(iterator,
-            source -> filter(fromStorageObject((StorageObject) source), filter), AccessorObject.class);
+            source -> filter(AbstractPublicObjectHelper.getFromStorageObject((StorageObject) source), filter),
+            AccessorObject.class);
       }
       final var iterator = driver.objectsIteratorInBucket(bucketName, filter.getNamePrefix(), filter.getCreationAfter(),
           filter.getCreationBefore());
       return StreamIteratorUtils.getInputStreamFromIterator(iterator,
-          source -> filter(fromStorageObject((StorageObject) source), filter), AccessorObject.class);
+          source -> filter(AbstractPublicObjectHelper.getFromStorageObject((StorageObject) source), filter),
+          AccessorObject.class);
     } catch (final DriverNotFoundException e) {
       throw new CcsNotExistException(e.getMessage(), e);
     } catch (final DriverNotAcceptableException e) {
@@ -254,7 +251,8 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
   }
 
   @Override
-  public InputStream filterObjects(final String bucketName, final AccessorFilter filter) throws CcsOperationException {
+  public InputStream filterObjects(final String bucketName, final AccessorFilter filter, final String clientId,
+                                   final boolean external) throws CcsOperationException {
     throw new UnsupportedOperationException("Not implemented");
   }
 }

@@ -26,8 +26,8 @@ import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketReposi
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.MongoKafkaProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -60,12 +60,13 @@ class AccessorBucketInternalResourceNoS3Test {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-    DriverS3Properties.setDynamicS3Parameters("http://127.0.0.1:9999", "AccessKey", "SecretKey", "Region");
   }
 
   @BeforeEach
   void beforeEach() {
     repository = repositoryInstance.get();
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
@@ -82,15 +83,14 @@ class AccessorBucketInternalResourceNoS3Test {
           assertThrows(CcsWithStatusException.class, () -> client.getBucket(bucketName2, clientId)).getStatus());
       // Now same but having Bucket in DB, except creation
       final var fakebucket = "fakebucket";
-      final var technicalId = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, fakebucket);
       final var dao = repository.createEmptyItem();
-      dao.setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setName(fakebucket)
-          .setId(technicalId).setStatus(AccessorStatus.READY);
+      dao.setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setId(fakebucket)
+          .setStatus(AccessorStatus.READY).setClientId(clientId);
       repository.insert(dao);
-      assertEquals(StorageType.BUCKET, client.checkBucket(technicalId, clientId, false));
-      assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.checkBucket(technicalId, clientId, true)).getStatus());
-      assertNotNull(assertDoesNotThrow(() -> client.getBucket(technicalId, clientId)));
+      assertEquals(StorageType.BUCKET, client.checkBucket(fakebucket, clientId, false));
+      assertEquals(500,
+          assertThrows(CcsWithStatusException.class, () -> client.checkBucket(fakebucket, clientId, true)).getStatus());
+      assertNotNull(assertDoesNotThrow(() -> client.getBucket(fakebucket, clientId)));
       // Now check non-existing bucket, so no S3
       assertEquals(StorageType.NONE, client.checkBucket(bucketName2, clientId, false));
       assertEquals(StorageType.NONE, client.checkBucket(bucketName2, clientId, true));

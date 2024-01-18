@@ -22,9 +22,9 @@ import io.clonecloudstore.accessor.client.api.AccessorBucketApi;
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.StorageType;
 import jakarta.ws.rs.core.Response;
@@ -49,7 +49,7 @@ public class AccessorBucketApiClient extends SimpleClientAbstract<AccessorBucket
     try {
       return (Collection<AccessorBucket>) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -68,7 +68,7 @@ public class AccessorBucketApiClient extends SimpleClientAbstract<AccessorBucket
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(bucketName, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);
@@ -104,7 +104,7 @@ public class AccessorBucketApiClient extends SimpleClientAbstract<AccessorBucket
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(bucketName, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);

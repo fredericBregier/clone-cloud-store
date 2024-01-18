@@ -21,12 +21,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
-import io.clonecloudstore.common.quarkus.stream.ChunkInputStream;
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
+import io.clonecloudstore.common.quarkus.stream.ChunkInputStreamInterface;
+import io.clonecloudstore.common.quarkus.stream.ChunkInputStreamOptionalBuffer;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.DriverApi;
 import io.clonecloudstore.driver.api.StorageType;
@@ -37,45 +36,51 @@ import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.api.exception.DriverRuntimeException;
 import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
+import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
-import static io.clonecloudstore.common.standard.system.SystemTools.STANDARD_EXECUTOR_SERVICE;
-
 /**
  * S3 Driver
  */
 public class DriverS3 implements DriverApi {
   private static final Logger LOGGER = Logger.getLogger(DriverS3.class);
-  private static final Map<String, TransferStatus> storageObjectCreations = new ConcurrentHashMap<>();
-
   private final S3Client s3Client;
   private final DriverS3Helper driverS3Helper;
+  private final BulkMetrics bulkMetrics;
 
   protected DriverS3(final DriverS3Helper driverS3Helper) throws DriverRuntimeException {
     this.driverS3Helper = driverS3Helper;
     s3Client = driverS3Helper.getClient();
+    bulkMetrics = CDI.current().select(BulkMetrics.class).get();
+  }
+
+  S3Client getS3Client() {
+    return s3Client;
   }
 
   @Override
   public long bucketsCount() throws DriverException {
     // Count S3 buckets
-    final var response = driverS3Helper.getS3Buckets(s3Client);
+    final var response = driverS3Helper.getBuckets(s3Client);
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_COUNT);
     return response.buckets().size();
   }
 
   @Override
   public Stream<StorageBucket> bucketsStream() throws DriverException {
     // List first level buckets from S3
-    final var response = driverS3Helper.getS3Buckets(s3Client);
+    final var response = driverS3Helper.getBuckets(s3Client);
     final var buckets = response.buckets();
     final List<StorageBucket> directories = new ArrayList<>(buckets.size());
     for (final var bucket : buckets) {
-      directories.add(driverS3Helper.fromBucket(bucket));
+      final var clientId = driverS3Helper.getClientIdTag(s3Client, bucket.name());
+      directories.add(driverS3Helper.fromBucket(bucket, clientId));
     }
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_STREAM);
     return directories.stream();
   }
 
@@ -85,34 +90,78 @@ public class DriverS3 implements DriverApi {
   }
 
   @Override
+  public StorageBucket bucketGet(final String bucket)
+      throws DriverNotFoundException, DriverException { // NOSONAR Exception details
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_READ);
+    return driverS3Helper.getBucket(s3Client, bucket);
+  }
+
+  @Override
   public StorageBucket bucketCreate(final StorageBucket bucket)
       throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    return driverS3Helper.createS3Bucket(s3Client, bucket);
+    try {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+      return driverS3Helper.createBucket(s3Client, bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageBucket bucketImport(final StorageBucket bucket)
+      throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+      return driverS3Helper.importBucket(s3Client, bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
   }
 
   @Override
   public void bucketDelete(final String bucket)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
-    driverS3Helper.deleteS3Bucket(s3Client, bucket);
+    try {
+      driverS3Helper.deleteBucket(s3Client, bucket);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_DELETE);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
+    }
   }
 
   @Override
   public boolean bucketExists(final String bucket) throws DriverException {
-    return driverS3Helper.existS3Bucket(s3Client, bucket);
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_EXISTS);
+    return driverS3Helper.existBucket(s3Client, bucket);
   }
 
   @Override
   public long objectsCountInBucket(final String bucket)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    // Count S3 objects from S3 bucket if it exists
-    return driverS3Helper.countS3ObjectsInBucket(s3Client, bucket);
+    try {
+      // Count S3 objects from S3 bucket if it exists
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
+      return driverS3Helper.countObjectsInBucket(s3Client, bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
   public long objectsCountInBucket(final String bucket, final String prefix, final Instant from, final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    final var iterator = driverS3Helper.getS3ObjectsIteratorFilteredInBucket(s3Client, bucket, prefix, from, to);
-    return SystemTools.consumeAll(iterator);
+    try {
+      final var iterator = driverS3Helper.getObjectsIteratorFilteredInBucket(s3Client, bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
+      return SystemTools.consumeAll(iterator);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
@@ -125,15 +174,21 @@ public class DriverS3 implements DriverApi {
   public Stream<StorageObject> objectsStreamInBucket(final String bucket, final String prefix, final Instant from,
                                                      final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    final var stream = driverS3Helper.getS3ObjectsStreamFilteredInBucket(s3Client, bucket, prefix, from, to);
-    return stream.map(s3Object -> {
-      try {
-        return driverS3Helper.fromS3Object(s3Client, bucket, s3Object);
-      } catch (final DriverException e) {
-        // Should not occur except if object is deleted in the middle
-        throw new DriverRuntimeException(e.getMessage(), e);
-      }
-    });
+    try {
+      final var stream = driverS3Helper.getObjectsStreamFilteredInBucket(s3Client, bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
+      return stream.map(s3Object -> {
+        try {
+          return driverS3Helper.fromS3Object(s3Client, bucket, s3Object);
+        } catch (final DriverException e) {
+          // Should not occur except if object is deleted in the middle
+          throw new DriverRuntimeException(e.getMessage(), e);
+        }
+      });
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
@@ -146,91 +201,90 @@ public class DriverS3 implements DriverApi {
   public Iterator<StorageObject> objectsIteratorInBucket(final String bucket, final String prefix, final Instant from,
                                                          final Instant to)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    final var iterator = driverS3Helper.getS3ObjectsIteratorFilteredInBucket(s3Client, bucket, prefix, from, to);
-    return new StorageObjectIterator(iterator, bucket);
+    try {
+      final var iterator = driverS3Helper.getObjectsIteratorFilteredInBucket(s3Client, bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
+      return new StorageObjectIterator(iterator, bucket);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
   public StorageType directoryOrObjectExistsInBucket(final String bucket, final String directoryOrObject)
       throws DriverException {
-    return driverS3Helper.existS3DirectoryOrObjectInBucket(s3Client, bucket, directoryOrObject);
+    try {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_EXISTS);
+      return driverS3Helper.existDirectoryOrObjectInBucket(s3Client, bucket, directoryOrObject);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
   }
 
   @Override
   public void objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    if (!driverS3Helper.existS3Bucket(s3Client, object.bucket())) {
-      throw new DriverNotFoundException(DriverS3Helper.BUCKET_DOES_NOT_EXIST + object.bucket());
-    }
-    checkExistingObjectOnStorage(object);
-    final var countDownLatch = new CountDownLatch(1);
-    final var transferStatus = new TransferStatus();
-    transferStatus.countDownLatch = countDownLatch;
-    transferStatus.exception = null;
-    transferStatus.size = 0;
-    storageObjectCreations.put(object.bucket() + '/' + object.name(), transferStatus);
-    STANDARD_EXECUTOR_SERVICE.execute(() -> {
-      try {
-        final var exc = objectCreatePreparedAsync(object, inputStream, countDownLatch, transferStatus);
-        if (exc != null) {
-          transferStatus.exception = exc;
-          LOGGER.error(exc, exc);
-        }
-        SystemTools.silentlyCloseNoException(inputStream);
-      } finally {
-        countDownLatch.countDown();
+    try {
+      if (!driverS3Helper.existBucket(s3Client, object.bucket())) {
+        throw new DriverNotFoundException(DriverS3Helper.BUCKET_DOES_NOT_EXIST + object.bucket());
       }
-    });
-    Thread.yield();
+      checkExistingObjectOnStorage(object);
+      var exc = objectCreatePreparedAsync(object, inputStream);
+      SystemTools.silentlyCloseNoException(inputStream);
+      if (exc != null) {
+        LOGGER.error(exc, exc);
+        if (exc instanceof DriverException e) {
+          throw e;
+        }
+        throw new DriverException("Issue during creation", exc);
+      }
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
   }
 
   private void checkExistingObjectOnStorage(final StorageObject object)
       throws DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    if (driverS3Helper.existS3ObjectInBucket(s3Client, object.bucket(), object.name())) {
+    if (driverS3Helper.existObjectInBucket(s3Client, object.bucket(), object.name())) {
       throw new DriverAlreadyExistException("Object already exists: " + object.bucket() + ":" + object.name());
     }
   }
 
-  private Exception objectCreatePreparedAsync(final StorageObject object, final InputStream inputStream,
-                                              final CountDownLatch countDownLatch,
-                                              final TransferStatus transferStatus) {
+  private Exception objectCreatePreparedAsync(final StorageObject object, final InputStream inputStream) {
     if (object.size() > 0 && object.size() <= DriverS3Properties.getMaxPartSize()) {
-      return objectCreatePreparedAsyncMonoPart(object, inputStream, countDownLatch, transferStatus);
+      return objectCreatePreparedAsyncMonoPart(object, inputStream);
     } else {
-      return objectCreatePreparedAsyncMultiParts(object, inputStream, countDownLatch, transferStatus);
+      return objectCreatePreparedAsyncMultiParts(object, inputStream);
     }
   }
 
-  private Exception objectCreatePreparedAsyncMultiParts(final StorageObject object, final InputStream inputStream,
-                                                        final CountDownLatch countDownLatch,
-                                                        final TransferStatus transferStatus) {
+  private Exception objectCreatePreparedAsyncMultiParts(final StorageObject object, final InputStream inputStream) {
     LOGGER.debugf("Start creation chunked: %s", object.name());
     final var partSize =
         Math.min(object.size() > 0 ? object.size() : DriverS3Properties.getMaxPartSizeForUnknownLength(),
             DriverS3Properties.getMaxPartSizeForUnknownLength());
-    final var chunkInputStream = new ChunkInputStream(inputStream, object.size(), (int) partSize);
+    final var chunkInputStream = new ChunkInputStreamOptionalBuffer(inputStream, object.size(), (int) partSize);
     try (final var client = driverS3Helper.getClient()) {
       final var multipartUploadHelper = new MultipartUploadHelper(client, object);
-      return chunkByChunkAsyncMultiParts(transferStatus, chunkInputStream, multipartUploadHelper);
+      return chunkByChunkAsyncMultiParts(chunkInputStream, multipartUploadHelper);
     } catch (final DriverException e) {
-      transferStatus.exception = e;
       return e;
     } finally {
       SystemTools.silentlyCloseNoException(inputStream);
       SystemTools.silentlyCloseNoException(chunkInputStream);
-      countDownLatch.countDown();
     }
   }
 
-  private Exception chunkByChunkAsyncMultiParts(final TransferStatus transferStatus,
-                                                final ChunkInputStream chunkInputStream,
+  private Exception chunkByChunkAsyncMultiParts(final ChunkInputStreamInterface chunkInputStream,
                                                 final MultipartUploadHelper multipartUploadHelper) {
     try {
       while (chunkInputStream.nextChunk()) {
-        final var chunkSize = chunkInputStream.getChunkSize();
+        final var chunkSize = chunkInputStream.getAvailableChunkSize();
         LOGGER.debugf("Newt ChunkSize: %d", chunkSize);
-        multipartUploadHelper.partUpload(chunkInputStream, chunkSize);
-        transferStatus.size += chunkSize;
+        multipartUploadHelper.partUpload((InputStream) chunkInputStream, chunkSize);
         Thread.yield();
       }
       multipartUploadHelper.complete();
@@ -238,7 +292,6 @@ public class DriverS3 implements DriverApi {
       return null;
     } catch (final Exception e) {
       LOGGER.debugf("Error: %s", e.getMessage());
-      transferStatus.exception = e;
       try {
         LOGGER.debug("Cancel multipart");
         multipartUploadHelper.cancel();
@@ -249,22 +302,15 @@ public class DriverS3 implements DriverApi {
     }
   }
 
-  private Exception objectCreatePreparedAsyncMonoPart(final StorageObject object, final InputStream inputStream,
-                                                      final CountDownLatch countDownLatch,
-                                                      final TransferStatus transferStatus) {
+  private Exception objectCreatePreparedAsyncMonoPart(final StorageObject object, final InputStream inputStream) {
     LOGGER.debugf("Start creation direct: %s", object.name());
     try (final var client = driverS3Helper.getClient()) {
-      driverS3Helper.createS3ObjectInBucketNoCheck(client, object, inputStream);
-      transferStatus.size = object.size();
-      Thread.yield();
+      driverS3Helper.createObjectInBucket(client, object, inputStream);
       return null;
     } catch (final DriverException e) {
-      LOGGER.errorf("Error: %s", e);
-      transferStatus.exception = e;
       return e;
     } finally {
       SystemTools.silentlyCloseNoException(inputStream);
-      countDownLatch.countDown();
     }
   }
 
@@ -272,23 +318,7 @@ public class DriverS3 implements DriverApi {
   public StorageObject objectFinalizeCreateInBucket(final String bucket, final String object, final long realLen,
                                                     final String sha256)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
-    final var transferStatus = storageObjectCreations.remove(bucket + '/' + object);
-    if (transferStatus == null) {
-      throw new DriverException("Request not found while finishing creation request: " + bucket + '/' + object);
-    }
-    try {
-      transferStatus.countDownLatch.await();
-    } catch (final InterruptedException e) {
-      transferStatus.exception = e;
-      Thread.currentThread().interrupt();
-    }
-    final var exception = transferStatus.exception;
-    if (exception != null) {
-      if (exception instanceof DriverException e) {
-        throw e;
-      }
-      throw new DriverException("Issue during creation", exception);
-    }
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_CREATE);
     try {
       return driverS3Helper.waitUntilObjectExist(s3Client, bucket, object, sha256);
     } catch (final DriverNotAcceptableException e) {
@@ -300,22 +330,46 @@ public class DriverS3 implements DriverApi {
   public InputStream objectGetInputStreamInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
-      return driverS3Helper.getS3ObjectBodyInBucket(s3Client, bucket, object, false);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ);
+      return driverS3Helper.getObjectBodyInBucket(s3Client, bucket, object, false);
     } catch (final NoSuchBucketException | NoSuchKeyException e) {
       throw new DriverNotFoundException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageObject objectCopy(final StorageObject objectSource, final StorageObject objectTarget)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      validCopy(objectSource, objectTarget);
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COPY);
+      return driverS3Helper.objectCopyToAnother(s3Client, objectSource, objectTarget);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
     }
   }
 
   @Override
   public StorageObject objectGetMetadataInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    return driverS3Helper.getS3ObjectInBucket(s3Client, bucket, object);
+    bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ_MD);
+    return driverS3Helper.getObjectInBucket(s3Client, bucket, object);
   }
 
   @Override
   public void objectDeleteInBucket(final String bucket, final String object)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
-    driverS3Helper.deleteS3ObjectInBucket(s3Client, bucket, object);
+    try {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_DELETE);
+      driverS3Helper.deleteObjectInBucket(s3Client, bucket, object);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverS3.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
+    }
   }
 
   @Override
@@ -323,12 +377,6 @@ public class DriverS3 implements DriverApi {
     if (s3Client != null) {
       s3Client.close();
     }
-  }
-
-  private static class TransferStatus {
-    CountDownLatch countDownLatch;
-    Exception exception;
-    long size;
   }
 
   private class StorageObjectIterator implements Iterator<StorageObject> {

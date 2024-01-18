@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,18 +29,16 @@ import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
-import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.accessor.server.simple.application.AccessorObjectService;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
-import io.clonecloudstore.test.resource.s3.MinioProfile;
+import io.clonecloudstore.test.resource.azure.AzureProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -61,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioProfile.class)
+@TestProfile(AzureProfile.class)
 class AccessorApacheObjectResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorApacheObjectResourceTest.class);
   public static final String BUCKET_NAME = "testbucket";
@@ -78,19 +77,12 @@ class AccessorApacheObjectResourceTest {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
   }
 
   @BeforeEach
   void beforeEach() {
     factory = new AccessorApiFactory("http://127.0.0.1:8081", clientId);
+    CleanupTestUtil.cleanUp();
   }
 
   @AfterEach
@@ -100,18 +92,16 @@ class AccessorApacheObjectResourceTest {
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_NAME, true);
-    createBucketAndObject(BUCKET_NAME, finalBucketName, OBJECT);
-    createBucketAndObject(BUCKET_NAME, finalBucketName, '/' + OBJECT);
+    createBucketAndObject(BUCKET_NAME, OBJECT);
+    createBucketAndObject(BUCKET_NAME, '/' + OBJECT);
   }
 
-  void createBucketAndObject(final String bucketName, final String finalBucketName, final String objectName)
-      throws CcsWithStatusException {
+  void createBucketAndObject(final String bucketName, final String objectName) throws CcsWithStatusException {
     // Create Bucket
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object
     AccessorObject original;
@@ -119,8 +109,8 @@ class AccessorApacheObjectResourceTest {
       final var accessorObject = new AccessorObject().setBucket(bucketName).setName(objectName).setSize(100);
       original = client.createObject(accessorObject, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(objectName), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(objectName), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertNotNull(original.getHash());
@@ -149,13 +139,13 @@ class AccessorApacheObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var object = client.getObjectInfo(bucketName, objectName);
       LOG.infof("Object: %s", object);
-      Assertions.assertEquals(original, object);
+      checkVsOriginal(original, object);
     }
     // Get both Object and content
     try (final var client = factory.newClient()) {
       final var inputStreamObject = client.getObject(bucketName, objectName);
       LOG.infof("Object: %s", inputStreamObject.dtoOut());
-      Assertions.assertEquals(original, inputStreamObject.dtoOut());
+      checkVsOriginal(original, inputStreamObject.dtoOut());
       final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
       assertEquals(100, len);
     } catch (final IOException e) {
@@ -236,13 +226,12 @@ class AccessorApacheObjectResourceTest {
 
   @Test
   void checkTryCreateWhileAlreadyInCreation() throws CcsWithStatusException {
-    final var bucketName = "retry-create";
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
+    final var bucketName = "retrycreate";
     // Create Bucket
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object with fake Hash
     AccessorObject original;
@@ -251,8 +240,8 @@ class AccessorApacheObjectResourceTest {
           new AccessorObject().setBucket(bucketName).setName(OBJECT).setSize(100).setHash("fakeHash");
       original = client.createObject(accessorObject, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(OBJECT), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertEquals(accessorObject.getHash(), original.getHash());
@@ -273,15 +262,30 @@ class AccessorApacheObjectResourceTest {
     }
   }
 
+  private void checkVsOriginal(final AccessorObject original, final AccessorObject object) {
+    // Time can be different since no database
+    assertEquals(original.getBucket(), object.getBucket());
+    assertEquals(original.getSize(), object.getSize());
+    assertEquals(original.getSite(), object.getSite());
+    assertEquals(original.getId(), object.getId());
+    assertEquals(original.getHash(), object.getHash());
+    assertEquals(original.getMetadata(), object.getMetadata());
+    assertEquals(original.getName(), object.getName());
+    assertEquals(original.getStatus(), object.getStatus());
+    assertTrue(Objects.equals(original.getCreation(), object.getCreation()) ||
+        original.getCreation().isBefore(object.getCreation()));
+    assertTrue(Objects.equals(original.getExpires(), object.getExpires()) ||
+        original.getExpires().isBefore(object.getExpires()));
+  }
+
   @Test
   void createBucketAndObjectRemote() throws CcsWithStatusException {
-    final var bucketName = "change-remote";
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true);
+    final var bucketName = "changeremote";
     // Create Bucket
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(finalBucketName, bucket.getId());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     // Create Object
     AccessorObject original;
@@ -293,11 +297,12 @@ class AccessorApacheObjectResourceTest {
               .setExpires(Instant.now().plusSeconds(10000));
       original = client.createObject(accessorObject, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(OBJECT), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT), original.getName());
       assertEquals(100, original.getSize());
       assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
       assertNotNull(original.getHash());
+      assertEquals(accessorObject.getExpires(), original.getExpires());
     }
     // Check existence
     try (final var client = factory.newClient()) {
@@ -313,7 +318,7 @@ class AccessorApacheObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var object = client.getObjectInfo(bucketName, OBJECT);
       LOG.infof("Object: %s", object);
-      Assertions.assertEquals(original, object);
+      checkVsOriginal(original, object);
     }
     // Get both Object and content
     try (final var client = factory.newClient()) {
@@ -548,7 +553,7 @@ class AccessorApacheObjectResourceTest {
       }
       final var object = client.getObjectInfo(bucketName, OBJECT);
       LOG.infof("Object: %s", object);
-      Assertions.assertEquals(original, object);
+      checkVsOriginal(original, object);
       final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
@@ -577,24 +582,20 @@ class AccessorApacheObjectResourceTest {
 
   @Test
   void createBucketAndMultipleObject() throws CcsWithStatusException {
-    final var finalBucketName = AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME, true);
-    createBucketAndMultipleObject(BUCKET_MULTI_NAME, finalBucketName, true);
+    createBucketAndMultipleObject(BUCKET_MULTI_NAME, true);
   }
 
   @Test
   void createBucketAndMultipleObjectNoSize() throws CcsWithStatusException {
-    final var finalBucketName =
-        AbstractPublicBucketHelper.getTechnicalBucketName(clientId, BUCKET_MULTI_NAME + "2", true);
-    createBucketAndMultipleObject(BUCKET_MULTI_NAME + "2", finalBucketName, false);
+    createBucketAndMultipleObject(BUCKET_MULTI_NAME + "2", false);
   }
 
-  void createBucketAndMultipleObject(final String bucketName, final String finalBucketName, final boolean useLen)
-      throws CcsWithStatusException {
+  void createBucketAndMultipleObject(final String bucketName, final boolean useLen) throws CcsWithStatusException {
     // Create Bucket
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
     }
     AccessorObject original;
     // Will create, check, read 10 objects
@@ -604,8 +605,8 @@ class AccessorApacheObjectResourceTest {
             new AccessorObject().setBucket(bucketName).setName(OBJECT + i).setSize(useLen ? 100 + i : 0);
         original = client.createObject(accessorObject, new FakeInputStream(100 + i));
         LOG.infof("Object: %s", original);
-        assertEquals(finalBucketName, original.getBucket());
-        assertEquals(ParametersChecker.getSanitizedName(OBJECT + i), original.getName());
+        assertEquals(bucketName, original.getBucket());
+        assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT + i), original.getName());
         assertEquals(100 + i, original.getSize());
         assertEquals(AccessorProperties.getAccessorSite(), original.getSite());
         assertNotNull(original.getHash());
@@ -662,9 +663,7 @@ class AccessorApacheObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var accessorBucket = client.createBucket(bucket);
       LOG.infof("Bucket: %s", bucket);
-      Assertions.assertEquals(bucket, accessorBucket.getName());
-      Assertions.assertEquals(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucket, true),
-          accessorBucket.getId());
+      Assertions.assertEquals(bucket, accessorBucket.getId());
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -676,7 +675,7 @@ class AccessorApacheObjectResourceTest {
           given().headers(map).header(AccessorConstants.HeaderObject.X_OBJECT_NAME, objectChunked)
               .contentType(MediaType.APPLICATION_OCTET_STREAM).header(X_OP_ID, "1").body(body).when()
               .post("http://127.0.0.1:8081" + uriChunked).then().statusCode(201).extract().as(AccessorObject.class);
-      assertEquals(ParametersChecker.getSanitizedName(objectChunked), accessorObject.getName());
+      assertEquals(ParametersChecker.getSanitizedObjectName(objectChunked), accessorObject.getName());
       assertEquals(len, accessorObject.getSize());
       assertNotNull(accessorObject.getCreation());
       final var stop = System.nanoTime();

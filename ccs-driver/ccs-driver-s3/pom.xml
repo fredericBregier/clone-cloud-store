@@ -42,6 +42,10 @@
       <artifactId>s3</artifactId>
     </dependency>
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>netty-nio-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-common-quarkus</artifactId>
     </dependency>

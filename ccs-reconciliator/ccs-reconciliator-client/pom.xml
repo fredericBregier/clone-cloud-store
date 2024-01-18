@@ -27,4 +27,19 @@
   </parent>
 
   <artifactId>ccs-reconciliator-client</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-config-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-accessor-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-replicator-model</artifactId>
+    </dependency>
+  </dependencies>
 </project>

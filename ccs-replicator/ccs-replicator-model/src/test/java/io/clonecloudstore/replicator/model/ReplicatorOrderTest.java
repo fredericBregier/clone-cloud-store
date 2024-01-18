@@ -18,15 +18,14 @@ package io.clonecloudstore.replicator.model;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.common.standard.guid.GuidLike;
-import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TARGET_ID;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Action.CREATE;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Action.DELETE;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.X_TARGET_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -99,14 +98,14 @@ class ReplicatorOrderTest {
             null, CREATE);
     var map = object.getHeaders();
     assertEquals(object.clientId(), map.get(AccessorConstants.Api.X_CLIENT_ID));
-    assertEquals(object.toSite(), map.get(ReplicatorConstants.Api.X_TARGET_ID));
+    assertEquals(object.toSite(), map.get(AccessorConstants.Api.X_TARGET_ID));
     assertEquals(object.opId(), map.get(X_OP_ID));
     assertEquals(3, map.size());
 
     object = new ReplicatorOrder(null, "FROM_SITE", "TO_SITE", null, "BUCKET_NAME", "OBJECT_PATH", 0, null, CREATE);
     map = object.getHeaders();
     assertNull(map.get(X_CLIENT_ID));
-    assertEquals(object.toSite(), map.get(ReplicatorConstants.Api.X_TARGET_ID));
+    assertEquals(object.toSite(), map.get(AccessorConstants.Api.X_TARGET_ID));
     assertEquals(1, map.size());
   }
 }

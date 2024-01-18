@@ -42,6 +42,10 @@
       <artifactId>quarkus-config-yaml</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-scheduler</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-common-quarkus-server</artifactId>
     </dependency>

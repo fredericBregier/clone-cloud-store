@@ -12,7 +12,8 @@ Missing or In Progress Functionalities
 
 - Reconciliation
 
-  - First steps on Reconciliation computations are still in progress
+  - Reconciliation computations done
+  - Missing API and configurations
   - Note that replication is active and remote access if not locally present is possible (through configuration)
 
 - PostgreSQL full support
@@ -32,7 +33,6 @@ Missing or In Progress Functionalities
 
     - It shall be useful only for Replicator and in particular in outbound global mode per site
 
-  - Quarkus Metrics are available but not yet for actions within Clone Cloud Store. The work is on going.
   - Health check service to be done
 
 - Distribution of final jars according to various options is still in debate
@@ -40,3 +40,4 @@ Missing or In Progress Functionalities
   - A choice between Kafka or Pulsar implies 2 different jar due to pom differences
   - However, for PostgreSql or MongoDB, it can be done through configuration so keeping one jar
   - Should it be separate jar (individual per module and per option) or flatten jar (per option)?
+  - Helm, Ansible and Dockerfile or other ways to distribute image

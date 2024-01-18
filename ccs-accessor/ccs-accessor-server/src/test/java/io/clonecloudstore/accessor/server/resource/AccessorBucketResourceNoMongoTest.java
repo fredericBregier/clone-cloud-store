@@ -20,9 +20,7 @@ import java.util.UUID;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.MinioKafkaProfile;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
+import io.clonecloudstore.test.resource.AzureKafkaProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -33,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
-@TestProfile(MinioKafkaProfile.class)
+@TestProfile(AzureKafkaProfile.class)
 class AccessorBucketResourceNoMongoTest {
 
   @Inject
@@ -43,14 +41,6 @@ class AccessorBucketResourceNoMongoTest {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
   }
 
   @Test

@@ -204,9 +204,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
     MDC.removeObject(MDC_QUERY_HEADERS);
     if (opId.get() != null) {
       INPUTSTREAM_OBJECT_MAP.remove(opId.get());
-      if (!INPUTSTREAM_COMPRESSED_MAP.isEmpty()) {
-        LOGGER.infof("Compression Status not empty: %s", INPUTSTREAM_COMPRESSED_MAP);
-      }
+      INPUTSTREAM_COMPRESSED_MAP.remove(opId.get());
     }
     MDC.remove(ApiConstants.X_OP_ID);
   }

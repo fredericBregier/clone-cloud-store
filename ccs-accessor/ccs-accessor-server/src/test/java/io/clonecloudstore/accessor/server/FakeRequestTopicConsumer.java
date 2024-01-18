@@ -23,6 +23,7 @@ import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
@@ -36,6 +37,7 @@ public class FakeRequestTopicConsumer {
   static final AtomicLong objectDelete = new AtomicLong(0);
 
   @Incoming(ReplicatorConstants.Topic.REPLICATOR_REQUEST_IN)
+  @Blocking(ordered = true)
   public void consume(final List<ReplicatorOrder> orders) {
     QuarkusProperties.refreshModuleMdc();
     for (final var order : orders) {

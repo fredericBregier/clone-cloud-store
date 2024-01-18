@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
-import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
@@ -90,41 +89,18 @@ class AccessorHeaderDtoConverterTest {
     assertTrue(accessorObject.toString().contains("value2"));
     accessorObjectClone.addMetadata("key2", "value3");
     assertNotEquals(accessorObject, accessorObjectClone);
-  }
 
-  @Test
-  void bucketConverter() {
-    final var accessorBucket0 = new AccessorBucket();
-    final var accessorBucket01 = new AccessorBucket();
-    final MultivaluedMap<String, String> multivaluedMapEmpty = new MultivaluedHashMap<>();
-    AccessorHeaderDtoConverter.bucketFromMap(accessorBucket01, multivaluedMapEmpty);
-    assertEquals(accessorBucket0.hashCode(), accessorBucket01.hashCode());
-    final Map<String, String> headersEmpty = new HashMap<>();
-    AccessorHeaderDtoConverter.bucketToMap(accessorBucket01, headersEmpty);
-    assertFalse(headersEmpty.isEmpty());
-    assertEquals(AccessorStatus.UNKNOWN.toString(), headersEmpty.get(AccessorConstants.HeaderBucket.X_BUCKET_STATUS));
-    headersEmpty.remove(AccessorConstants.HeaderBucket.X_BUCKET_STATUS);
-    assertTrue(headersEmpty.isEmpty());
-
-    final var accessorBucket = new AccessorBucket();
-    accessorBucket.setId("id-name").setName("name").setStatus(AccessorStatus.READY).setCreation(Instant.now())
-        .setExpires(Instant.now().plusSeconds(60)).setSite("site");
-    final Map<String, String> headers = new HashMap<>();
-    AccessorHeaderDtoConverter.bucketToMap(accessorBucket, headers);
-    final var accessorBucket1 = new AccessorBucket();
-    final MultivaluedMap<String, String> multivaluedMap = new MultivaluedHashMap<>();
-    for (final var entry : headers.entrySet()) {
-      multivaluedMap.putSingle(entry.getKey(), entry.getValue());
+    accessorObject.setBucket("clientid-bucket");
+    final Map<String, String> headers2 = new HashMap<>();
+    AccessorHeaderDtoConverter.objectToMap(accessorObject, headers2);
+    final var accessorObject3 = new AccessorObject();
+    final MultivaluedMap<String, String> multivaluedMap2 = new MultivaluedHashMap<>();
+    for (final var entry : headers2.entrySet()) {
+      multivaluedMap2.putSingle(entry.getKey(), entry.getValue());
     }
-    AccessorHeaderDtoConverter.bucketFromMap(accessorBucket1, multivaluedMap);
-    assertEquals(accessorBucket, accessorBucket1);
-    assertEquals(accessorBucket.hashCode(), accessorBucket1.hashCode());
-    final var accessorObjectClone = accessorBucket.cloneInstance();
-    assertEquals(accessorBucket, accessorObjectClone);
-    assertEquals(accessorBucket, accessorBucket);
-    assertTrue(accessorBucket.toString().contains("id-name"));
-    accessorObjectClone.setName("name2");
-    assertNotEquals(accessorBucket, accessorObjectClone);
+    AccessorHeaderDtoConverter.objectFromMap(accessorObject3, multivaluedMap2);
+    assertEquals(accessorObject, accessorObject3);
+    assertNotEquals(accessorObject1, accessorObject3);
   }
 
   @Test

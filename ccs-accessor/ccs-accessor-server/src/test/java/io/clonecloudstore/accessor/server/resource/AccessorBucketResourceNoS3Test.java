@@ -25,8 +25,8 @@ import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketReposi
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.MongoKafkaProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -56,12 +56,13 @@ class AccessorBucketResourceNoS3Test {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-    DriverS3Properties.setDynamicS3Parameters("http://127.0.0.1:9999", "AccessKey", "SecretKey", "Region");
   }
 
   @BeforeEach
   void beforeEach() {
     repository = repositoryInstance.get();
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
@@ -83,9 +84,8 @@ class AccessorBucketResourceNoS3Test {
       // Now same but having Bucket in DB, except creation
       final var fakebucket = "fakebucket";
       final var dao = repository.createEmptyItem();
-      dao.setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setName(fakebucket)
-          .setId(DaoAccessorBucketRepository.getBucketTechnicalName(clientId, fakebucket))
-          .setStatus(AccessorStatus.READY);
+      dao.setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setId(fakebucket)
+          .setStatus(AccessorStatus.READY).setClientId(clientId);
       repository.insert(dao);
       assertEquals(StorageType.NONE, client.checkBucket(bucketName1, clientId));
       assertEquals(404,

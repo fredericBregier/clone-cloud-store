@@ -19,13 +19,13 @@ package io.clonecloudstore.accessor.server.database.model;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.common.quarkus.properties.JsonUtil;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import jakarta.persistence.Column;
@@ -69,7 +69,8 @@ public abstract class DaoAccessorObject {
   @Column(name = SIZE)
   private long size;
   /**
-   * Reconciliation status is not used elsewhere than Reconciliation
+   * Reconciliation status is not used elsewhere than Reconciliation,
+   * based on AccessorStatus
    */
   @Column(name = RSTATUS)
   private short rstatus;
@@ -120,6 +121,7 @@ public abstract class DaoAccessorObject {
   }
 
   public DaoAccessorObject setSite(final String site) {
+    ParametersChecker.checkSanityString(site);
     this.site = site;
     return this;
   }
@@ -236,12 +238,7 @@ public abstract class DaoAccessorObject {
     try {
       return JsonUtil.getInstance().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{" + "\"id\":\"" + getId() + "\"" + ", \"site\":\"" + site + "\"" + ", \"bucket\":\"" + bucket + "\"" +
-          ", \"name\":\"" + name + "\"" + ", \"hash\":\"" + hash + "\"" + ", \"status\":\"" + status + "\"" +
-          ", \"rstatus\":" + rstatus + ", \"creation\":" + creation + ", \"expires\":" + expires + ", \"size\":\"" +
-          size + "\"" + ", \"metadata\": {" +
-          getMetadata().entrySet().stream().map(d -> "\"%s\": \"%s\",".formatted(d.getKey(), d.getValue()))
-              .collect(Collectors.joining()) + "}}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 }

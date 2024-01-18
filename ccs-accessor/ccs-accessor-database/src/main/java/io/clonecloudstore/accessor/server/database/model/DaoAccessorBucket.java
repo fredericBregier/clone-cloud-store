@@ -24,13 +24,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.common.quarkus.properties.JsonUtil;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
+import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.clonecloudstore.common.standard.system.SystemTools;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
 
 import static io.clonecloudstore.accessor.model.AccessorStatus.STATUS_LENGTH;
 import static io.clonecloudstore.common.standard.guid.GuidLike.UUID_B32_SIZE;
-import static io.clonecloudstore.common.standard.system.ParametersChecker.BUCKET_NOSITE_LENGTH;
 import static io.clonecloudstore.common.standard.system.ParametersChecker.SITE_LENGTH;
 
 /**
@@ -38,14 +40,14 @@ import static io.clonecloudstore.common.standard.system.ParametersChecker.SITE_L
  */
 @MappedSuperclass
 public abstract class DaoAccessorBucket {
+  @Column(name = DaoAccessorBucketRepository.CLIENT_ID, nullable = false, length = UUID_B32_SIZE)
+  private String clientId;
   @Column(name = DaoAccessorBucketRepository.SITE, nullable = false, length = SITE_LENGTH)
   private String site;
-  @Column(name = DaoAccessorBucketRepository.NAME, nullable = false, length = BUCKET_NOSITE_LENGTH)
-  private String name;
-  @Column(name = DaoAccessorBucketRepository.CREATION, nullable = false, length = UUID_B32_SIZE)
+  @Column(name = DaoAccessorBucketRepository.CREATION, nullable = false)
   private Instant creation;
 
-  @Column(name = DaoAccessorBucketRepository.EXPIRES, nullable = false, length = UUID_B32_SIZE)
+  @Column(name = DaoAccessorBucketRepository.EXPIRES, nullable = true)
   private Instant expires = null;
 
   @Column(name = DaoAccessorBucketRepository.BUCKET_STATUS, nullable = false, length = STATUS_LENGTH)
@@ -61,7 +63,7 @@ public abstract class DaoAccessorBucket {
   @JsonIgnore
   public DaoAccessorBucket fromDto(final AccessorBucket dto) {
     setId(dto.getId());
-    setName(dto.getName());
+    setClientId(dto.getClientId());
     setSite(dto.getSite());
     setExpires(dto.getExpires());
     setCreation(dto.getCreation());
@@ -72,29 +74,31 @@ public abstract class DaoAccessorBucket {
   @Transient
   @JsonIgnore
   public AccessorBucket getDto() {
-    return new AccessorBucket().setId(this.getId()).setName(this.getName()).setSite(this.getSite())
-        .setCreation(this.getCreation()).setExpires(this.getExpires()).setStatus(this.getStatus());
+    return new AccessorBucket().setId(this.getId()).setSite(this.getSite()).setCreation(this.getCreation())
+        .setExpires(this.getExpires()).setStatus(this.getStatus()).setClientId(this.getClientId());
   }
 
   public abstract String getId();
 
-  public abstract DaoAccessorBucket setId(final String bucketTechnicalId);
+  public abstract DaoAccessorBucket setId(final String bucketId);
+
+  public String getClientId() {
+    return clientId;
+  }
+
+  public DaoAccessorBucket setClientId(final String clientId) {
+    ParametersChecker.checkSanityString(clientId);
+    this.clientId = clientId;
+    return this;
+  }
 
   public String getSite() {
     return site;
   }
 
   public DaoAccessorBucket setSite(final String site) {
+    ParametersChecker.checkSanityString(site);
     this.site = site;
-    return this;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public DaoAccessorBucket setName(final String name) {
-    this.name = name;
     return this;
   }
 
@@ -103,7 +107,7 @@ public abstract class DaoAccessorBucket {
   }
 
   public DaoAccessorBucket setCreation(final Instant creation) {
-    this.creation = creation;
+    this.creation = SystemTools.toMillis(creation);
     return this;
   }
 
@@ -112,7 +116,7 @@ public abstract class DaoAccessorBucket {
   }
 
   public DaoAccessorBucket setExpires(final Instant expires) {
-    this.expires = expires;
+    this.expires = SystemTools.toMillis(expires);
     return this;
   }
 
@@ -140,8 +144,8 @@ public abstract class DaoAccessorBucket {
       return true;
     }
     if (obj instanceof DaoAccessorBucket that) {
-      return Objects.equals(getId(), that.getId()) && Objects.equals(site, that.site) &&
-          Objects.equals(name, that.name) && Objects.equals(status, that.status) &&
+      return Objects.equals(getId(), that.getId()) && Objects.equals(getClientId(), that.getClientId()) &&
+          Objects.equals(site, that.site) && Objects.equals(status, that.status) &&
           Objects.equals(creation, that.creation) && Objects.equals(expires, that.expires);
     }
     return false;
@@ -149,7 +153,7 @@ public abstract class DaoAccessorBucket {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getId(), site, name, creation, expires, status);
+    return Objects.hash(getId(), clientId, site, creation, expires, status);
   }
 
   @Override
@@ -157,9 +161,7 @@ public abstract class DaoAccessorBucket {
     try {
       return JsonUtil.getInstance().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{" + "\"id\":\"" + getId() + "\"" + ", \"site\":\"" + site + "\"" + ", \"name\":\"" + name + "\"" +
-          ", \"status\":\"" + status.name() + "\"" + ", \"rstatus\":" + rstatus + ", \"creation\":" + creation +
-          ", \"expires\":" + expires + "}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 }

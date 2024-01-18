@@ -57,7 +57,7 @@ import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_NA
 
 @Path(API_FULLROOT)
 @NoCache
-public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerNativeStreamHandler> {
+public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerStreamHandler> {
   public static final long LEN = 50 * 1024 * 1024;
   public static final String NOT_FOUND_NAME = "notFoundName";
   public static final String CONFLICT_NAME = "conflictName";
@@ -157,7 +157,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     // Fake LEN
     businessIn.len = len > 0 ? len : LEN;
     var futureAlreadyCompressed = business.startsWith(PROXY_COMP_TEST);
-    return readObject(request, closer, businessIn);
+    return readObject(request, closer, businessIn, false);
   }
 
   // REST API for sending InputStream back to client
@@ -173,7 +173,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     businessIn.name = business;
     businessIn.len = len > 0 ? len : LEN;
     var futureAlreadyCompressed = business.startsWith(PROXY_COMP_TEST);
-    return readObject(request, closer, businessIn);
+    return readObject(request, closer, businessIn, false);
   }
 
   // REST API for sending InputStream back to client
@@ -188,7 +188,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
     final var businessIn = new ApiBusinessIn();
     businessIn.name = business;
     businessIn.len = len > 0 ? len : LEN;
-    return readObject(request, closer, businessIn);
+    return readObject(request, closer, businessIn, false);
   }
 
   // Example of REST API out of any InputStream usage but same URI (different accept through Produces annotation)

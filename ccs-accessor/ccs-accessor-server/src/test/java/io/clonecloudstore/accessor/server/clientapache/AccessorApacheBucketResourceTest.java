@@ -20,15 +20,15 @@ import java.util.UUID;
 
 import io.clonecloudstore.accessor.apache.client.AccessorApiFactory;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
+import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
-import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
+import io.clonecloudstore.test.resource.AzureMongoKafkaProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.enterprise.inject.Instance;
@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioMongoKafkaProfile.class)
+@TestProfile(AzureMongoKafkaProfile.class)
 class AccessorApacheBucketResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorApacheBucketResourceTest.class);
   AccessorApiFactory factory;
@@ -61,13 +61,6 @@ class AccessorApacheBucketResourceTest {
   static void setup() {
     clientId = UUID.randomUUID().toString();
 
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
     FakeCommonBucketResourceHelper.errorCode = 404;
     FakeCommonObjectResourceHelper.errorCode = 404;
   }
@@ -76,6 +69,8 @@ class AccessorApacheBucketResourceTest {
   void beforeEach() {
     repository = repositoryInstance.get();
     factory = new AccessorApiFactory("http://127.0.0.1:8081", clientId);
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @AfterEach
@@ -88,13 +83,14 @@ class AccessorApacheBucketResourceTest {
     final var bucketName = "testcreatebucket1";
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
       //Test already exist Exception
       assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName));
 
       //Check Error
       assertThrows(CcsWithStatusException.class, () -> client.createBucket("notValidBucket"));
 
+      assertTrue(client.deleteBucket(bucketName));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -106,13 +102,14 @@ class AccessorApacheBucketResourceTest {
     try (final var client = factory.newClient()) {
       client.createBucket(bucketName);
       final var bucket = client.getBucket(bucketName);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
       final var unknownException =
           assertThrows(CcsWithStatusException.class, () -> client.getBucket(bucketUnknownName));
       assertEquals(404, unknownException.getStatus());
+      assertTrue(client.deleteBucket(bucketName));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -123,11 +120,14 @@ class AccessorApacheBucketResourceTest {
     try (final var client = factory.newClient()) {
       final var bucketsBeforeTest = client.getBuckets();
       final var numberBucketBeforeInsert = bucketsBeforeTest.size();
-      client.createBucket("testgetbuckets1");
-      client.createBucket("testgetbuckets2");
-      client.createBucket("testgetbuckets3");
+      client.createBucket("testcreatebuckets13");
+      client.createBucket("testcreatebuckets23");
+      client.createBucket("testcreatebuckets33");
       final var buckets = client.getBuckets();
       assertEquals(numberBucketBeforeInsert + 3, buckets.size());
+      for (var item : buckets) {
+        assertTrue(client.deleteBucket(item.getId()));
+      }
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -152,20 +152,20 @@ class AccessorApacheBucketResourceTest {
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket12";
     try (final var client = factory.newClient()) {
       // check non-existing bucket
       var res = client.checkBucket(bucketName);
       assertEquals(StorageType.NONE, res);
 
       // simple check existing bucket
-      client.createBucket(bucketName);
+      var bucket = client.createBucket(bucketName);
       res = client.checkBucket(bucketName);
       assertEquals(StorageType.BUCKET, res);
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(DaoAccessorBucketRepository.getPrefix(clientId) + bucketName);
+        driverApi.bucketDelete(bucketName);
       } catch (final DriverException e) {
         fail(e);
       }
@@ -177,7 +177,8 @@ class AccessorApacheBucketResourceTest {
       // No full check non-existing bucket
       res = client.checkBucket(bucketName);
       assertEquals(StorageType.BUCKET, res);
-    } catch (final CcsWithStatusException e) {
+      repository.deleteWithPk(bucket.getId());
+    } catch (final CcsWithStatusException | CcsDbException e) {
       fail(e);
     }
   }

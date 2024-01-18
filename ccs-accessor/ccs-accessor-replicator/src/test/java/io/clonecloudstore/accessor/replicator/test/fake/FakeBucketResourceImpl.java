@@ -19,10 +19,10 @@ package io.clonecloudstore.accessor.replicator.test.fake;
 import io.clonecloudstore.test.accessor.server.resource.internal.FakeBucketPrivateResourceAbstract;
 import jakarta.ws.rs.Path;
 
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.BASE;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.COLL_BUCKETS;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_BUCKETS;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.REPLICATOR_ROOT;
 
-@Path(BASE + LOCAL + COLL_BUCKETS)
+@Path(REPLICATOR_ROOT + LOCAL + COLL_BUCKETS)
 public class FakeBucketResourceImpl extends FakeBucketPrivateResourceAbstract {
 }

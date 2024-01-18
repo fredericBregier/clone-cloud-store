@@ -54,7 +54,7 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-topology-client</artifactId>
+      <artifactId>ccs-administration-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>

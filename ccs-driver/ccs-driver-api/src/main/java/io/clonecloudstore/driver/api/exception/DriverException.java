@@ -36,7 +36,7 @@ public class DriverException extends Exception {
     if (e == null || e.getMessage() == null) {
       return "";
     }
-    return e.getMessage().replace('\n', ' ');
+    return e.getMessage().replace('\n', ' ').replace('#', ' ');
   }
 
   public static DriverException getDriverExceptionFromStatus(final int status, final Exception e) {

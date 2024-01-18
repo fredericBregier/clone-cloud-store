@@ -203,7 +203,7 @@ class AccessorObjectResourceTest {
   }
 
   @Test
-  void validApiBiFile() {
+  void validApiBigFile() {
     FakeObjectService.errorCode = 0;
     FakeObjectService.length = 256 * 1024 * 1024;
     try (final var client = factory.newClient()) {

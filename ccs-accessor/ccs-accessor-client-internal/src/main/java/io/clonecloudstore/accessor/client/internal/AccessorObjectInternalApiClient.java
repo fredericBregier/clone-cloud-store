@@ -26,9 +26,9 @@ import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
@@ -72,7 +72,7 @@ public class AccessorObjectInternalApiClient
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(accessorObject, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);
@@ -90,7 +90,7 @@ public class AccessorObjectInternalApiClient
     try {
       return (AccessorObject) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(accessorObject, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);

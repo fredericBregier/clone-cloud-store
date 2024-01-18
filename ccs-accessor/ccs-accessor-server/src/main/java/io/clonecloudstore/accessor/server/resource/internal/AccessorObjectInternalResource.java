@@ -18,7 +18,7 @@ package io.clonecloudstore.accessor.server.resource.internal;
 
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.server.application.AccessorObjectService;
-import io.clonecloudstore.accessor.server.application.ObjectNativeStreamHandler;
+import io.clonecloudstore.accessor.server.application.ObjectStreamHandler;
 import io.clonecloudstore.accessor.server.commons.AbstractAccessorPrivateObjectResource;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.common.annotation.Blocking;
@@ -33,7 +33,7 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.INTERNAL_
  * Object API Resource
  */
 @Path(INTERNAL_ROOT)
-public class AccessorObjectInternalResource extends AbstractAccessorPrivateObjectResource<ObjectNativeStreamHandler> {
+public class AccessorObjectInternalResource extends AbstractAccessorPrivateObjectResource<ObjectStreamHandler> {
   public AccessorObjectInternalResource(final AccessorObjectService service) {
     super(service);
   }

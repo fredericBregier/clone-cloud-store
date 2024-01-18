@@ -22,6 +22,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
@@ -54,16 +55,13 @@ public final class ParametersChecker {
   private static final String SCRIPT_TAG_ESCAPED = "&lt;script&gt;";
   private static final String SQL_COMMA_ESCAPED = ";";
   public static final int BUCKET_LENGTH = 63;
-  // FIXME Once clientId key size known, will be extracted from BUCKET_LENGTH - 1
-  public static final int BUCKET_NOSITE_LENGTH = 60;
   public static final int OBJECT_LENGTH = 1024;
   public static final int SITE_LENGTH = 256;
+  private static final Pattern METADATA_KEY_PATTERN = Pattern.compile("^([a-zA-Z_])([0-9a-zA-Z_]*)$");
   private static final Pattern BUCKET_NAME_PATTERN = Pattern.compile("^[0-9a-z\\-]{3," + BUCKET_LENGTH + "}$");
   private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_./\\-]{1," + OBJECT_LENGTH + "}$");
   public static final String INVALID_INPUT = "Invalid input";
-
   public static final String INVALID_URI = "Invalid uri [%s]";
-  public static final String ACCENTS = "āăąēîïĩíĝġńñšŝśûůŷ";
 
   static {
     RULES.add(CDATA_TAG_UNESCAPED);
@@ -204,6 +202,35 @@ public final class ParametersChecker {
   }
 
   /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param mapKey for Map key check
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static void checkSanityMapKey(final String mapKey) throws CcsInvalidArgumentRuntimeException {
+    if (ParametersChecker.isNotEmpty(mapKey) && (!METADATA_KEY_PATTERN.matcher(mapKey).find())) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param map where key and value are to be checked
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static void checkSanityMap(final Map<String, String> map) throws CcsInvalidArgumentRuntimeException {
+    if (map != null && !map.isEmpty()) {
+      for (final var entry : map.entrySet()) {
+        if (!METADATA_KEY_PATTERN.matcher(entry.getKey()).find()) {
+          throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+        }
+        checkSanityString(entry.getKey(), entry.getValue());
+      }
+    }
+  }
+
+  /**
    * Check if any parameter are null or empty and if so, return true
    *
    * @param parameters set of parameters
@@ -274,6 +301,9 @@ public final class ParametersChecker {
     }
   }
 
+  /**
+   * @return the sanitized name
+   */
   public static String getSanitizedName(final String objectName) {
     if (isEmpty(objectName)) {
       return null;
@@ -291,6 +321,38 @@ public final class ParametersChecker {
       name = name.substring(1);
     }
     return name;
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param bucketName to check
+   * @return the sanitized name
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static String getSanitizedBucketName(final String bucketName) throws CcsInvalidArgumentRuntimeException {
+    final var sanitized = getSanitizedName(bucketName);
+    if (sanitized == null) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+    checkSanityBucketName(sanitized);
+    return sanitized;
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param objectName to check
+   * @return the sanitized name
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static String getSanitizedObjectName(final String objectName) throws CcsInvalidArgumentRuntimeException {
+    final var sanitized = getSanitizedName(objectName);
+    if (sanitized == null) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+    checkSanityObjectName(sanitized);
+    return sanitized;
   }
 
   public static String urlDecodePathParam(final String path) {

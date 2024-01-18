@@ -22,11 +22,8 @@ import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
 import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.MinioKafkaProfile;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
+import io.clonecloudstore.test.resource.AzureKafkaProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -39,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
-@TestProfile(MinioKafkaProfile.class)
+@TestProfile(AzureKafkaProfile.class)
 class AccessorObjectResourceNoMongoTest {
   private static final Logger LOG = Logger.getLogger(AccessorObjectResourceNoMongoTest.class);
   public static final String BUCKET_NAME = "testbucket";
@@ -55,19 +52,10 @@ class AccessorObjectResourceNoMongoTest {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
   }
 
   @Test
-  void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, BUCKET_NAME);
+  void createBucketAndObject() {
     createBucketAndObject(BUCKET_NAME);
   }
 
@@ -111,7 +99,7 @@ class AccessorObjectResourceNoMongoTest {
           assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
     try (final var client = factory.newClient()) {
-      assertEquals(500, assertThrows(CcsWithStatusException.class,
+      assertEquals(403, assertThrows(CcsWithStatusException.class,
           () -> client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME))).getStatus());
     }
     try (final var client = factory.newClient()) {

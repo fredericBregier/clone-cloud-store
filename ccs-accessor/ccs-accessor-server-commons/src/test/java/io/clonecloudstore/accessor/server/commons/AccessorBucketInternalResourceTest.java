@@ -59,9 +59,8 @@ class AccessorBucketInternalResourceTest {
     final var bucketName = "testgetbucket2";
     try (final var client = factory.newClient(); final var clientExternal = factoryExternal.newClient()) {
       clientExternal.createBucket(bucketName, clientId);
-      final var bucket =
-          client.getBucket(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true), clientId);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      final var bucket = client.getBucket(bucketName, clientId);
+      Assertions.assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
@@ -93,27 +92,23 @@ class AccessorBucketInternalResourceTest {
     final var bucketName = "testcheckbucket2";
     try (final var client = factory.newClient(); final var clientExternal = factoryExternal.newClient()) {
       // check non-existing bucket
-      var res =
-          client.checkBucket(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true), clientId,
-              true);
+      var res = client.checkBucket(bucketName, clientId, true);
       assertEquals(StorageType.NONE, res);
 
       // simple check existing bucket
       clientExternal.createBucket(bucketName, clientId);
-      res = client.checkBucket(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true), clientId,
-          false);
+      res = client.checkBucket(bucketName, clientId, false);
       assertEquals(StorageType.BUCKET, res);
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true));
+        driverApi.bucketDelete(bucketName);
       } catch (final DriverException e) {
         fail(e);
       }
 
       // simple check non-existing bucket
-      res = client.checkBucket(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true), clientId,
-          false);
+      res = client.checkBucket(bucketName, clientId, false);
       assertEquals(StorageType.NONE, res);
     } catch (final CcsWithStatusException e) {
       fail(e);

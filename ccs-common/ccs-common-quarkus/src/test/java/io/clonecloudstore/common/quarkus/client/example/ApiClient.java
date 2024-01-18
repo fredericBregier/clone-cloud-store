@@ -25,9 +25,9 @@ import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.client.example.model.ApiBusinessIn;
 import io.clonecloudstore.common.quarkus.client.example.model.ApiBusinessOut;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import jakarta.ws.rs.core.Response;
@@ -85,7 +85,9 @@ public class ApiClient extends ClientAbstract<ApiBusinessIn, ApiBusinessOut, Api
       final var uni = getService().getObjectMetadata(name);
       return (ApiBusinessOut) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
+    } catch (final CcsWithStatusException e) {
+      throw e;
     } catch (final Exception e) {
       throw new CcsWithStatusException(businessIn, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);

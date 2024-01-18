@@ -19,14 +19,12 @@ package io.clonecloudstore.accessor.server.simple.resource;
 import java.util.UUID;
 
 import io.clonecloudstore.accessor.apache.client.AccessorApiFactory;
-import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
-import io.clonecloudstore.test.resource.s3.MinioProfile;
+import io.clonecloudstore.test.resource.azure.AzureProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -43,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioProfile.class)
+@TestProfile(AzureProfile.class)
 class AccessorApacheBucketResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorApacheBucketResourceTest.class);
   AccessorApiFactory factory;
@@ -54,19 +52,12 @@ class AccessorApacheBucketResourceTest {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
   }
 
   @BeforeEach
   void beforeEach() {
     factory = new AccessorApiFactory("http://127.0.0.1:8081", clientId);
+    CleanupTestUtil.cleanUp();
   }
 
   @AfterEach
@@ -79,13 +70,14 @@ class AccessorApacheBucketResourceTest {
     final var bucketName = "testcreatebucket1";
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
       //Test already exist Exception
       assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName));
 
       //Check Error
       assertThrows(CcsWithStatusException.class, () -> client.createBucket("notValidBucket"));
 
+      assertTrue(client.deleteBucket(bucketName));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -97,13 +89,14 @@ class AccessorApacheBucketResourceTest {
     try (final var client = factory.newClient()) {
       client.createBucket(bucketName);
       final var bucket = client.getBucket(bucketName);
-      Assertions.assertEquals(bucketName, bucket.getName());
+      Assertions.assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
       final var unknownException =
           assertThrows(CcsWithStatusException.class, () -> client.getBucket(bucketUnknownName));
       assertEquals(404, unknownException.getStatus());
+      assertTrue(client.deleteBucket(bucketName));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -114,11 +107,14 @@ class AccessorApacheBucketResourceTest {
     try (final var client = factory.newClient()) {
       final var bucketsBeforeTest = client.getBuckets();
       final var numberBucketBeforeInsert = bucketsBeforeTest.size();
-      client.createBucket("testgetbuckets1");
-      client.createBucket("testgetbuckets2");
-      client.createBucket("testgetbuckets3");
+      client.createBucket("testcreatebuckets1");
+      client.createBucket("testcreatebuckets2");
+      client.createBucket("testcreatebuckets3");
       final var buckets = client.getBuckets();
       assertEquals(numberBucketBeforeInsert + 3, buckets.size());
+      for (var item : buckets) {
+        assertTrue(client.deleteBucket(item.getId()));
+      }
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
@@ -143,7 +139,7 @@ class AccessorApacheBucketResourceTest {
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket15";
     try (final var client = factory.newClient()) {
       // check non-existing bucket
       var res = client.checkBucket(bucketName);
@@ -156,7 +152,7 @@ class AccessorApacheBucketResourceTest {
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(AbstractPublicBucketHelper.getTechnicalBucketName(clientId, bucketName, true));
+        driverApi.bucketDelete(bucketName);
       } catch (final DriverException e) {
         fail(e);
       }

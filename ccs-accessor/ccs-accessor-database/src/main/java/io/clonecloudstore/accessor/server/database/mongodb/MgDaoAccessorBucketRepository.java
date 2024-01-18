@@ -45,7 +45,7 @@ public class MgDaoAccessorBucketRepository
   public void createIndex() throws CcsDbException {
     //TODO: index to specialize
     try {
-      mongoCollection().createIndex(Indexes.ascending(ID, NAME, BUCKET_STATUS),
+      mongoCollection().createIndex(Indexes.ascending(ID, BUCKET_STATUS, CLIENT_ID),
           new IndexOptions().name(TABLE_NAME + "_filter_idx"));
     } catch (final MongoException e) {
       throw new CcsDbException("Cannot Create Index", e);

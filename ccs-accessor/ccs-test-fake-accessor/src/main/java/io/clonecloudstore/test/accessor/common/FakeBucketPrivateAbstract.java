@@ -33,12 +33,11 @@ public abstract class FakeBucketPrivateAbstract {
     return FakeCommonBucketResourceHelper.getBuckets0Helper(clientId);
   }
 
-  protected Uni<Response> checkBucket0(final String bucketName, final boolean fullCheck, final String clientId,
-                                       final boolean isPublic) {
-    return FakeCommonBucketResourceHelper.checkBucket0Helper(bucketName, fullCheck, clientId, isPublic);
+  protected Uni<Response> checkBucket0(final String bucketName, final boolean fullCheck, final String clientId) {
+    return FakeCommonBucketResourceHelper.checkBucket0Helper(bucketName);
   }
 
-  protected Uni<AccessorBucket> getBucket0(final String bucketName, final String clientId, final boolean isPublic) {
-    return FakeCommonBucketResourceHelper.getBucket0Helper(bucketName, clientId, isPublic);
+  protected Uni<AccessorBucket> getBucket0(final String bucketName, final String clientId) {
+    return FakeCommonBucketResourceHelper.getBucket0Helper(bucketName, clientId);
   }
 }

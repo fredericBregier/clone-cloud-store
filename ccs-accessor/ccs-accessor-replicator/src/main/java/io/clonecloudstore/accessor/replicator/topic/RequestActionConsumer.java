@@ -24,7 +24,8 @@ import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
-import io.smallrye.common.annotation.Blocking;
+import io.quarkus.arc.Unremovable;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
@@ -32,10 +33,9 @@ import org.jboss.logging.Logger;
 import static io.clonecloudstore.replicator.config.ReplicatorConstants.Topic.REPLICATOR_ACTION_IN;
 
 @ApplicationScoped
+@Unremovable
 public class RequestActionConsumer {
   private static final Logger LOGGER = Logger.getLogger(RequestActionConsumer.class);
-  public static final String TAG_CREATE = "create";
-  public static final String TAG_DELETE = "delete";
   private final RequestActionService requestActionService;
   private final BulkMetrics bulkMetrics;
 
@@ -45,13 +45,15 @@ public class RequestActionConsumer {
   }
 
   @Incoming(REPLICATOR_ACTION_IN)
-  @Blocking
+  @Blocking(ordered = true)
   public void consumeOrder(final List<ReplicatorOrder> replicatorOrders) {
     QuarkusProperties.refreshModuleMdc();
     int delObject = 0;
     int delBucket = 0;
     int creObject = 0;
     int creBucket = 0;
+    int errorBucket = 0;
+    int errorObject = 0;
     for (final var replicatorOrder : replicatorOrders) {
       try {
         SimpleClientAbstract.setMdcOpId(replicatorOrder.opId());
@@ -79,40 +81,58 @@ public class RequestActionConsumer {
         }
         LOGGER.debugf("Done Order %s", replicatorOrder);
       } catch (final RuntimeException e) {
+        if (ParametersChecker.isNotEmpty(replicatorOrder.objectName())) {
+          errorObject++;
+        } else {
+          errorBucket++;
+        }
         LOGGER.warn(replicatorOrder + " => " + e.getMessage());
       }
     }
-    bulkMetricsUpdates(creBucket, creObject, delBucket, delObject);
+    bulkMetricsUpdates(creBucket, creObject, delBucket, delObject, errorBucket, errorObject);
   }
 
-  private void bulkMetricsUpdates(final int creBucket, final int creObject, final int delBucket, final int delObject) {
+  private void bulkMetricsUpdates(final int creBucket, final int creObject, final int delBucket, final int delObject,
+                                  final int errorBucket, final int errorObject) {
     if (creBucket > 0) {
-      bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, TAG_CREATE).increment(creBucket);
+      bulkMetrics.incrementCounter(creBucket, RequestActionConsumer.class, BulkMetrics.KEY_BUCKET,
+          BulkMetrics.TAG_CREATE);
     }
     if (creObject > 0) {
-      bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, TAG_CREATE).increment(creObject);
+      bulkMetrics.incrementCounter(creObject, RequestActionConsumer.class, BulkMetrics.KEY_OBJECT,
+          BulkMetrics.TAG_CREATE);
     }
     if (delBucket > 0) {
-      bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_BUCKET, TAG_DELETE).increment(delBucket);
+      bulkMetrics.incrementCounter(delBucket, RequestActionConsumer.class, BulkMetrics.KEY_BUCKET,
+          BulkMetrics.TAG_DELETE);
     }
     if (delObject > 0) {
-      bulkMetrics.getCounter(RequestActionConsumer.class, BulkMetrics.KEY_OBJECT, TAG_DELETE).increment(delObject);
+      bulkMetrics.incrementCounter(delObject, RequestActionConsumer.class, BulkMetrics.KEY_OBJECT,
+          BulkMetrics.TAG_DELETE);
+    }
+    if (errorBucket > 0) {
+      bulkMetrics.incrementCounter(errorBucket, RequestActionConsumer.class, BulkMetrics.KEY_BUCKET,
+          BulkMetrics.TAG_ERROR);
+    }
+    if (errorObject > 0) {
+      bulkMetrics.incrementCounter(errorObject, RequestActionConsumer.class, BulkMetrics.KEY_OBJECT,
+          BulkMetrics.TAG_ERROR);
     }
   }
 
   void deleteBucket(final ReplicatorOrder order) {
     LOGGER.debugf("DeleteBucket %s", order);
-    requestActionService.deleteBucket(order.bucketName());
+    requestActionService.deleteBucket(order);
   }
 
   void createBucket(final ReplicatorOrder order) {
     LOGGER.debugf("CreateBucket %s", order);
-    requestActionService.createBucket(order.clientId(), order.bucketName());
+    requestActionService.createBucket(order);
   }
 
   void deleteObject(final ReplicatorOrder order) {
     LOGGER.debugf("DeleteObject %s", order);
-    requestActionService.deleteObject(order.bucketName(), order.objectName());
+    requestActionService.deleteObject(order);
   }
 
   void createObject(final ReplicatorOrder order) {

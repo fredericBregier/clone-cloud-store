@@ -2,7 +2,16 @@ quarkus:
   log:
     console:
       format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
-
+  cache:
+    caffeine:
+      "remote-check-bucket":
+        initial-capacity: 10
+        maximum-size: 100
+        expire-after-write: 10m
+      "remote-check-object":
+        initial-capacity: 100
+        maximum-size: 1000
+        expire-after-write: 5m
 mp:
   messaging:
     incoming:
@@ -10,6 +19,8 @@ mp:
         connector: smallrye-kafka
         topic: ${CCS_REQUEST_REPLICATION:request-replication}
         retry-attempts: 10
+        group:
+          id: replication
         auto:
           offset:
             reset: earliest

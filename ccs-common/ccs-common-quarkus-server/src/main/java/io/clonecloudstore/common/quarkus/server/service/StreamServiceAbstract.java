@@ -45,7 +45,7 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID
  * @param <O>  the output information that will be output from business point
  *             of view (if any)
  */
-public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerAbstract<I, O>> {
+public abstract class StreamServiceAbstract<I, O, H extends StreamHandlerAbstract<I, O>> {
   private static final Logger LOGGER = Logger.getLogger(StreamServiceAbstract.class);
 
   @Inject
@@ -75,12 +75,12 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
                                        final long len, final String optionalHash,
                                        final boolean keepInputStreamCompressed, final InputStream inputStream) {
     LOGGER.debugf("POST start");
-    nativeStream.setup(request, closer, true, businessIn, len, optionalHash, keepInputStreamCompressed);
+    nativeStream.setup(request, closer, true, businessIn, len, optionalHash, keepInputStreamCompressed, true);
     return Uni.createFrom().emitter(em -> {
       try {
         final var result = nativeStream.upload(inputStream);
         em.complete(result);
-      } catch (NativeServerResponseException e) {
+      } catch (ServerStreamHandlerResponseException e) {
         em.complete(e.getResponse());
       } catch (final Exception e) {
         em.complete(createErrorResponse(e));
@@ -92,13 +92,14 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
    * Method to use within the GET query definition with a @Blocking annotation.
    * Usually len is 0 but might be a hint on expected InputStream size.
    */
-  protected Uni<Response> readObject(final HttpServerRequest request, final Closer closer, final I businessIn) {
+  protected Uni<Response> readObject(final HttpServerRequest request, final Closer closer, final I businessIn,
+                                     final boolean external) {
     LOGGER.debugf("GET start");
-    nativeStream.setup(request, closer, false, businessIn, 0, null, false);
+    nativeStream.setup(request, closer, false, businessIn, 0, null, false, external);
     return Uni.createFrom().emitter(em -> {
       try {
         em.complete(nativeStream.pull());
-      } catch (NativeServerResponseException e) {
+      } catch (ServerStreamHandlerResponseException e) {
         em.complete(e.getResponse());
       } catch (final Exception e) {
         em.complete(createErrorResponse(e));
@@ -107,7 +108,7 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   }
 
   protected Response createErrorResponse(final Exception e) {
-    if (e instanceof NativeServerResponseException ne) {
+    if (e instanceof ServerStreamHandlerResponseException ne) {
       return ne.getResponse();
     }
     final var responseBuild = switch (e) {

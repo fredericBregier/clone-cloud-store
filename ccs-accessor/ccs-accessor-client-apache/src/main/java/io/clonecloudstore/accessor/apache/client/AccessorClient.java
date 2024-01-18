@@ -108,6 +108,10 @@ public class AccessorClient implements Closeable {
    */
   public StorageType checkBucket(final String bucketName) throws CcsWithStatusException {
     final var request = new HttpHead(factory.getBaseUri() + API_ROOT + "/" + bucketName);
+    return checkBucketOrObject(request);
+  }
+
+  private StorageType checkBucketOrObject(final HttpHead request) throws CcsWithStatusException {
     setCommonHeaders(request);
     final AtomicReference<ApiErrorResponse> errorReference = new AtomicReference<>();
     try {
@@ -227,28 +231,7 @@ public class AccessorClient implements Closeable {
   public StorageType checkObjectOrDirectory(final String bucketName, final String pathDirectoryOrObject)
       throws CcsWithStatusException {
     final var request = new HttpHead(factory.getBaseUri() + API_ROOT + "/" + bucketName + "/" + pathDirectoryOrObject);
-    setCommonHeaders(request);
-    final AtomicReference<ApiErrorResponse> errorReference = new AtomicReference<>();
-    try {
-      StorageType storageType = client.execute(request, response -> {
-        try (response) {
-          if (response.getCode() == HttpStatus.SC_OK || response.getCode() == HttpStatus.SC_NO_CONTENT) {
-            return getStorageTypeFromResponse(response);
-          } else if (response.getCode() == HttpStatus.SC_NOT_FOUND) {
-            return StorageType.NONE;
-          } else {
-            errorReference.set(handleError(response));
-            return null;
-          }
-        }
-      });
-      if (storageType != null) {
-        return storageType;
-      }
-      throw getCcsError(errorReference.get());
-    } catch (final IOException | RuntimeException e) {
-      throw new CcsWithStatusException(null, HttpStatus.SC_SERVER_ERROR, e.getMessage(), e);
-    }
+    return checkBucketOrObject(request);
   }
 
   /**
@@ -433,6 +416,23 @@ public class AccessorClient implements Closeable {
     }
   }
 
+  private static String getString(final ClassicHttpResponse response, final String headerName) {
+    var header = response.getFirstHeader(headerName);
+    if (header != null) {
+      return header.getValue();
+    }
+    return null;
+  }
+
+  private static Instant getInstant(final ClassicHttpResponse response, final String headerName) {
+    final var instantAsString = getString(response, headerName);
+    if (ParametersChecker.isNotEmpty(instantAsString)) {
+      assert instantAsString != null;
+      return Instant.parse(instantAsString);
+    }
+    return null;
+  }
+
   private AccessorObject getAccessorObjectFromResponse(final ClassicHttpResponse response,
                                                        final boolean fromHeaderOnly) {
     if (!fromHeaderOnly) {
@@ -448,61 +448,41 @@ public class AccessorClient implements Closeable {
     }
     final var accessorObject = new AccessorObject();
     try {
-      var header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_ID);
-      if (header != null) {
-        accessorObject.setId(header.getValue());
+      var value = getString(response, AccessorConstants.HeaderObject.X_OBJECT_ID);
+      if (value != null) {
+        accessorObject.setId(value);
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_SITE);
-      if (header != null) {
-        accessorObject.setSite(header.getValue());
+      value = getString(response, AccessorConstants.HeaderObject.X_OBJECT_SITE);
+      if (value != null) {
+        accessorObject.setSite(value);
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_BUCKET);
-      if (header != null) {
-        accessorObject.setBucket(header.getValue());
+      value = getString(response, AccessorConstants.HeaderObject.X_OBJECT_BUCKET);
+      if (value != null) {
+        accessorObject.setBucket(value);
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_NAME);
-      if (header != null) {
-        accessorObject.setName(header.getValue());
+      value = getString(response, AccessorConstants.HeaderObject.X_OBJECT_NAME);
+      if (value != null) {
+        accessorObject.setName(value);
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_HASH);
-      if (header != null) {
-        accessorObject.setHash(header.getValue());
+      value = getString(response, AccessorConstants.HeaderObject.X_OBJECT_HASH);
+      if (value != null) {
+        accessorObject.setHash(value);
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_STATUS);
-      if (header != null) {
-        var status = header.getValue();
-        if (ParametersChecker.isNotEmpty(status)) {
-          accessorObject.setStatus(AccessorStatus.valueOf(status));
-        }
+      var status = getString(response, AccessorConstants.HeaderObject.X_OBJECT_STATUS);
+      if (ParametersChecker.isNotEmpty(status)) {
+        accessorObject.setStatus(AccessorStatus.valueOf(status));
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_CREATION);
-      if (header != null) {
-        final var instantAsString = header.getValue();
-        if (ParametersChecker.isNotEmpty(instantAsString)) {
-          accessorObject.setCreation(Instant.parse(instantAsString));
-        }
+      accessorObject.setCreation(getInstant(response, AccessorConstants.HeaderObject.X_OBJECT_CREATION));
+      accessorObject.setExpires(getInstant(response, AccessorConstants.HeaderObject.X_OBJECT_EXPIRES));
+      final var size = getString(response, AccessorConstants.HeaderObject.X_OBJECT_SIZE);
+      if (ParametersChecker.isNotEmpty(size)) {
+        assert size != null;
+        accessorObject.setSize(Long.parseLong(size));
       }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_EXPIRES);
-      if (header != null) {
-        final var instantAsString = header.getValue();
-        if (ParametersChecker.isNotEmpty(instantAsString)) {
-          accessorObject.setExpires(Instant.parse(instantAsString));
-        }
-      }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_SIZE);
-      if (header != null) {
-        final var size = header.getValue();
-        if (ParametersChecker.isNotEmpty(size)) {
-          accessorObject.setSize(Long.parseLong(size));
-        }
-      }
-      header = response.getFirstHeader(AccessorConstants.HeaderObject.X_OBJECT_METADATA);
-      if (header != null) {
-        final var metadata = header.getValue();
-        if (ParametersChecker.isNotEmpty(metadata)) {
-          accessorObject.setMetadata(
-              StandardProperties.getObjectMapper().readValue(metadata, typeReferenceMapStringString));
-        }
+      final var metadata = getString(response, AccessorConstants.HeaderObject.X_OBJECT_METADATA);
+      if (ParametersChecker.isNotEmpty(metadata)) {
+        accessorObject.setMetadata(
+            StandardProperties.getObjectMapper().readValue(metadata, typeReferenceMapStringString));
       }
     } catch (final Exception e) {
       throw new CcsInvalidArgumentRuntimeException(INVALID_ARGUMENT, e);

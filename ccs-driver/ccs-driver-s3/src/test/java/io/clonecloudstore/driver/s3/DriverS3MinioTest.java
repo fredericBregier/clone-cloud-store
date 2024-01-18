@@ -43,13 +43,8 @@ public class DriverS3MinioTest extends DriverS3Base {
       DriverApiRegistry.setDriverApiFactory(CDI.current().select(DriverS3ApiFactory.class).get());
     }
     // Simulate loading the Factory from Class name
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
+    DriverS3Properties.setDynamicS3Parameters(MinIoResource.getUrlString(), MinIoResource.getAccessKey(),
+        MinIoResource.getSecretKey(), MinIoResource.getRegion());
     oldSha = QuarkusProperties.serverComputeSha256();
     factory = new ApiClientFactory();
   }

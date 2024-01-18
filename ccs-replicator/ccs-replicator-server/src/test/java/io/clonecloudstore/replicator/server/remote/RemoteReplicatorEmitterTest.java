@@ -31,7 +31,7 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_ID;
+import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_NAME;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.CLIENT_ID;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.OBJECT_PATH;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.OP_ID;
@@ -56,7 +56,7 @@ class RemoteReplicatorEmitterTest {
   void testRemoteEmitter() throws InterruptedException {
     LOGGER.infof("Check ReplicateOrder");
     final var replicateOrder =
-        new ReplicatorOrder(OP_ID, SITE, SITE_REMOTE, CLIENT_ID, BUCKET_ID, OBJECT_PATH, 0, "hash",
+        new ReplicatorOrder(OP_ID, SITE, SITE_REMOTE, CLIENT_ID, BUCKET_NAME, OBJECT_PATH, 0, "hash",
             ReplicatorConstants.Action.CREATE);
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
       client.createOrder(replicateOrder).await().indefinitely();
@@ -64,7 +64,7 @@ class RemoteReplicatorEmitterTest {
       assertEquals(replicateOrder, replicatorOrder2);
     }
     final var replicateOrder2 =
-        new ReplicatorOrder(OP_ID, SITE, SITE_REMOTE, CLIENT_ID, BUCKET_ID, OBJECT_PATH, 0, "hash",
+        new ReplicatorOrder(OP_ID, SITE, SITE_REMOTE, CLIENT_ID, BUCKET_NAME, OBJECT_PATH, 0, "hash",
             ReplicatorConstants.Action.DELETE);
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
       for (int i = 0; i < 10; i++) {

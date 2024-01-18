@@ -24,6 +24,8 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+
 /**
  * Uncomment annotations if you want to trace API calls from server side
  */
@@ -99,7 +101,7 @@ public class ApiFilter {
       }
       builder.append("] ");
     }
-    final var contentType = responseContext.getHeaderString("Content-Type");
+    final var contentType = responseContext.getHeaderString(CONTENT_TYPE);
     final var isJson = contentType != null && contentType.startsWith(MediaType.APPLICATION_JSON);
     builder.append("Content ? ").append(responseContext.hasEntity()).append(" Json? ").append(isJson);
     if (responseContext.hasEntity() && isJson) {

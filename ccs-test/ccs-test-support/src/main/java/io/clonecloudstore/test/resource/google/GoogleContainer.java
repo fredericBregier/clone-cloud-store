@@ -24,7 +24,8 @@ import org.testcontainers.utility.DockerImageName;
 import static io.clonecloudstore.test.resource.google.GoogleResource.EXPOSED_PORT;
 
 public class GoogleContainer extends GenericContainer<GoogleContainer> {
-  protected static final String[] ARGUMENTS = "/bin/fake-gcs-server -scheme http -backend memory".split(" ");
+  protected static final String[] ARGUMENTS =
+      "/bin/fake-gcs-server -scheme http -log-level warn -backend filesystem".split(" ");
   private final OptionalInt fixedExposedPort;
 
   public GoogleContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort) {

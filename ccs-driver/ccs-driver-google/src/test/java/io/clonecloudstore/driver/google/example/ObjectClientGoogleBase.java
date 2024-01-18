@@ -367,7 +367,7 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test98BigFileNoChunkTest() {
+  void test96BigFileNoChunkTest() {
     DriverGoogleProperties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
     QuarkusProperties.setServerComputeSha256(false);
     final var start = System.nanoTime();
@@ -401,7 +401,6 @@ abstract class ObjectClientGoogleBase {
       var time = (to - from) / 1000000000.0;
       LOG.info("Time Creation : " + time + " speed: " + len / time / 1024 / 1024.0);
 
-      Thread.sleep(100);
       // Create Object 2
       from = System.nanoTime();
       inputStreamSrc =
@@ -499,13 +498,13 @@ abstract class ObjectClientGoogleBase {
       apiClient.objectDelete(bucket, object + 2);
       LOG.info("Time Delete: " + time);
       apiClient.bucketDelete(bucket);
-    } catch (final DriverException | InterruptedException e) {
+    } catch (final DriverException e) {
       fail(e);
     }
   }
 
   @Test
-  void test99BigFileChunkedTest() {
+  void test95BigFileChunkedTest() {
     DriverGoogleProperties.setDynamicPartSize(10 * 1024 * 1024);
     QuarkusProperties.setServerComputeSha256(false);
     final var start = System.nanoTime();
@@ -516,10 +515,9 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test98BigFileNoChunkShaComputeTest() throws InterruptedException {
+  void test97BigFileNoChunkShaComputeTest() throws InterruptedException {
     DriverGoogleProperties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
     QuarkusProperties.setServerComputeSha256(true);
-    Thread.sleep(100);
     final var start = System.nanoTime();
     testBigFile(2, bigLen, null);
     final var stop = System.nanoTime();
@@ -528,10 +526,9 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test99BigFileChunkedShaComputeTest() throws InterruptedException {
+  void test98BigFileChunkedShaComputeTest() throws InterruptedException {
     DriverGoogleProperties.setDynamicPartSize(10 * 1024 * 1024);
     QuarkusProperties.setServerComputeSha256(true);
-    Thread.sleep(100);
     final var start = System.nanoTime();
     testBigFile(5, bigLen, null);
     final var stop = System.nanoTime();
@@ -540,7 +537,7 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test98BigFileNoChunkShaTest() {
+  void test96BigFileNoChunkShaTest() {
     DriverGoogleProperties.setDynamicPartSize(DEFAULT_MAX_SIZE_NOT_PART);
     QuarkusProperties.setServerComputeSha256(true);
     final var start = System.nanoTime();
@@ -551,7 +548,7 @@ abstract class ObjectClientGoogleBase {
   }
 
   @Test
-  void test99BigFileChunkedShaTest() {
+  void test95BigFileChunkedShaTest() {
     DriverGoogleProperties.setDynamicPartSize(10 * 1024 * 1024);
     QuarkusProperties.setServerComputeSha256(true);
     final var start = System.nanoTime();

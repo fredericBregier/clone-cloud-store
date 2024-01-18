@@ -58,9 +58,8 @@ class MgDaoAccessorBucketDNoDbbTest {
     assertThrows(CcsDbException.class, () -> repository.createIndex());
     // GIVEN
     final var creationDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    final var bucket =
-        new MgDaoAccessorBucket().setName("bucket").setId("client-bucket").setSite(AccessorProperties.getAccessorSite())
-            .setStatus(AccessorStatus.UPLOAD);
+    final var bucket = new MgDaoAccessorBucket().setId("bucket").setSite(AccessorProperties.getAccessorSite())
+        .setStatus(AccessorStatus.UPLOAD).setClientId("client");
     assertThrows(CcsDbException.class, () -> repository.insert((MgDaoAccessorBucket) bucket));
 
     assertThrows(CcsDbException.class, () -> repository.findOne(DbQuery.idEquals(bucket.getId())));

@@ -23,7 +23,7 @@ import io.clonecloudstore.accessor.client.internal.api.AccessorBucketInternalApi
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
 import io.clonecloudstore.common.standard.system.SingletonUtils;
 import io.clonecloudstore.driver.api.StorageType;
 import io.smallrye.mutiny.Uni;
@@ -38,7 +38,7 @@ public class FakeBucketInternalService implements AccessorBucketInternalApi {
   public Uni<Collection<AccessorBucket>> getBuckets(final String clientId, final String opId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
-        throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+        throw CcsServerExceptionMapper.getCcsException(errorCode);
       }
       em.complete(SingletonUtils.singletonList());
     });
@@ -50,7 +50,7 @@ public class FakeBucketInternalService implements AccessorBucketInternalApi {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
         if (errorCode != 404) {
-          throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+          throw CcsServerExceptionMapper.getCcsException(errorCode);
         }
         em.complete((Response.status(Response.Status.NOT_FOUND).header(AccessorConstants.Api.X_TYPE, StorageType.NONE)
             .build()));
@@ -64,11 +64,11 @@ public class FakeBucketInternalService implements AccessorBucketInternalApi {
   public Uni<AccessorBucket> getBucket(final String bucketName, final String clientId, final String opId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
-        throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+        throw CcsServerExceptionMapper.getCcsException(errorCode);
       }
       final var accessorBucket =
-          new AccessorBucket().setName(bucketName).setSite("site").setStatus(AccessorStatus.READY)
-              .setCreation(Instant.now()).setId(clientId + '-' + bucketName);
+          new AccessorBucket().setSite("site").setStatus(AccessorStatus.READY).setCreation(Instant.now())
+              .setId(bucketName).setClientId(clientId);
       em.complete(accessorBucket);
     });
   }

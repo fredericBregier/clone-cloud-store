@@ -17,18 +17,22 @@
 package io.clonecloudstore.common.quarkus.client.utils;
 
 import java.io.InputStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
+import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
+import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
@@ -36,15 +40,31 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+
 /**
  * Implementation for a @Provider for handling exceptions in case of POST/GET InputStream
  */
 //@Provider
 @ApplicationScoped
+@Unremovable
 public class ClientResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
   private static final Logger LOGGER = Logger.getLogger(ClientResponseExceptionMapper.class);
   static final String NO_RESPONSE = "No Response";
   static final String RESPONSE_ISSUE = "Response issue: ";
+
+  /**
+   * Web Application Exception (Runtime) to Ccs With Status Exception (Exception)
+   */
+  public static CcsWithStatusException getBusinessException(final WebApplicationException e) {
+    if (e.getCause() instanceof CcsClientGenericException ccge) {
+      if (ccge.getCause() instanceof CcsWithStatusException cwse) {
+        return cwse;
+      }
+      return new CcsWithStatusException("API", ccge.getStatus(), ccge);
+    }
+    return new CcsWithStatusException("API", e.getResponse().getStatus(), e);
+  }
 
   /**
    * Default handling for Uni Response (not for InputStream)
@@ -59,10 +79,10 @@ public class ClientResponseExceptionMapper implements ResponseExceptionMapper<Ru
         // Issue
         throw new CcsClientGenericException(NO_RESPONSE, Status.PRECONDITION_FAILED);
       }
-      responseToThrowable(response);
+      responseToExceptionIfError(response);
       return response;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw getBusinessException(e);
     } catch (final RuntimeException e) {
       LOGGER.info(e);
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
@@ -70,16 +90,43 @@ public class ClientResponseExceptionMapper implements ResponseExceptionMapper<Ru
     }
   }
 
+  public Response handleCompletableResponse(final CompletableFuture<Response> completableFuture)
+      throws CcsWithStatusException {
+    try (final var response = completableFuture.get()) {
+      if (response == null) {
+        // Issue
+        throw new CcsClientGenericException(NO_RESPONSE, Status.PRECONDITION_FAILED);
+      }
+      responseToExceptionIfError(response);
+      return response;
+    } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
+      throw getBusinessException(e);
+    } catch (final ExecutionException e) {
+      if (e.getCause() instanceof WebApplicationException wae) {
+        throw getBusinessException(wae);
+      }
+      throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+          RESPONSE_ISSUE + e.getMessage(), e);
+    } catch (final RuntimeException | InterruptedException e) { // NOSONAR intentional
+      LOGGER.info(e);
+      throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+          RESPONSE_ISSUE + e.getMessage(), e);
+    }
+  }
+
   /**
-   * Generate a RuntimeRestException if needed
+   * Generate a CcsWithStatusException if needed
    */
-  public void responseToThrowable(final Response response) throws CcsWithStatusException {
+  public void responseToExceptionIfError(final Response response) throws CcsWithStatusException {
     final var status = response.getStatus();
     if (status >= Status.BAD_REQUEST.getStatusCode()) {
       final var generic = Status.fromStatusCode(status);
-      final var body = response.hasEntity() && response.bufferEntity() ? response.readEntity(String.class) :
-          generic.getReasonPhrase();
-      throw new CcsWithStatusException(body, status);
+      var message = response.getHeaderString(X_ERROR);
+      if (ParametersChecker.isEmpty(message)) {
+        message = response.hasEntity() && response.bufferEntity() ? response.readEntity(String.class) :
+            generic.getReasonPhrase();
+      }
+      throw new CcsWithStatusException(message, status);
     }
   }
 
@@ -106,7 +153,7 @@ public class ClientResponseExceptionMapper implements ResponseExceptionMapper<Ru
         SystemTools.consumeWhileErrorInputStream(inputStreamOptional, StandardProperties.getMaxWaitMs());
       }
       simpleClientAbstract.reopen();
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw getBusinessException(e);
     } catch (final RuntimeException e) {
       LOGGER.info(e);
       if (inputStreamOptional != null) {
@@ -118,10 +165,37 @@ public class ClientResponseExceptionMapper implements ResponseExceptionMapper<Ru
     }
   }
 
+  public Object handleCompletableObject(final SimpleClientAbstract<?> simpleClientAbstract,
+                                        final CompletableFuture<?> completableFuture) throws CcsWithStatusException {
+    try {
+      final var response = completableFuture.get();
+      if (response == null) {
+        // Issue
+        throw new CcsClientGenericException(NO_RESPONSE, Status.PRECONDITION_FAILED);
+      }
+      return response;
+    } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
+      simpleClientAbstract.reopen();
+      throw getBusinessException(e);
+    } catch (final ExecutionException e) {
+      simpleClientAbstract.reopen();
+      if (e.getCause() instanceof WebApplicationException wae) {
+        throw getBusinessException(wae);
+      }
+      throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+          RESPONSE_ISSUE + e.getMessage(), e);
+    } catch (final RuntimeException | InterruptedException e) { // NOSONAR intentional
+      LOGGER.info(e);
+      simpleClientAbstract.reopen();
+      throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+          RESPONSE_ISSUE + e.getMessage(), e);
+    }
+  }
+
   @Override
   public RuntimeException toThrowable(final Response response) {
     try {
-      responseToThrowable(response);
+      responseToExceptionIfError(response);
       return null;
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() < Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
@@ -133,7 +207,7 @@ public class ClientResponseExceptionMapper implements ResponseExceptionMapper<Ru
 
   @Override
   public boolean handles(final int status, final MultivaluedMap<String, Object> headers) {
-    return status >= Status.BAD_REQUEST.getStatusCode() && status < Status.INTERNAL_SERVER_ERROR.getStatusCode();
+    return status >= Status.BAD_REQUEST.getStatusCode();
   }
 
   @Override

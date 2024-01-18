@@ -20,7 +20,7 @@ import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.server.commons.AbstractAccessorPrivateObjectResource;
 import io.clonecloudstore.accessor.server.commons.example.AccessorObjectService;
-import io.clonecloudstore.accessor.server.commons.example.ObjectNativeStreamHandler;
+import io.clonecloudstore.accessor.server.commons.example.ObjectStreamHandler;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
@@ -32,7 +32,7 @@ import jakarta.ws.rs.core.Response;
  * Object API Resource
  */
 @Path(AccessorConstants.Api.INTERNAL_ROOT)
-public class AccessorObjectInternalResource extends AbstractAccessorPrivateObjectResource<ObjectNativeStreamHandler> {
+public class AccessorObjectInternalResource extends AbstractAccessorPrivateObjectResource<ObjectStreamHandler> {
 
   public AccessorObjectInternalResource(final AccessorObjectService service) {
     super(service);

@@ -50,7 +50,7 @@ import static io.clonecloudstore.test.server.service.example.client.ApiConstants
 
 @Path(ApiConstants.API_ROOT)
 @NoCache
-public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerNativeStreamHandler> {
+public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerStreamHandler> {
   public static final long LEN = 50 * 1024 * 1024;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
 
@@ -101,7 +101,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
     businessIn.name = business;
     // Fake LEN
     businessIn.len = len > 0 ? len : LEN;
-    return readObject(request, closer, businessIn);
+    return readObject(request, closer, businessIn, false);
   }
 
   // Example of REST API out of any InputStream usage but same URI (different accept through Produces annotation)

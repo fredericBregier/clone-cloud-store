@@ -31,13 +31,13 @@ public interface AccessorObjectServiceInterface {
   /**
    * Check if object or directory exists (internal)
    *
-   * @param bucketName            technical name
+   * @param bucketName            bucket name
    * @param objectOrDirectoryName prefix or full name
    * @param fullCheck             if True, and if Object, will check on Driver Storage
    * @return the associated StorageType
    */
   StorageType objectOrDirectoryExists(final String bucketName, final String objectOrDirectoryName,
-                                      final boolean fullCheck) throws CcsOperationException;
+                                      final boolean fullCheck, final String clientId) throws CcsOperationException;
 
   /**
    * Check if object or directory exists
@@ -47,16 +47,18 @@ public interface AccessorObjectServiceInterface {
                                       final boolean external) throws CcsOperationException;
 
   /**
-   * @param bucketName technical name
+   * @param bucketName bucket name
    * @param filter     the filter to apply on Objects
+   * @param external   True if bucket will be for external usage
    * @return a stream (InputStream) of AccessorObject line by line (newline separated)
    */
-  InputStream filterObjects(final String bucketName, final AccessorFilter filter) throws CcsOperationException;
+  InputStream filterObjects(final String bucketName, final AccessorFilter filter, final String clientId,
+                            final boolean external) throws CcsOperationException;
 
   /**
    * Get DB Object DTO
    */
-  AccessorObject getObjectInfo(final String bucketName, final String objectName)
+  AccessorObject getObjectInfo(final String bucketName, final String objectName, final String clientId)
       throws CcsNotExistException, CcsOperationException;
 
   /**
@@ -64,7 +66,8 @@ public interface AccessorObjectServiceInterface {
    *
    * @throws CcsNotAcceptableException if already in creation step
    */
-  AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len)
+  AccessorObject createObject(final AccessorObject accessorObject, final String hash, final long len,
+                              final String clientId)
       throws CcsOperationException, CcsAlreadyExistException, CcsNotExistException, CcsNotAcceptableException;
 
   /**

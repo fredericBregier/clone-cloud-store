@@ -17,6 +17,7 @@
 package io.clonecloudstore.accessor.replicator.application;
 
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
@@ -24,16 +25,20 @@ import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObject;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
+import io.clonecloudstore.administration.client.OwnershipApiClient;
+import io.clonecloudstore.administration.client.OwnershipApiClientFactory;
+import io.clonecloudstore.administration.model.ClientOwnership;
 import io.clonecloudstore.common.database.utils.DbQuery;
 import io.clonecloudstore.common.database.utils.RestQuery;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotAcceptableException;
+import io.clonecloudstore.common.quarkus.exception.CcsNotAllowedException;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
@@ -48,71 +53,78 @@ import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
 import io.clonecloudstore.replicator.client.LocalReplicatorApiClientFactory;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
+import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 /**
  * Request Action Service
  */
 @ApplicationScoped
+@Unremovable
 public class RequestActionService {
   private static final Logger LOGGER = Logger.getLogger(RequestActionService.class);
   private static final String STATUS_STRING = " Status: ";
+  private static final String NOT_ALLOWED = " not allowed";
   private final LocalReplicatorApiClientFactory localReplicatorApiClientFactory;
   private final DaoAccessorBucketRepository bucketRepository;
   private final DaoAccessorObjectRepository objectRepository;
   private final DriverApiFactory storageDriverFactory;
+  private final OwnershipApiClientFactory ownershipApiClientFactory;
 
   public RequestActionService(final LocalReplicatorApiClientFactory localReplicatorApiClientFactory,
                               final Instance<DaoAccessorBucketRepository> bucketRepositoryInstance,
-                              final Instance<DaoAccessorObjectRepository> objectRepositoryInstance) {
+                              final Instance<DaoAccessorObjectRepository> objectRepositoryInstance,
+                              final OwnershipApiClientFactory ownershipApiClientFactory) {
     this.localReplicatorApiClientFactory = localReplicatorApiClientFactory;
     // Normal injection does not work, probably due to test only dependency
     this.bucketRepository = bucketRepositoryInstance.get();
     this.objectRepository = objectRepositoryInstance.get();
     this.storageDriverFactory = DriverApiRegistry.getDriverApiFactory();
+    this.ownershipApiClientFactory = ownershipApiClientFactory;
   }
 
   private String mesg(final String bucketName, final String objectName) {
     return "Bucket: " + bucketName + " Object: " + objectName;
   }
 
-  /**
-   * Create bucket from client Id and technicalBucketName
-   *
-   * @param clientId            Format client ID use to identify client
-   * @param technicalBucketName Technical Bucket Name
-   * @return AccessorBucket add on Database and in object storage
-   */
-  public AccessorBucket createBucket(final String clientId, final String technicalBucketName)
-      throws CcsAlreadyExistException, CcsOperationException {
-    final var bucketName = DaoAccessorBucketRepository.getBucketName(clientId, technicalBucketName);
+  private void checkReplicatorOrderBucketName(final ReplicatorOrder replicatorOrder) {
     try {
-      //Check format (special char, uppercase...) and size (min, max) for bucket name and technicalBucketName
-      ParametersChecker.checkSanityBucketName(bucketName);
-      ParametersChecker.checkSanityBucketName(technicalBucketName);
+      // Check format (special char, uppercase...) and size (min, max) for bucket name
+      ParametersChecker.checkSanityBucketName(replicatorOrder.bucketName());
     } catch (final CcsInvalidArgumentRuntimeException e) {
-      final var message = String.format("Bucket Name %s is invalid", technicalBucketName);
+      final var message = String.format("Bucket Name %s is invalid", replicatorOrder.bucketName());
       throw new CcsOperationException(message);
     }
-    //Check if bucket already exist in database.
+  }
+
+  /**
+   * Create bucket from client Id and BucketName
+   *
+   * @return AccessorBucket add on Database and in object storage
+   */
+  public AccessorBucket createBucket(final ReplicatorOrder replicatorOrder)
+      throws CcsAlreadyExistException, CcsOperationException {
+    checkReplicatorOrderBucketName(replicatorOrder);
+    // Check if bucket already exist in database.
     AccessorBucket result;
     try {
-      result = bucketRepository.findBucketById(technicalBucketName);
+      result = bucketRepository.findBucketById(replicatorOrder.bucketName());
     } catch (final CcsDbException e) {
-      throw new CcsOperationException("Error on find repository with technical ID", e);
+      throw new CcsOperationException("Error on find repository with bucket name", e);
     }
     if (result != null && !AccessorStatus.DELETED.equals(result.getStatus())) {
-      final var message = String.format("Bucket %s already exist", technicalBucketName);
+      final var message = String.format("Bucket %s already exist", replicatorOrder.bucketName());
       LOGGER.errorf(message);
       throw new CcsAlreadyExistException(message);
     } else if (result == null) {
-      //Create Bucket in Database with Status In Progress.
-      //Only name and technical name (over value are erased during creation).
+      // Create Bucket in Database with Status UPLOAD.
+      // Only name and clientId (other value are erased during creation).
       result = new AccessorBucket();
-      result.setName(bucketName);
-      result.setId(technicalBucketName);
+      result.setId(replicatorOrder.bucketName());
+      result.setClientId(replicatorOrder.clientId());
       result.setSite(ServiceProperties.getAccessorSite());
     }
     return createBucketFromDto(result);
@@ -127,7 +139,7 @@ public class RequestActionService {
   private AccessorBucket createBucketFromDto(final AccessorBucket bucket) throws CcsOperationException {
     LOGGER.debugf("Create bucket %s in database and in object storage", bucket.getId());
     try {
-      //Insert in Database
+      // Insert in Database
       // Since it can be in DELETED status, it might be updated (creation + status)
       bucket.setCreation(Instant.now());
       AccessorBucket newBucket = bucket;
@@ -139,21 +151,34 @@ public class RequestActionService {
         newBucket = bucketRepository.insertBucket(newBucket);
       }
       //Create Bucket in Object Storage
-      final var storageBucket = new StorageBucket(newBucket.getId(), newBucket.getCreation());
+      final var storageBucket = new StorageBucket(newBucket.getId(), newBucket.getClientId(), newBucket.getCreation());
       return createBucketOnStorage(storageBucket, newBucket);
     } catch (final CcsDbException e) {
-      throw new CcsOperationException("Database error on bucket " + bucket.getName() + " creation", e);
+      throw new CcsOperationException("Database error on bucket " + bucket.getId() + " creation", e);
     } finally {
       flushBucket();
     }
   }
 
+  private void finalizeAddOwnership(final OwnershipApiClient ownershipClient,
+                                    final CompletableFuture<ClientOwnership> completableFuture) {
+    try {
+      ownershipClient.getClientOwnershipFromAsync(completableFuture);
+    } catch (final CcsWithStatusException e) {
+      // Ignore
+      LOGGER.info(e);
+    }
+  }
+
   private AccessorBucket createBucketOnStorage(final StorageBucket storageBucket, final AccessorBucket bucket)
       throws CcsDbException {
-    try (final var storageDriver = storageDriverFactory.getInstance()) {
-      // retrieving metadata from storage, would data be duplicated in database
+    try (final var storageDriver = storageDriverFactory.getInstance();
+         final var ownershipClient = ownershipApiClientFactory.newClient()) {
+      final var completableFuture =
+          ownershipClient.addAsync(storageBucket.clientId(), storageBucket.bucket(), ClientOwnership.OWNER);
       storageDriver.bucketCreate(storageBucket);
-      //Update Database in Database with status Available.
+      finalizeAddOwnership(ownershipClient, completableFuture);
+      // Update Database in Database with status Ready.
       var newBucket = bucketRepository.updateBucketStatus(bucket, AccessorStatus.READY, null);
       LOGGER.debugf("Bucket %s created in database and in object storage", bucket.getId());
       return newBucket;
@@ -177,18 +202,21 @@ public class RequestActionService {
   }
 
   /**
-   * Delete bucket from technical bucket name
+   * Delete bucket
    *
-   * @param technicalBucketName Bucket technical name
-   * @return the associated DTO- deleted
+   * @return the associated DTO deleted
    */
-  public AccessorBucket deleteBucket(final String technicalBucketName)
+  public AccessorBucket deleteBucket(final ReplicatorOrder replicatorOrder)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
+    checkReplicatorOrderBucketName(replicatorOrder);
     try {
-      final var bucket = bucketRepository.findBucketById(technicalBucketName);
+      final var bucket = bucketRepository.findBucketById(replicatorOrder.bucketName());
       if (bucket == null) {
-        throw new CcsNotExistException("Bucket " + technicalBucketName + " doesn't exist");
+        throw new CcsNotExistException("Bucket " + replicatorOrder.bucketName() + " doesn't exist");
       } else if (bucket.getStatus() == AccessorStatus.READY) {
+        if (!bucket.getClientId().equals(replicatorOrder.clientId())) {
+          throw new CcsNotAllowedException(replicatorOrder.bucketName() + " is not owned by current client");
+        }
         final var count = objectRepository.count(new DbQuery(RestQuery.CONJUNCTION.AND,
             new DbQuery(RestQuery.QUERY.EQ, DaoAccessorObjectRepository.BUCKET, bucket.getId()),
             new DbQuery(RestQuery.QUERY.EQ, DaoAccessorObjectRepository.STATUS, AccessorStatus.READY)));
@@ -196,25 +224,38 @@ public class RequestActionService {
           throw new CcsNotAcceptableException("Bucket is not empty");
         }
         bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETING, null);
-        return deleteBucketOnStorage(technicalBucketName, bucket);
+        return deleteBucketOnStorage(replicatorOrder.bucketName(), bucket);
       } else if (bucket.getStatus() == AccessorStatus.DELETED) {
-        throw new CcsDeletedException("Bucket " + technicalBucketName + " is already deleted");
+        throw new CcsDeletedException("Bucket " + replicatorOrder.bucketName() + " is already deleted");
       } else {
         throw new CcsOperationException("Bucket Status " + bucket.getStatus());
       }
     } catch (final CcsDbException e) {
-      throw new CcsOperationException("Database error on delete bucket " + technicalBucketName, e);
+      throw new CcsOperationException("Database error on delete bucket " + replicatorOrder.bucketName(), e);
     } finally {
       flushBucket();
     }
   }
 
-  private AccessorBucket deleteBucketOnStorage(final String technicalBucketName, final AccessorBucket bucket)
+  private void finalizeDeleteOwnership(final OwnershipApiClient ownershipClient,
+                                       final CompletableFuture<Response> completableFuture) {
+    try {
+      ownershipClient.getBooleanFromAsync(completableFuture);
+    } catch (final CcsWithStatusException e) {
+      // Ignore
+      LOGGER.info(e);
+    }
+  }
+
+  private AccessorBucket deleteBucketOnStorage(final String bucketName, final AccessorBucket bucket)
       throws CcsDbException {
     try {
-      try (final var storageDriver = storageDriverFactory.getInstance()) {
-        // retrieving metadata from storage, would data be duplicated in database
-        storageDriver.bucketDelete(technicalBucketName);
+      try (final var storageDriver = storageDriverFactory.getInstance();
+           final var ownershipClient = ownershipApiClientFactory.newClient()) {
+        // All clients cannot have anymore ownership on this bucket
+        final var completableFuture = ownershipClient.deleteAllClientsAsync(bucketName);
+        storageDriver.bucketDelete(bucketName);
+        finalizeDeleteOwnership(ownershipClient, completableFuture);
       }
       return bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETED, null);
     } catch (final DriverException | RuntimeException e) {
@@ -224,8 +265,35 @@ public class RequestActionService {
     }
   }
 
+  private void checkSanityReplicatorOrder(final ReplicatorOrder replicatorOrder) {
+    checkReplicatorOrderBucketName(replicatorOrder);
+    try {
+      // Check format (special char, uppercase...) and size (min, max) for object name
+      ParametersChecker.checkSanityObjectName(replicatorOrder.objectName());
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      final var message = String.format("Object Name %s is invalid", replicatorOrder.objectName());
+      throw new CcsOperationException(message);
+    }
+  }
+
+  private void checkOwnership(final ReplicatorOrder replicatorOrder, final ClientOwnership ownership)
+      throws CcsNotAllowedException {
+    try (final var ownerClient = ownershipApiClientFactory.newClient()) {
+      if (!ownerClient.findByBucket(replicatorOrder.clientId(), replicatorOrder.bucketName()).include(ownership)) {
+        throw new CcsNotAllowedException(ownership.name() + NOT_ALLOWED);
+      }
+    } catch (CcsWithStatusException e) {
+      if (e.getStatus() < Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
+        throw new CcsNotAllowedException(ownership.name() + NOT_ALLOWED, e);
+      }
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), e.getMessage(), e);
+    }
+  }
+
   public void createObject(final ReplicatorOrder replicatorOrder)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
+    checkSanityReplicatorOrder(replicatorOrder);
+    checkOwnership(replicatorOrder, ClientOwnership.WRITE);
     final var daoObject = createObjectInternal(replicatorOrder);
     LOGGER.debugf("Debug Log Creation: %s from %s", daoObject.getBucket(), daoObject);
     try (final var driverApi = storageDriverFactory.getInstance();
@@ -246,7 +314,7 @@ public class RequestActionService {
       throw new CcsAlreadyExistException(e.getMessage(), e);
     } catch (final CcsWithStatusException e) {
       objectInError(daoObject, replicatorOrder);
-      throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), e.getMessage(), e);
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), e.getMessage(), e);
     } catch (final DriverNotFoundException e) {
       objectInError(daoObject, replicatorOrder);
       throw new CcsNotExistException(e.getMessage(), e);
@@ -298,6 +366,7 @@ public class RequestActionService {
       // Now Object check
       var daoAccessorObject = objectRepository.getObject(replicatorOrder.bucketName(), replicatorOrder.objectName());
       if (daoAccessorObject != null) {
+        // FIXME might need extra check from Reconciliation (RStatus = To_Update Rank ?)
         if (daoAccessorObject.getStatus() != AccessorStatus.DELETED) {
           if (daoAccessorObject.getStatus() == AccessorStatus.UPLOAD) {
             throw new CcsNotAcceptableException(
@@ -317,7 +386,7 @@ public class RequestActionService {
               AccessorStatus.UPLOAD, daoAccessorObject.getCreation());
         }
       } else {
-        //Create object in database with status "In progress"
+        // Create object in database with status "UPLOAD"
         daoAccessorObject = objectRepository.createEmptyItem();
         daoAccessorObject.setBucket(replicatorOrder.bucketName()).setName(replicatorOrder.objectName())
             .setHash(replicatorOrder.hash()).setSize(replicatorOrder.size());
@@ -342,11 +411,11 @@ public class RequestActionService {
   }
 
   /**
-   * Once Object really created in Cloud Cloud Store, finalize the Object in DB
+   * Once Object really created in Cloud Clone Store, finalize the Object in DB
    */
   private DaoAccessorObject createObjectFinalize(final DaoAccessorObject daoObject) throws CcsOperationException {
     try {
-      // Update Database with status available and metadata from ObjectStorage
+      // Update Database with status Ready and metadata from ObjectStorage
       objectRepository.updateObjectStatusHashLen(daoObject.getBucket(), daoObject.getName(), AccessorStatus.READY,
           daoObject.getHash(), daoObject.getSize());
       return objectRepository.getObject(daoObject.getBucket(), daoObject.getName());
@@ -359,29 +428,40 @@ public class RequestActionService {
   /**
    * Delete object in DB and through Replicator if needed
    */
-  public void deleteObject(final String bucketName, final String objectName)
+  public void deleteObject(final ReplicatorOrder replicatorOrder)
       throws CcsDeletedException, CcsNotExistException, CcsOperationException {
+    checkSanityReplicatorOrder(replicatorOrder);
+    checkOwnership(replicatorOrder, ClientOwnership.DELETE);
     try {
       // Check existence first in DB
-      final var daoAccessorObject = objectRepository.getObject(bucketName, objectName);
+      final var daoAccessorObject =
+          objectRepository.getObject(replicatorOrder.bucketName(), replicatorOrder.objectName());
       if (daoAccessorObject != null) {
         LOGGER.debugf("Dao: %s", daoAccessorObject);
         if (daoAccessorObject.getStatus() != AccessorStatus.READY) {
           if (daoAccessorObject.getStatus().equals(AccessorStatus.DELETED)) {
-            throw new CcsDeletedException(mesg(bucketName, objectName) + " is already Deleted");
+            throw new CcsDeletedException(
+                mesg(replicatorOrder.bucketName(), replicatorOrder.objectName()) + " is already Deleted");
           }
-          throw new CcsOperationException(mesg(bucketName, objectName) + STATUS_STRING + daoAccessorObject.getStatus());
+          throw new CcsOperationException(
+              mesg(replicatorOrder.bucketName(), replicatorOrder.objectName()) + STATUS_STRING +
+                  daoAccessorObject.getStatus());
         }
-        objectRepository.updateObjectStatus(bucketName, objectName, AccessorStatus.DELETING, null);
+        objectRepository.updateObjectStatus(replicatorOrder.bucketName(), replicatorOrder.objectName(),
+            AccessorStatus.DELETING, null);
       } else {
-        throw new CcsNotExistException(mesg(bucketName, objectName) + STATUS_STRING + AccessorStatus.UNKNOWN);
+        throw new CcsNotExistException(
+            mesg(replicatorOrder.bucketName(), replicatorOrder.objectName()) + STATUS_STRING + AccessorStatus.UNKNOWN);
       }
       // Delete in S3
-      deleteObjectOnStorage(bucketName, objectName, daoAccessorObject);
+      deleteObjectOnStorage(replicatorOrder.bucketName(), replicatorOrder.objectName(), daoAccessorObject);
       // Update status in DB to Deleted
-      objectRepository.updateObjectStatus(bucketName, objectName, AccessorStatus.DELETED, null);
+      objectRepository.updateObjectStatus(replicatorOrder.bucketName(), replicatorOrder.objectName(),
+          AccessorStatus.DELETED, null);
     } catch (final CcsDbException e) {
-      throw new CcsOperationException("Database error on delete object : " + bucketName + " - " + objectName, e);
+      throw new CcsOperationException(
+          "Database error on delete object : " + replicatorOrder.bucketName() + " - " + replicatorOrder.objectName(),
+          e);
     } finally {
       flushObject();
     }

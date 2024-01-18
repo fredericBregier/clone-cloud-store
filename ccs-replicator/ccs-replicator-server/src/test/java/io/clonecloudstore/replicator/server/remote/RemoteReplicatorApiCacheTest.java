@@ -31,7 +31,7 @@ import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.replicator.server.remote.client.RemoteReplicatorApiClientFactory;
-import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApiService;
+import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorClientApiService;
 import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
@@ -44,7 +44,6 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_ID;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_NAME;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.CLIENT_ID;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.OBJECT_PATH;
@@ -66,7 +65,7 @@ class RemoteReplicatorApiCacheTest {
   @Inject
   AccessorObjectApiFactory accessorObjectApiFactory;
   @Inject
-  RemoteReplicatorApiService remoteReplicatorApiService;
+  RemoteReplicatorClientApiService remoteReplicatorClientApiService;
   @Inject
   DriverApiFactory driverFactory;
 
@@ -80,17 +79,17 @@ class RemoteReplicatorApiCacheTest {
   @Test
   void testRemoteCheckAndAccessCache() throws InterruptedException {
     // First error return
-    remoteReplicatorApiService.invalidateCacheBucket();
-    remoteReplicatorApiService.invalidateCacheObject();
+    remoteReplicatorClientApiService.invalidateCacheBucket();
+    remoteReplicatorClientApiService.invalidateCacheObject();
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
       FakeCommonBucketResourceHelper.errorCode = 400;
       FakeCommonObjectResourceHelper.errorCode = 400;
       assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID)).getStatus());
+          () -> client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID)).getStatus());
       assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID)).getStatus());
+          () -> client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID)).getStatus());
       assertEquals(400, assertThrows(CcsWithStatusException.class,
-          () -> client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
+          () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
     } finally {
       FakeCommonBucketResourceHelper.errorCode = 0;
       FakeCommonObjectResourceHelper.errorCode = 0;
@@ -99,38 +98,38 @@ class RemoteReplicatorApiCacheTest {
       FakeCommonBucketResourceHelper.errorCode = 400;
       FakeCommonObjectResourceHelper.errorCode = 400;
       assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID)).getStatus());
+          () -> client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID)).getStatus());
       assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID)).getStatus());
+          () -> client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID)).getStatus());
       assertEquals(400, assertThrows(CcsWithStatusException.class,
-          () -> client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
+          () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
     } finally {
       FakeCommonBucketResourceHelper.errorCode = 0;
       FakeCommonObjectResourceHelper.errorCode = 0;
     }
-    remoteReplicatorApiService.invalidateCacheBucket();
-    remoteReplicatorApiService.invalidateCacheObject();
+    remoteReplicatorClientApiService.invalidateCacheBucket();
+    remoteReplicatorClientApiService.invalidateCacheObject();
     // Second absent items
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      assertEquals(StorageType.NONE, client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID));
+      assertEquals(StorageType.NONE, client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID));
       assertEquals(StorageType.NONE,
-          client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID));
       assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
+          () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      assertEquals(StorageType.NONE, client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID));
+      assertEquals(StorageType.NONE, client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID));
       assertEquals(StorageType.NONE,
-          client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID));
       assertEquals(404, assertThrows(CcsWithStatusException.class,
-          () -> client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
+          () -> client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0)).getStatus());
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
-    remoteReplicatorApiService.invalidateCacheBucket();
-    remoteReplicatorApiService.invalidateCacheObject();
+    remoteReplicatorClientApiService.invalidateCacheBucket();
+    remoteReplicatorClientApiService.invalidateCacheObject();
     // Now check with existing items
     String digest = null;
     try (final var accessorClient = accessorBucketApiFactory.newClient()) {
@@ -140,9 +139,8 @@ class RemoteReplicatorApiCacheTest {
     }
     try (final var accessorClient = accessorObjectApiFactory.newClient();
          final var inputStream0 = new FakeInputStream(120L, (byte) 'A');
-         final var digestInputStream = new MultipleActionsInputStream(inputStream0);
+         final var digestInputStream = new MultipleActionsInputStream(inputStream0, DigestAlgo.SHA256);
          final var inputStream = new FakeInputStream(120L, (byte) 'A')) {
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       digest = digestInputStream.getDigestBase32();
       final var accessorObject =
@@ -157,47 +155,47 @@ class RemoteReplicatorApiCacheTest {
       fail(e);
     }
     try (final var driverClient = driverFactory.getInstance()) {
-      assertTrue(driverClient.bucketExists(BUCKET_ID));
-      assertEquals(StorageType.OBJECT, driverClient.directoryOrObjectExistsInBucket(BUCKET_ID, OBJECT_PATH));
-      final var inputStream = driverClient.objectGetInputStreamInBucket(BUCKET_ID, OBJECT_PATH);
+      assertTrue(driverClient.bucketExists(BUCKET_NAME));
+      assertEquals(StorageType.OBJECT, driverClient.directoryOrObjectExistsInBucket(BUCKET_NAME, OBJECT_PATH));
+      final var inputStream = driverClient.objectGetInputStreamInBucket(BUCKET_NAME, OBJECT_PATH);
       final var len = FakeInputStream.consumeAll(inputStream);
       assertEquals(120, len);
     } catch (final DriverException | IOException e) {
       fail(e);
     }
-    remoteReplicatorApiService.clearCacheBucket(URI.create(URI_SERVER), BUCKET_ID);
-    remoteReplicatorApiService.clearCacheObject(URI.create(URI_SERVER), BUCKET_ID, OBJECT_PATH);
+    remoteReplicatorClientApiService.clearCacheBucket(URI.create(URI_SERVER), BUCKET_NAME);
+    remoteReplicatorClientApiService.clearCacheObject(URI.create(URI_SERVER), BUCKET_NAME, OBJECT_PATH);
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      assertEquals(StorageType.BUCKET, client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID));
+      assertEquals(StorageType.BUCKET, client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID));
       assertEquals(StorageType.OBJECT,
-          client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      final var result = client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0);
+      final var result = client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0);
       assertEquals(digest, result.dtoOut().getHash());
       final var len = FakeInputStream.consumeAll(result.inputStream());
       assertEquals(120, len);
       assertEquals(StorageType.NONE,
-          client.checkObjectOrDirectory(BUCKET_ID, OBJECT_PATH + "NotExist", true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectory(BUCKET_NAME, OBJECT_PATH + "NotExist", true, CLIENT_ID, OP_ID));
     } catch (final CcsWithStatusException | IOException e) {
       fail(e);
     }
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      assertEquals(StorageType.BUCKET, client.checkBucketCache(BUCKET_ID, true, CLIENT_ID, OP_ID));
+      assertEquals(StorageType.BUCKET, client.checkBucketCache(BUCKET_NAME, true, CLIENT_ID, OP_ID));
       assertEquals(StorageType.OBJECT,
-          client.checkObjectOrDirectoryCache(BUCKET_ID, OBJECT_PATH, true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectoryCache(BUCKET_NAME, OBJECT_PATH, true, CLIENT_ID, OP_ID));
     } catch (final CcsWithStatusException e) {
       fail(e);
     }
     try (final var client = remoteReplicatorApiClientFactory.newClient(URI.create(URI_SERVER))) {
-      final var result = client.readRemoteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, OP_ID, 0);
+      final var result = client.readRemoteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, OP_ID, 0);
       assertEquals(digest, result.dtoOut().getHash());
       final var len = FakeInputStream.consumeAll(result.inputStream());
       assertEquals(120, len);
       assertEquals(StorageType.NONE,
-          client.checkObjectOrDirectory(BUCKET_ID, OBJECT_PATH + "NotExist", true, CLIENT_ID, OP_ID));
+          client.checkObjectOrDirectory(BUCKET_NAME, OBJECT_PATH + "NotExist", true, CLIENT_ID, OP_ID));
     } catch (final CcsWithStatusException | IOException e) {
       fail(e);
     }

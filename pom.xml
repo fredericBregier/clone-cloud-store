@@ -42,21 +42,21 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.6.4</quarkus.platform.version>
+    <quarkus.platform.version>3.7.3</quarkus.platform.version>
     <zstd-jni.version>1.5.5-11</zstd-jni.version>
-    <testcontainers.version>1.19.3</testcontainers.version>
+    <testcontainers.version>1.19.5</testcontainers.version>
     <guava.version>33.0.0-jre</guava.version>
     <jmh-core.version>1.37</jmh-core.version>
-    <azure-version>1.0.1</azure-version>
-    <google-version>2.6.0</google-version>
-    <google-bom-version>26.29.0</google-bom-version>
-    <apache-httpclient.version>5.3</apache-httpclient.version>
+    <azure-version>1.0.2</azure-version>
+    <google-version>2.7.0</google-version>
+    <google-bom-version>26.32.0</google-bom-version>
+    <apache-httpclient.version>5.3.1</apache-httpclient.version>
     <skipITs>true</skipITs>
     <root.directory>${maven.multiModuleProjectDirectory}</root.directory>
     <!-- Plugins -->
     <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
     <compiler-plugin.version>3.12.1</compiler-plugin.version>
-    <surefire-plugin.version>3.2.3</surefire-plugin.version>
+    <surefire-plugin.version>3.2.5</surefire-plugin.version>
     <jandex.version>3.1.6</jandex.version>
     <maven-javadoc.version>3.6.3</maven-javadoc.version>
     <maven-site.version>4.0.0-M13</maven-site.version>
@@ -66,10 +66,10 @@
     <exec-maven.version>3.1.1</exec-maven.version>
     <maven-antrun.version>3.1.0</maven-antrun.version>
     <maven-clean.version>3.3.2</maven-clean.version>
-    <dependency-check.version>9.0.7</dependency-check.version>
+    <dependency-check.version>9.0.9</dependency-check.version>
     <properties-maven.version>1.2.1</properties-maven.version>
     <maven-reports.version>3.5.0</maven-reports.version>
-    <maven-surefire-reports.version>3.2.3</maven-surefire-reports.version>
+    <maven-surefire-reports.version>3.2.5</maven-surefire-reports.version>
     <maven-jxr.version>3.3.2</maven-jxr.version>
     <!-- JaCoCo Properties -->
     <jacoco.version>0.8.11</jacoco.version>
@@ -103,13 +103,14 @@
       ${root.directory}/ccs-replicator/ccs-replicator-model/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-replicator/ccs-replicator-client/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-replicator/ccs-replicator-server/target/jacoco-report/jacoco.xml,
-      ${root.directory}/ccs-topology/ccs-topology-client/target/jacoco-report/jacoco.xml,
-      ${root.directory}/ccs-topology/ccs-topology-server/target/jacoco-report/jacoco.xml,
-      ${root.directory}/ccs-reconciliator/ccs-reconciliator-model/target/jacoco-report/jacoco.xml,
+      ${root.directory}/ccs-administration/ccs-administration-client/target/jacoco-report/jacoco.xml,
+      ${root.directory}/ccs-administration/ccs-administration-server/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-reconciliator/ccs-reconciliator-client/target/jacoco-report/jacoco.xml,
-      ${root.directory}/ccs-reconciliator/ccs-reconciliator-database/target/jacoco-report/jacoco.xml,
       ${root.directory}/ccs-reconciliator/ccs-reconciliator-server/target/jacoco-report/jacoco.xml
     </sonar.coverage.jacoco.xmlReportPaths>
+    <sonar.dependencyCheck.htmlReportPath>target/dependency-check-report.html</sonar.dependencyCheck.htmlReportPath>
+    <sonar.dependencyCheck.jsonReportPath>target/dependency-check-report.json</sonar.dependencyCheck.jsonReportPath>
+
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -129,6 +130,12 @@
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+      </dependency>
+      <!-- Quick workarkoud for https://github.com/quarkusio/quarkus/issues/38510 (affecting Quarkus 3.7.0 and 3.7.1) -->
+      <dependency>
+        <groupId>org.mvnpm</groupId>
+        <artifactId>lit-element</artifactId>
+        <version>4.0.3</version>
       </dependency>
       <!-- Storage support -->
       <dependency>
@@ -346,12 +353,12 @@
       </dependency>
       <dependency>
         <groupId>io.clonecloudstore</groupId>
-        <artifactId>ccs-topology-client</artifactId>
+        <artifactId>ccs-administration-client</artifactId>
         <version>${revision}</version>
       </dependency>
       <dependency>
         <groupId>io.clonecloudstore</groupId>
-        <artifactId>ccs-topology-server</artifactId>
+        <artifactId>ccs-administration-server</artifactId>
         <version>${revision}</version>
       </dependency>
       <dependency>
@@ -386,17 +393,7 @@
       </dependency>
       <dependency>
         <groupId>io.clonecloudstore</groupId>
-        <artifactId>ccs-reconciliator-model</artifactId>
-        <version>${revision}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.clonecloudstore</groupId>
         <artifactId>ccs-reconciliator-client</artifactId>
-        <version>${revision}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.clonecloudstore</groupId>
-        <artifactId>ccs-reconciliator-database</artifactId>
         <version>${revision}</version>
       </dependency>
       <dependency>
@@ -649,6 +646,7 @@
               <goal>jar</goal>
             </goals>
             <configuration>
+              <failOnError>false</failOnError>
               <!-- switch on dependency-driven aggregation -->
               <includeDependencySources>true</includeDependencySources>
               <dependencySourceIncludes>
@@ -675,7 +673,7 @@
                 </group>
                 <group>
                   <title>Cloud Cloud Store Driver API Package</title>
-                  <packages>io.clonecloudstore.driver.api*</packages>
+                  <packages>io.clonecloudstore.driver.api</packages>
                 </group>
                 <group>
                   <title>Cloud Cloud Store Driver API Amazon S3 Package</title>
@@ -702,8 +700,8 @@
                   <packages>io.clonecloudstore.reconciliator*</packages>
                 </group>
                 <group>
-                  <title>Cloud Cloud Store Topology Package</title>
-                  <packages>io.clonecloudstore.topology*</packages>
+                  <title>Cloud Cloud Store Administration Package</title>
+                  <packages>io.clonecloudstore.administration*</packages>
                 </group>
                 <group>
                   <title>Cloud Cloud Store Test helper Package</title>
@@ -728,6 +726,7 @@
           <doclint>all,-missing</doclint>
           <keywords>true</keywords>
           <attach>false</attach>
+          <failOnError>false</failOnError>
           <show>package</show>
           <encoding>UTF-8</encoding>
           <locale>en_US</locale>
@@ -751,7 +750,7 @@
             </group>
             <group>
               <title>Cloud Cloud Store Driver API Package</title>
-              <packages>io.clonecloudstore.driver.api*</packages>
+              <packages>io.clonecloudstore.driver.api</packages>
             </group>
             <group>
               <title>Cloud Cloud Store Driver API Amazon S3 Package</title>
@@ -774,8 +773,8 @@
               <packages>io.clonecloudstore.replicator*</packages>
             </group>
             <group>
-              <title>Cloud Cloud Store Topology Package</title>
-              <packages>io.clonecloudstore.topology*</packages>
+              <title>Cloud Cloud Store Administration Package</title>
+              <packages>io.clonecloudstore.administration*</packages>
             </group>
             <group>
               <title>Cloud Cloud Store Reconciliator Package</title>
@@ -881,7 +880,7 @@
     <module>ccs-common</module>
     <module>ccs-driver</module>
     <module>ccs-accessor</module>
-    <module>ccs-topology</module>
+    <module>ccs-administration</module>
     <module>ccs-replicator</module>
     <module>ccs-reconciliator</module>
     <module>ccs-doc</module>

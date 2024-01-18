@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -29,22 +30,22 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
  * Dto for Java and possibly Rest API: Bucket minimal information
  */
 @RegisterForReflection
-public record StorageBucket(String bucket, Instant creationDate) {
-  public StorageBucket(final String bucket, final Instant creationDate) {
+public record StorageBucket(String bucket, String clientId, Instant creationDate) {
+  public StorageBucket(final String bucket, final String clientId, final Instant creationDate) {
     if (bucket != null) {
       ParametersChecker.checkSanityBucketName(bucket);
     }
+    if (clientId != null) {
+      ParametersChecker.checkSanityBucketName(clientId);
+    }
     this.bucket = bucket;
+    this.clientId = clientId;
     this.creationDate = SystemTools.toMillis(creationDate);
   }
 
   @Override
   public int hashCode() {
-    if (bucket != null) {
-      return bucket.hashCode();
-    }
-    // Fixed hash since value is null
-    return -1;
+    return Objects.hash(bucket, clientId);
   }
 
   @Override
@@ -53,7 +54,7 @@ public record StorageBucket(String bucket, Instant creationDate) {
       return true;
     }
     if (obj instanceof final StorageBucket storageBucket) {
-      return Objects.equals(bucket, storageBucket.bucket);
+      return Objects.equals(bucket, storageBucket.bucket) && Objects.equals(clientId, storageBucket.clientId);
     }
     return false;
   }
@@ -63,8 +64,7 @@ public record StorageBucket(String bucket, Instant creationDate) {
     try {
       return StandardProperties.getObjectMapper().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{'bucket':'" + (bucket != null ? bucket : "") + "', 'creationDate':'" +
-          (creationDate != null ? creationDate.toString() : "") + "'}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 }

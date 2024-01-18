@@ -51,6 +51,7 @@ public abstract class AbstractResponseClientFilter<O> implements ResteasyReactiv
   @Override
   public void filter(final ResteasyReactiveClientRequestContext requestContext,
                      final ClientResponseContext responseContext) {
+    SimpleClientAbstract.setMdcOpId((String) requestContext.getHeaders().getFirst(X_OP_ID));
     final var method = requestContext.getMethod();
     LOGGER.debugf("Finalize Response for %s: is inputStream %s : %b", method,
         requestContext.getHeaders().getFirst(HttpHeaders.ACCEPT),
@@ -58,7 +59,6 @@ public abstract class AbstractResponseClientFilter<O> implements ResteasyReactiv
     final var validMethod = Arrays.stream(validMethods()).filter(valid -> valid.equalsIgnoreCase(method)).count() > 0;
     if (validMethod &&
         MediaType.APPLICATION_OCTET_STREAM.equals(requestContext.getHeaders().getFirst(HttpHeaders.ACCEPT))) {
-      SimpleClientAbstract.setMdcOpId((String) requestContext.getHeaders().getFirst(X_OP_ID));
       final var headers = responseContext.getHeaders();
       if (headers != null) {
         LOGGER.debugf("Headers %s", headers);

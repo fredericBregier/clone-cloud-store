@@ -32,7 +32,7 @@ import jakarta.ws.rs.core.Response;
  * Object API Resource
  */
 @Path(AccessorConstants.Api.API_ROOT)
-public class AccessorObjectResource extends AbstractAccessorPublicObjectResource<ObjectNativeStreamHandler> {
+public class AccessorObjectResource extends AbstractAccessorPublicObjectResource<ObjectStreamHandler> {
 
   public AccessorObjectResource(final AccessorObjectService service) {
     super(service);

@@ -29,7 +29,7 @@ import jakarta.enterprise.context.Dependent;
 import jakarta.ws.rs.core.Response;
 
 @Dependent
-public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStreamHandlerAbstract>
+public abstract class FakeAccessorObjectPublicAbstract<H extends FakeStreamHandlerAbstract>
     extends AbstractAccessorPublicObjectResource<H> {
   protected FakeAccessorObjectPublicAbstract() {
     super((AccessorObjectServiceInterface) null);
@@ -41,55 +41,42 @@ public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStrea
 
   protected void listObjects(final UniEmitter<? super Response> em, final String bucketName, final String xNamePrefix,
                              final String xCreationAfter, final String xCreationBefore, final String clientId,
-                             final boolean isPublic, final HttpServerRequest request, final Closer closer) {
+                             final HttpServerRequest request, final Closer closer) {
     FakeCommonObjectResourceHelper.listObjectsHelper(em, bucketName, xNamePrefix, xCreationAfter, xCreationBefore,
-        clientId, isPublic, request, closer);
+        clientId, request, closer);
   }
 
-  protected Uni<Response> listObjects0(final String bucketName, final String acceptHeader,
-                                       final String acceptEncodingHeader, final String clientId, final String opId,
-                                       final String xNamePrefix, final String xStatuses, final String xCreationBefore,
+  protected Uni<Response> listObjects0(final String bucketName, final String clientId, final String xNamePrefix,
+                                       final String xStatuses, final String xCreationBefore,
                                        final String xCreationAfter, final String xExpiresBefore,
                                        final String xExpiresAfter, final long xSizeLt, final long xSizeGt,
-                                       final String xMetadataEq, final boolean isPublic,
-                                       final HttpServerRequest request, final Closer closer) {
-    return FakeCommonObjectResourceHelper.listObjects0Helper(bucketName, acceptHeader, acceptEncodingHeader, clientId,
-        opId, xNamePrefix, xStatuses, xCreationBefore, xCreationAfter, xExpiresBefore, xExpiresAfter, xSizeLt, xSizeGt,
-        xMetadataEq, isPublic, request, closer);
+                                       final String xMetadataEq, final HttpServerRequest request, final Closer closer) {
+    return FakeCommonObjectResourceHelper.listObjects0Helper(bucketName, clientId, xNamePrefix, xStatuses,
+        xCreationBefore, xCreationAfter, xExpiresBefore, xExpiresAfter, xSizeLt, xSizeGt, xMetadataEq, request, closer);
   }
 
   protected void checkObjectOrDirectory(final UniEmitter<? super Response> em, final String bucketName,
-                                        final String pathDirectoryOrObject, final boolean fullCheck,
-                                        final String clientId, final boolean isPublic) {
-    FakeCommonObjectResourceHelper.checkObjectOrDirectoryHelper(em, bucketName, pathDirectoryOrObject, fullCheck,
-        clientId, isPublic);
+                                        final String pathDirectoryOrObject, final String clientId) {
+    FakeCommonObjectResourceHelper.checkObjectOrDirectoryHelper(em, bucketName, pathDirectoryOrObject, clientId);
   }
 
   protected Uni<Response> checkObjectOrDirectory0(final String bucketName, final String pathDirectoryOrObject,
-                                                  final boolean fullCheck, final String clientId,
-                                                  final boolean isPublic) {
-    return FakeCommonObjectResourceHelper.checkObjectOrDirectory0Helper(bucketName, pathDirectoryOrObject, fullCheck,
-        clientId, isPublic);
+                                                  final String clientId) {
+    return FakeCommonObjectResourceHelper.checkObjectOrDirectory0Helper(bucketName, pathDirectoryOrObject, clientId);
   }
 
   protected void getObjectInfo(final UniEmitter<? super AccessorObject> em, final String bucketName,
-                               final String objectName, final String clientId, final boolean isPublic) {
-    FakeCommonObjectResourceHelper.getObjectInfoHelper(em, bucketName, objectName, clientId, isPublic);
+                               final String objectName, final String clientId) {
+    FakeCommonObjectResourceHelper.getObjectInfoHelper(em, bucketName, objectName, clientId);
   }
 
-  protected Uni<AccessorObject> getObjectInfo0(final String bucketName, final String objectName, final String clientId,
-                                               final boolean isPublic) {
-    return FakeCommonObjectResourceHelper.getObjectInfo0Helper(bucketName, objectName, clientId, isPublic);
+  protected Uni<AccessorObject> getObjectInfo0(final String bucketName, final String objectName,
+                                               final String clientId) {
+    return FakeCommonObjectResourceHelper.getObjectInfo0Helper(bucketName, objectName, clientId);
   }
 
-  protected void deleteObjectHelper(final UniEmitter<? super Response> em, final String bucketName,
-                                    final String objectName, final String clientId, final boolean isPublic) {
-    FakeCommonObjectResourceHelper.deleteObjectHelper(em, bucketName, objectName, clientId, isPublic);
-  }
-
-  protected Uni<Response> deleteObject0(final String bucketName, final String objectName, final String clientId,
-                                        final boolean isPublic) {
-    return FakeCommonObjectResourceHelper.deleteObject0Helper(bucketName, objectName, clientId, isPublic);
+  protected Uni<Response> deleteObject0(final String bucketName, final String objectName, final String clientId) {
+    return FakeCommonObjectResourceHelper.deleteObject0Helper(bucketName, objectName, clientId);
   }
 
   protected Uni<Response> createObject0(final HttpServerRequest request, final Closer closer, final String bucketName,
@@ -98,20 +85,20 @@ public abstract class FakeAccessorObjectPublicAbstract<H extends FakeNativeStrea
                                         final String xObjectId, final String xObjectSite, final String xObjectBucket,
                                         final String xObjectName, final long xObjectSize, final String xObjectHash,
                                         final String xObjectMetadata, final String xObjectExpires,
-                                        final boolean isPublic, final InputStream inputStream) {
+                                        final InputStream inputStream) {
     final var accessorObject =
         FakeCommonObjectResourceHelper.getAccessorObjectForCreate(request, bucketName, objectName, clientId,
-            xObjectSize, isPublic);
+            xObjectSize);
     return createObject(request, closer, accessorObject, accessorObject.getSize(), accessorObject.getHash(),
         inputStream);
   }
 
   protected Uni<Response> getObject0(final String bucketName, final String objectName, final String acceptHeader,
                                      final String acceptEncodingHeader, final String clientId, final String opId,
-                                     final boolean isPublic, final HttpServerRequest request, final Closer closer) {
+                                     final HttpServerRequest request, final Closer closer) {
     final var accessorObject =
-        FakeCommonObjectResourceHelper.getAccessorObjectForGetObject(bucketName, objectName, clientId, isPublic);
-    return readObject(request, closer, accessorObject);
+        FakeCommonObjectResourceHelper.getAccessorObjectForGetObject(bucketName, objectName, clientId);
+    return readObject(request, closer, accessorObject, true);
   }
 
 }

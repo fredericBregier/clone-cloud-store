@@ -39,22 +39,22 @@ public abstract class FakeBucketPublicResourceAbstract extends FakeBucketPublicA
 
   @Override
   public Uni<Response> checkBucket(final String bucketName, final String clientId, final String opId) {
-    return checkBucket0(bucketName, false, clientId, isPublic());
+    return checkBucket0(bucketName, false, clientId);
   }
 
   @Override
   public Uni<AccessorBucket> getBucket(final String bucketName, final String clientId, final String opId) {
-    return getBucket0(bucketName, clientId, isPublic());
+    return getBucket0(bucketName, clientId);
   }
 
   @Override
   public Uni<AccessorBucket> createBucket(final String bucketName, final String clientId, final String opId) {
-    return createBucket0(bucketName, clientId, isPublic());
+    return createBucket0(bucketName, clientId);
   }
 
   @Override
   public Uni<Response> deleteBucket(final String bucketName, final String clientId, final String opId) {
-    return deleteBucket0(bucketName, clientId, isPublic());
+    return deleteBucket0(bucketName, clientId);
   }
 
   @Override

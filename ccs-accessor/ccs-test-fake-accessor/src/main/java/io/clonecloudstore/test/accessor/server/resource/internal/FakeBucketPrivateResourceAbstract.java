@@ -36,12 +36,12 @@ public abstract class FakeBucketPrivateResourceAbstract extends FakeBucketPrivat
   @Override
   public Uni<Response> checkBucket(final String bucketName, final boolean fullCheck, final String clientId,
                                    final String opId) {
-    return checkBucket0(bucketName, fullCheck, clientId, isPublic());
+    return checkBucket0(bucketName, fullCheck, clientId);
   }
 
   @Override
   public Uni<AccessorBucket> getBucket(final String bucketName, final String clientId, final String opId) {
-    return getBucket0(bucketName, clientId, isPublic());
+    return getBucket0(bucketName, clientId);
   }
 
   @Override

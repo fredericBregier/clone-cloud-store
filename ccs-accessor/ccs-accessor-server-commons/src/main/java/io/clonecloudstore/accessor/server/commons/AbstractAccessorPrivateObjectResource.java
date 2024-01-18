@@ -18,8 +18,9 @@ package io.clonecloudstore.accessor.server.commons;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.common.quarkus.server.service.NativeStreamHandlerAbstract;
+import io.clonecloudstore.common.quarkus.server.service.StreamHandlerAbstract;
 import io.quarkus.resteasy.reactive.server.Closer;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.ws.rs.DefaultValue;
@@ -47,32 +48,52 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_PUBLIC;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_INTERNAL;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
-public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStreamHandlerAbstract<AccessorObject,
+public abstract class AbstractAccessorPrivateObjectResource<H extends StreamHandlerAbstract<AccessorObject,
     AccessorObject>>
     extends AbstractPrivateObjectHelper<H> {
+  //TODO : Security check and get Client ID
   protected AbstractAccessorPrivateObjectResource(final AccessorObjectServiceInterface service) {
     super(service);
   }
 
-  @Tag(name = TAG_PUBLIC + AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}")
   @PUT
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   @Operation(summary = "List objects from filter", description = "List objects from filter as a Stream of Json lines")
-  @RequestBody(required = false, content = {}, description = "No content", ref = "Void")
+  @RequestBody(required = false, content = {}, description = "No content")
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType =
-      MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")))
-  @APIResponse(responseCode = "200", description = "OK")
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")), headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "403", description = "Forbidden", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Bucket not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Parameters({
       @Parameter(name = AccessorConstants.HeaderFilterObject.FILTER_NAME_PREFIX, description = "Filter based on name " +
           "prefix", in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = false),
@@ -97,6 +118,7 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
           "metadatata containing", in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required =
           false)})
   @Override
+  @Blocking
   public Uni<Response> listObjects(@PathParam("bucketName") final String bucketName,
                                    @HeaderParam(ACCEPT) final String acceptHeader,
                                    @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
@@ -119,7 +141,7 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
         xCreationBefore, xCreationAfter, xExpiresBefore, xExpiresAfter, xSizeLt, xSizeGt, xMetadataEq, request, closer);
   }
 
-  @Tag(name = TAG_PUBLIC + AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{pathDirectoryOrObject:.+}")
   @HEAD
   @Operation(summary = "Check if object or directory exist", description = "Check if object or directory exist " +
@@ -127,11 +149,27 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
   @APIResponse(responseCode = "204", description = "OK", headers = {
       @Header(name = AccessorConstants.Api.X_TYPE, description = "Type as StorageType", schema = @Schema(type =
           SchemaType.STRING, enumeration = {
-          "NONE", "BUCKET", "DIRECTORY", "OBJECT"}))})
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+          "NONE", "BUCKET", "DIRECTORY", "OBJECT"})),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "403", description = "Forbidden", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Override
+  @Blocking
   public Uni<Response> checkObjectOrDirectory(@PathParam("bucketName") String bucketName,
                                               @PathParam("pathDirectoryOrObject") String pathDirectoryOrObject,
                                               @Parameter(name = FULL_CHECK, description = "If True implies Storage " +
@@ -146,19 +184,38 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
     return super.checkObjectOrDirectory(bucketName, pathDirectoryOrObject, fullCheck, clientId, opId);
   }
 
-  @Tag(name = TAG_PUBLIC + AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{objectName:.+}")
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @Operation(summary = "Get object", description = "Get object binary with type application/octet-stream and get " +
       "object metadata with type application/json")
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
-      schema = @Schema(implementation = AccessorObject.class)))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      schema = @Schema(implementation = AccessorObject.class)), headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "403", description = "Forbidden", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Object not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Override
+  @Blocking
   public Uni<AccessorObject> getObjectInfo(@PathParam("bucketName") final String bucketName,
                                            @PathParam("objectName") final String objectName,
                                            @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client" +
@@ -173,7 +230,7 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
   /**
    * Returns both the content Object and the associated DTO through Headers
    */
-  @Tag(name = TAG_PUBLIC + AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{objectName:.+}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -188,7 +245,6 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
           schema = @Schema(type = SchemaType.STRING), required = true),
       @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type =
           SchemaType.STRING), required = false)})
-  @RequestBody(required = false, content = {}, description = "No content", ref = "Void")
   @APIResponse(responseCode = "200", description = "OK", headers = {
       @Header(name = AccessorConstants.HeaderObject.X_OBJECT_ID, description = "Id", schema = @Schema(type =
           SchemaType.STRING)),
@@ -209,13 +265,33 @@ public abstract class AbstractAccessorPrivateObjectResource<H extends NativeStre
       @Header(name = AccessorConstants.HeaderObject.X_OBJECT_STATUS, description = "Object Status", schema =
       @Schema(type = SchemaType.STRING)),
       @Header(name = AccessorConstants.HeaderObject.X_OBJECT_EXPIRES, description = "Expiration Date", schema =
-      @Schema(type = SchemaType.STRING))}, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema
-      = @Schema(type = SchemaType.STRING, format = "binary")))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      @Schema(type = SchemaType.STRING)),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))}, content =
+  @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format =
+      "binary")))
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "403", description = "Forbidden", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Object not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   @Override
+  @Blocking
   public Uni<Response> getObject(@PathParam("bucketName") final String bucketName,
                                  @PathParam("objectName") final String objectName,
                                  @HeaderParam(ACCEPT) final String acceptHeader,

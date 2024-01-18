@@ -22,19 +22,21 @@ import java.util.Collection;
 import java.util.Optional;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
+import io.clonecloudstore.administration.client.TopologyApiClientFactory;
+import io.clonecloudstore.administration.model.Topology;
+import io.clonecloudstore.administration.model.TopologyStatus;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.server.remote.client.RemoteReplicatorApiClient;
 import io.clonecloudstore.replicator.server.remote.client.RemoteReplicatorApiClientFactory;
-import io.clonecloudstore.topology.client.TopologyApiClientFactory;
-import io.clonecloudstore.topology.model.Topology;
-import io.clonecloudstore.topology.model.TopologyStatus;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
+@Unremovable
 public class LocalReplicatorService {
   private static final Logger LOGGER = Logger.getLogger(LocalReplicatorService.class);
   private final TopologyApiClientFactory topologyApiClientFactory;

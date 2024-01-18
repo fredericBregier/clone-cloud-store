@@ -12,6 +12,8 @@ quarkus:
       idle-timeout: 1S
   devservices:
     enabled: false
+  scheduler:
+    enabled: false
   s3:
     devservices:
       enabled: false

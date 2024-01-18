@@ -57,7 +57,7 @@ import org.jboss.resteasy.reactive.RestPath;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
 
 @Path(ApiConstants.API_ROOT)
-public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, NativeStreamHandler> {
+public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, StreamHandler> {
   public static final String NOT_ACCEPTABLE_NAME = "notAcceptableName";
   private final DriverApiFactory driverApiFactory;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
@@ -113,7 +113,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
   public Uni<StorageBucket> bucketCreate(@RestPath("bucket") final String bucket) {
     return Uni.createFrom().emitter(em -> {
       try (final var driverApi = driverApiFactory.getInstance()) {
-        final var bucket1 = new StorageBucket(bucket, null);
+        final var bucket1 = new StorageBucket(bucket, "client", null);
         final var storageBucket = driverApi.bucketCreate(bucket1);
         em.complete(storageBucket);
       } catch (final DriverNotAcceptableException e) {
@@ -227,7 +227,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
     // Business code should come here
     final var businessIn = new StorageObject(bucket, decodedName, null, len, null);
     // use InputStream abstract implementation
-    return readObject(request, closer, businessIn);
+    return readObject(request, closer, businessIn, false);
   }
 
   @Path("/{bucket}/{object:.+}")

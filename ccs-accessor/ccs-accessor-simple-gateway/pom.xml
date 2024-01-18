@@ -75,17 +75,12 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-driver-s3</artifactId>
+      <artifactId>ccs-driver-azure</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore.test</groupId>
       <artifactId>ccs-test-support</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>minio</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

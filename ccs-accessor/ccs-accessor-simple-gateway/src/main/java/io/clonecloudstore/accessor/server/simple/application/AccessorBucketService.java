@@ -21,7 +21,6 @@ import java.util.LinkedList;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorStatus;
-import io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper;
 import io.clonecloudstore.accessor.server.commons.AccessorBucketServiceInterface;
 import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.exception.CcsAlreadyExistException;
@@ -40,6 +39,7 @@ import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.api.exception.DriverNotAcceptableException;
 import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.api.model.StorageBucket;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.jboss.logging.Logger;
 
@@ -47,6 +47,7 @@ import org.jboss.logging.Logger;
  * Accessor Bucket Service
  */
 @ApplicationScoped
+@Unremovable
 public class AccessorBucketService implements AccessorBucketServiceInterface {
   private static final Logger LOGGER = Logger.getLogger(AccessorBucketService.class);
   private static final String BUCKET_STRING = "Bucket ";
@@ -56,42 +57,36 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
     this.storageDriverFactory = DriverApiRegistry.getDriverApiFactory();
   }
 
-  static String getBucketName(final String clientId, final String technicalBucketName) {
-    return AbstractPublicBucketHelper.getBusinessBucketName(clientId, technicalBucketName);
-  }
-
   /**
-   * Create bucket from client Id and technicalBucketName
+   * Create bucket from client Id and bucketName
    *
-   * @param clientId            Format client ID use to identify client
-   * @param technicalBucketName Technical Bucket Name
+   * @param bucketName Bucket Name
+   * @param clientId   Format client ID use to identify client
    * @return AccessorBucket add on Database and in object storage
    */
   @Override
-  public AccessorBucket createBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
+  public AccessorBucket createBucket(final String bucketName, final String clientId, final boolean isPublic)
       throws CcsAlreadyExistException, CcsOperationException {
-    final var bucketName = getBucketName(clientId, technicalBucketName);
     try {
-      //Check format (special char, uppercase...) and size (min, max) for bucket name and technicalBucketName
+      //Check format (special char, uppercase...) and size (min, max) for bucket name
       ParametersChecker.checkSanityBucketName(bucketName);
-      ParametersChecker.checkSanityBucketName(technicalBucketName);
     } catch (final CcsInvalidArgumentRuntimeException e) {
-      final var message = String.format("Bucket Name %s is invalid", technicalBucketName);
+      final var message = String.format("Bucket Name %s is invalid", bucketName);
       throw new CcsOperationException(message);
     }
     AccessorBucket result = new AccessorBucket();
-    result.setName(bucketName);
-    result.setId(technicalBucketName);
+    result.setId(bucketName);
+    result.setClientId(clientId);
     result.setSite(ServiceProperties.getAccessorSite());
     result.setStatus(AccessorStatus.UPLOAD);
     //Create Bucket in Object Storage
-    final var storageBucket = new StorageBucket(result.getId(), null);
+    final var storageBucket = new StorageBucket(result.getId(), result.getClientId(), null);
     return createBucketOnStorage(storageBucket, result);
   }
 
   private AccessorBucket createBucketOnStorage(final StorageBucket storageBucket, final AccessorBucket bucket) {
     try (final var storageDriver = storageDriverFactory.getInstance()) {
-      // retrieving metadata from storage, would data be duplicated in database
+      // retrieving metadata from storage
       final var result = storageDriver.bucketCreate(storageBucket);
       bucket.setStatus(AccessorStatus.READY).setCreation(result.creationDate());
       return bucket;
@@ -106,39 +101,29 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
   }
 
   /**
-   * Get Bucket information from bucket technical name
+   * Get Bucket information from bucket name
    *
-   * @param technicalBucketName Bucket technical name
-   * @return AccessorBucket found with technical name
+   * @param bucketName Bucket name
+   * @return AccessorBucket found
    */
   @Override
-  public AccessorBucket getBucket(final String technicalBucketName, final String clientId, final String opId,
+  public AccessorBucket getBucket(final String bucketName, final String clientId, final String opId,
                                   final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException {
-    final var bucketName = getBucketName(clientId, technicalBucketName);
     try (final var storageDriver = storageDriverFactory.getInstance()) {
-      // retrieving metadata from storage, would data be duplicated in database
-      if (storageDriver.bucketExists(technicalBucketName)) {
+      // retrieving metadata from storage
+      final var storageBucket = storageDriver.bucketGet(bucketName);
+      if (storageBucket != null) {
         AccessorBucket result = new AccessorBucket();
-        final var iterator = storageDriver.bucketsIterator();
-        while (iterator.hasNext()) {
-          final var storageBucket = iterator.next();
-          if (storageBucket != null && storageBucket.bucket().equals(technicalBucketName)) {
-            result.setName(bucketName);
-            result.setId(technicalBucketName);
-            result.setSite(ServiceProperties.getAccessorSite());
-            result.setCreation(storageBucket.creationDate());
-            result.setStatus(AccessorStatus.READY);
-            break;
-          }
-        }
-        while (iterator.hasNext()) {
-          iterator.next();
-        }
-        if (result.getId() != null) {
-          return result;
-        }
+        result.setId(bucketName);
+        result.setClientId(storageBucket.clientId());
+        result.setSite(ServiceProperties.getAccessorSite());
+        result.setCreation(storageBucket.creationDate());
+        result.setStatus(AccessorStatus.READY);
+        return result;
       }
+    } catch (final DriverNotFoundException e) {
+      throw new CcsNotExistException(BUCKET_STRING + bucketName + " doesn't exist");
     } catch (final CcsInvalidArgumentRuntimeException | DriverException | CcsServerGenericException e) {
       LOGGER.error(e.getMessage());
       throw new CcsOperationException(e.getMessage(), e);
@@ -148,7 +133,7 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
   }
 
   /**
-   * Get All buckets in Storgate
+   * Get All buckets where the owner is clientId
    *
    * @return the list of Buckets
    */
@@ -157,15 +142,15 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
     //Search buckets.
     final var collection = new LinkedList<AccessorBucket>();
     try (final var storageDriver = storageDriverFactory.getInstance()) {
+      // retrieving metadata from storage
       final var iterator = storageDriver.bucketsIterator();
       while (iterator.hasNext()) {
         final var storageBucket = iterator.next();
-        if (storageBucket.bucket().startsWith(AbstractPublicBucketHelper.getBucketPrefix(clientId))) {
+        if (storageBucket.clientId() != null && storageBucket.clientId().equals(clientId)) {
           AccessorBucket result = new AccessorBucket();
-          final String technicalBucketName = storageBucket.bucket();
-          final var bucketName = getBucketName(clientId, technicalBucketName);
-          result.setName(bucketName);
-          result.setId(technicalBucketName);
+          final String bucketName = storageBucket.bucket();
+          result.setId(bucketName);
+          result.setClientId(clientId);
           result.setSite(ServiceProperties.getAccessorSite());
           result.setCreation(storageBucket.creationDate());
           result.setStatus(AccessorStatus.READY);
@@ -181,48 +166,55 @@ public class AccessorBucketService implements AccessorBucketServiceInterface {
   /**
    * Check if Bucket exists
    *
-   * @param technicalBucketName Bucket technical name
+   * @param bucketName Bucket name
    * @return True if it exists
    */
   @Override
-  public boolean checkBucket(final String technicalBucketName, final boolean fullCheck, final String clientId,
-                             final String opId, final boolean isPublic) throws CcsOperationException {
+  public boolean checkBucket(final String bucketName, final boolean fullCheck, final String clientId, final String opId,
+                             final boolean isPublic) throws CcsOperationException {
     try (final var storageDriver = storageDriverFactory.getInstance()) {
-      return storageDriver.bucketExists(technicalBucketName);
+      // retrieving metadata from storage
+      return storageDriver.bucketExists(bucketName);
     } catch (final DriverException e) {
-      throw new CcsOperationException("Issue while checking bucket : " + technicalBucketName, e);
+      throw new CcsOperationException("Issue while checking bucket : " + bucketName, e);
     }
   }
 
   /**
-   * Delete bucket from technical bucket name
+   * Delete bucket from  bucket name if owner
    *
-   * @param clientId            Client ID used to identify client
-   * @param technicalBucketName Bucket technical name
-   * @return the associated DTO- deleted
+   * @param bucketName Bucket name
+   * @param clientId   Client ID used to identify client
+   * @return the associated DTO deleted
    */
   @Override
-  public AccessorBucket deleteBucket(final String clientId, final String technicalBucketName, final boolean isPublic)
+  public AccessorBucket deleteBucket(final String bucketName, final String clientId, final boolean isPublic)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
-    if (checkBucket(technicalBucketName, true, clientId, SimpleClientAbstract.getMdcOpId(), true)) {
-      AccessorBucket result = new AccessorBucket();
-      final var bucketName = getBucketName(clientId, technicalBucketName);
-      result.setName(bucketName);
-      result.setId(technicalBucketName);
-      result.setSite(ServiceProperties.getAccessorSite());
-      result.setCreation(null);
-      result.setStatus(AccessorStatus.DELETING);
-      return storageDelete(technicalBucketName, result);
-    } else {
-      throw new CcsDeletedException(BUCKET_STRING + technicalBucketName + " is already deleted");
+    try {
+      final var bucket = getBucket(bucketName, clientId, SimpleClientAbstract.getMdcOpId(), true);
+      if (bucket.getClientId() != null && !bucket.getClientId().equals(clientId)) {
+        throw new CcsNotAcceptableException(BUCKET_STRING + bucketName + " is not owned by current client");
+      } else if (bucket.getClientId() != null && bucket.getClientId().equals(clientId)) {
+        AccessorBucket result = new AccessorBucket();
+        result.setId(bucketName);
+        result.setClientId(clientId);
+        result.setSite(ServiceProperties.getAccessorSite());
+        result.setCreation(null);
+        result.setStatus(AccessorStatus.DELETING);
+        return storageDelete(bucketName, result);
+      } else {
+        throw new CcsOperationException(BUCKET_STRING + bucketName + " has no clientId");
+      }
+    } catch (final CcsNotExistException e) {
+      throw new CcsDeletedException(BUCKET_STRING + bucketName + " is already deleted", e);
     }
   }
 
-  private AccessorBucket storageDelete(final String technicalBucketName, final AccessorBucket bucket) {
+  private AccessorBucket storageDelete(final String bucketName, final AccessorBucket bucket) {
     try {
       try (final var storageDriver = storageDriverFactory.getInstance()) {
-        // retrieving metadata from storage, would data be duplicated in database
-        storageDriver.bucketDelete(technicalBucketName);
+        // retrieving metadata from storage
+        storageDriver.bucketDelete(bucketName);
       }
       bucket.setStatus(AccessorStatus.DELETED);
       return bucket;

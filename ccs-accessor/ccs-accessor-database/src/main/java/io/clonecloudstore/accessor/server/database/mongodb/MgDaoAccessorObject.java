@@ -95,15 +95,14 @@ public class MgDaoAccessorObject extends DaoAccessorObject {
   @Override
   public MgDaoAccessorObject addMetadata(final String key, final String value) {
     ParametersChecker.checkSanityString(key, value);
+    ParametersChecker.checkSanityMapKey(key);
     metadata.getMap().put(key, value);
     return this;
   }
 
   @Override
   public MgDaoAccessorObject setMetadata(final Map<String, String> metadata) {
-    for (final var entry : metadata.entrySet()) {
-      ParametersChecker.checkSanityString(entry.getKey(), entry.getValue());
-    }
+    ParametersChecker.checkSanityMap(metadata);
     this.metadata.setMap(metadata);
     return this;
   }

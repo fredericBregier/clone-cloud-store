@@ -25,13 +25,11 @@ import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
-import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.inputstream.ZstdCompressInputStream;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.replicator.config.ReplicatorConstants;
-import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeObjectPrivateAbstract;
 import io.clonecloudstore.test.stream.FakeInputStream;
@@ -62,7 +60,10 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestPath;
 
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_BUCKETS;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.REPLICATOR_ROOT;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_BUCKET;
@@ -79,27 +80,24 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.CHUNKED
 import static io.clonecloudstore.common.standard.properties.ApiConstants.COMPRESSION_ZSTD;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.TRANSFER_ENCODING;
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.BASE;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.COLL_BUCKETS;
-import static io.clonecloudstore.replicator.config.ReplicatorConstants.Api.LOCAL;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
-@Path(BASE + LOCAL + COLL_BUCKETS)
+@Path(REPLICATOR_ROOT + LOCAL + COLL_BUCKETS)
 public class FakeLocalReplicatorObjectResourceImpl
-    extends FakeObjectPrivateAbstract<FakeNativeLocalReplicatorStreamHandlerImpl> {
+    extends FakeObjectPrivateAbstract<FakeLocalReplicatorStreamHandlerImpl> {
 
   public FakeLocalReplicatorObjectResourceImpl(final HttpHeaders httpHeaders) {
     super(httpHeaders);
   }
 
   @HEAD
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
   @Path("/{bucketName}/{pathDirectoryOrObject:.+}")
   @APIResponse(responseCode = "204", description = "OK", headers = {
       @Header(name = X_TYPE, description = "Type as StorageType", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema =
-      @Schema(type = SchemaType.STRING))})
+      @Header(name = AccessorConstants.Api.X_TARGET_ID, description = "Id of Remote Topology", schema = @Schema(type
+          = SchemaType.STRING))})
   @APIResponse(responseCode = "401", description = "Unauthorized")
   @APIResponse(responseCode = "404", description = "Object not found")
   @APIResponse(responseCode = "500", description = "Internal Error")
@@ -113,33 +111,32 @@ public class FakeLocalReplicatorObjectResourceImpl
                                               @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description =
                                                   "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
                                                   SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,
-                                              @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) String targetId,
+                                              @HeaderParam(AccessorConstants.Api.X_TARGET_ID) String targetId,
                                               @HeaderParam(X_OP_ID) final String opId) {
-    return checkObjectOrDirectory0(bucketName, pathDirectoryOrObject, fullCheck, clientId, isPublic());
+    return checkObjectOrDirectory0(bucketName, pathDirectoryOrObject, fullCheck, clientId);
   }
 
   @Override
   protected Uni<Response> checkObjectOrDirectory0(final String bucketName, final String pathDirectoryOrObject,
-                                                  final boolean fullCheck, final String clientId,
-                                                  final boolean isPublic) {
+                                                  final boolean fullCheck, final String clientId) {
     return Uni.createFrom().emitter(em -> {
       if (FakeCommonObjectResourceHelper.errorCode > 0) {
         if (FakeCommonObjectResourceHelper.errorCode >= 400 && FakeCommonObjectResourceHelper.errorCode != 404) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode));
+          em.fail(CcsServerExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode));
         } else if (FakeCommonObjectResourceHelper.errorCode == 404) {
           em.complete((Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build()));
         } else {
           em.complete((Response.status(Response.Status.NO_CONTENT).header(X_TYPE, StorageType.OBJECT)
-              .header(ReplicatorConstants.Api.X_TARGET_ID, AccessorProperties.getAccessorSite()).build()));
+              .header(AccessorConstants.Api.X_TARGET_ID, ServiceProperties.getAccessorSite()).build()));
         }
       } else {
-        checkObjectOrDirectory(em, bucketName, pathDirectoryOrObject, fullCheck, clientId, isPublic);
+        checkObjectOrDirectory(em, bucketName, pathDirectoryOrObject, clientId);
       }
     });
   }
 
   @GET
-  @Tag(name = ReplicatorConstants.Api.TAG_REPLICATOR)
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + LOCAL)
   @Path("/{bucketName}/{objectName:.+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   @Parameters({
@@ -149,7 +146,7 @@ public class FakeLocalReplicatorObjectResourceImpl
           schema = @Schema(type = SchemaType.STRING), required = false),
       @Parameter(name = X_CLIENT_ID, description = "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
           SchemaType.STRING), required = true),
-      @Parameter(name = ReplicatorConstants.Api.X_TARGET_ID, description = "Target ID", in = ParameterIn.HEADER,
+      @Parameter(name = AccessorConstants.Api.X_TARGET_ID, description = "Target ID", in = ParameterIn.HEADER,
           schema = @Schema(type = SchemaType.STRING), required = false),
       @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type =
           SchemaType.STRING), required = false)})
@@ -164,8 +161,8 @@ public class FakeLocalReplicatorObjectResourceImpl
       @Header(name = X_OBJECT_METADATA, description = "Object Metadata", schema = @Schema(type = SchemaType.STRING)),
       @Header(name = X_OBJECT_STATUS, description = "Object Status", schema = @Schema(type = SchemaType.STRING)),
       @Header(name = X_OBJECT_EXPIRES, description = "Expiration Date", schema = @Schema(type = SchemaType.STRING))},
-      content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM))
-  @APIResponse(responseCode = "200", description = "OK")
+      content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING,
+          format = "binary")))
   @APIResponse(responseCode = "401", description = "Unauthorized")
   @APIResponse(responseCode = "404", description = "Object not found")
   @APIResponse(responseCode = "500", description = "Internal Error")
@@ -178,27 +175,26 @@ public class FakeLocalReplicatorObjectResourceImpl
                                         @HeaderParam(ACCEPT) final String acceptHeader,
                                         @DefaultValue(MediaType.APPLICATION_OCTET_STREAM) @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
                                         @HeaderParam(X_OP_ID) final String xOpId,
-                                        @HeaderParam(ReplicatorConstants.Api.X_TARGET_ID) final String xTargetId,
+                                        @HeaderParam(AccessorConstants.Api.X_TARGET_ID) final String xTargetId,
                                         final HttpServerRequest request, @Context final Closer closer) {
-    final var decoded = ParametersChecker.getSanitizedName(objectName);
-    return getObject0(bucketName, decoded, acceptHeader, acceptEncodingHeader, xClientId, xOpId, isPublic(), request,
-        closer);
+    final var decoded = ParametersChecker.getSanitizedObjectName(objectName);
+    return getObject0(bucketName, decoded, acceptHeader, acceptEncodingHeader, xClientId, xOpId, request, closer);
   }
 
   @Override
   protected Uni<Response> getObject0(final String bucketName, final String objectName, final String acceptHeader,
                                      final String acceptEncodingHeader, final String clientId, final String opId,
-                                     final boolean isPublic, final HttpServerRequest request, final Closer closer) {
+                                     final HttpServerRequest request, final Closer closer) {
     if (FakeCommonObjectResourceHelper.errorCode > 0) {
       return Uni.createFrom().emitter(em -> {
         if (FakeCommonObjectResourceHelper.errorCode >= 400 && FakeCommonObjectResourceHelper.errorCode != 404) {
-          em.fail(CcsServerGenericExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode));
+          em.fail(CcsServerExceptionMapper.getCcsException(FakeCommonObjectResourceHelper.errorCode));
         } else if (FakeCommonObjectResourceHelper.errorCode == 404) {
           em.complete((Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build()));
         } else {
-          final var techName = FakeCommonBucketResourceHelper.getBucketTechnicalName(clientId, bucketName, isPublic);
-          final var accessorObject = new AccessorObject().setName(ParametersChecker.getSanitizedName(objectName))
-              .setSite(FakeCommonBucketResourceHelper.site).setBucket(techName)
+          final var techName = bucketName;
+          final var accessorObject = new AccessorObject().setName(ParametersChecker.getSanitizedObjectName(objectName))
+              .setSite(ServiceProperties.getAccessorSite()).setBucket(techName)
               .setSize(FakeCommonObjectResourceHelper.length);
           InputStream inputStream = new FakeInputStream(FakeCommonObjectResourceHelper.length, (byte) 'A');
           final Map<String, String> map = new HashMap<>();
@@ -222,8 +218,8 @@ public class FakeLocalReplicatorObjectResourceImpl
         }
       });
     } else {
-      return super.getObject0(bucketName, objectName, acceptHeader, acceptEncodingHeader, clientId, opId, isPublic,
-          request, closer);
+      return super.getObject0(bucketName, objectName, acceptHeader, acceptEncodingHeader, clientId, opId, request,
+          closer);
     }
   }
 }

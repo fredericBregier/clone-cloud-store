@@ -62,16 +62,15 @@ class MgDaoAccessorBucketDbTest {
     repository.createIndex();
     // GIVEN
     final var creationDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    final var bucket =
-        new MgDaoAccessorBucket().setName("bucket").setId("client-bucket").setSite(AccessorProperties.getAccessorSite())
-            .setStatus(AccessorStatus.UPLOAD);
+    final var bucket = new MgDaoAccessorBucket().setId("bucket").setSite(AccessorProperties.getAccessorSite())
+        .setStatus(AccessorStatus.UPLOAD).setClientId("client");
     repository.insert((MgDaoAccessorBucket) bucket);
 
     // WHEN
     var bucket2 = repository.findOne(DbQuery.idEquals(bucket.getId()));
     // THEN
     assertEquals(bucket, bucket2);
-    assertTrue(bucket2.toString().contains("client-bucket"));
+    assertTrue(bucket2.toString().contains("bucket"));
 
     // WHEN
     repository.updateBucketStatus(bucket.getDto(), AccessorStatus.READY, creationDate);
@@ -86,26 +85,15 @@ class MgDaoAccessorBucketDbTest {
     // THEN
     Assertions.assertEquals(bucket2.getDto(), bucket3);
 
-    // WHEN (adding a bucket of different client with same name)
-    final var dtoBucket4 =
-        new AccessorBucket().setName("bucket").setId("client2-bucket").setSite(AccessorProperties.getAccessorSite())
-            .setStatus(AccessorStatus.UPLOAD).setCreation(creationDate);
-    final var bucket4 = new MgDaoAccessorBucket(dtoBucket4);
-    repository.insert(bucket4);
-    var bucketList = repository.listBuckets("client");
-    // THEN (it's not listed)
-    Assertions.assertEquals(1, bucketList.size());
-
     // WHEN inserting twice, get DbException
-    final var twice = repository.createEmptyItem().fromDto(dtoBucket4);
+    final var twice = repository.createEmptyItem().fromDto(bucket3);
     assertThrows(CcsDbException.class, () -> repository.insert(twice));
 
     // WHEN (adding a bucket using insertBucket from DTO)
-    final var dtoBucket5 =
-        new AccessorBucket().setName("bucket3").setId("client-bucket2").setSite(AccessorProperties.getAccessorSite())
-            .setStatus(AccessorStatus.UPLOAD).setCreation(creationDate);
+    final var dtoBucket5 = new AccessorBucket().setId("bucket3").setSite(AccessorProperties.getAccessorSite())
+        .setStatus(AccessorStatus.UPLOAD).setCreation(creationDate).setClientId("client");
     repository.insertBucket(dtoBucket5);
-    bucketList = repository.listBuckets("client");
+    var bucketList = repository.listBuckets("client");
     // THEN (it's listed)
     Assertions.assertEquals(2, bucketList.size());
   }

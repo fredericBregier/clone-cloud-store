@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -48,6 +49,7 @@ public record StorageObject(String bucket, String name, String hash, long size, 
     this.creationDate = SystemTools.toMillis(creationDate);
     this.expiresDate = SystemTools.toMillis(expiresDate);
     if (metadata != null) {
+      ParametersChecker.checkSanityMap(metadata);
       this.metadata = new HashMap<>(metadata);
     } else {
       this.metadata = new HashMap<>();
@@ -84,8 +86,7 @@ public record StorageObject(String bucket, String name, String hash, long size, 
     try {
       return StandardProperties.getObjectMapper().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{'bucket':'" + (bucket != null ? bucket : "") + "', 'name':'" + (name != null ? name : "") + "', " +
-          "'creationDate':'" + (creationDate != null ? creationDate.toString() : "") + "'}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 }

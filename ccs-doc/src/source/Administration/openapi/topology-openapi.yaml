@@ -1,29 +1,506 @@
 openapi: 3.0.3
 info:
-  title: ccs-topology-server API
-  version: 0.6.0-SNAPSHOT
+  title: ccs-administration-server API
+  version: 0.8.0-SNAPSHOT
 tags:
-  - name: 'Administration API / Topologies'
+  - name: 'Administration API / Ownership'
+  - name: 'Administration API / Topology'
 paths:
-  /replicator/topologies:
+  /administration/ownerships/{bucket}:
+    delete:
+      tags:
+        - 'Administration API / Ownership'
+      summary: Delete an Ownership for all client for this bucket
+      description: Delete an Ownership for all client for this bucket
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successfully deleted Ownership
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Ownership not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "404":
+          description: Ownership not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+  /administration/ownerships/{client}:
     get:
       tags:
-        - 'Administration API / Topologies'
-      summary: Get list of replicators
-      description: Get list of replicators in the  topology
+        - 'Administration API / Ownership'
+      summary: Get list of ownerships
+      description: Get list of ownerships in the  administration
+      parameters:
+        - name: client
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownership
+          in: query
+          schema:
+            $ref: '#/components/schemas/ClientOwnership'
+            #- default: UNKNOWN
+      responses:
+        "200":
+          description: Successfully retrieved list of ownerships
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClientBucketAccess'
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+  /administration/ownerships/{client}/{bucket}:
+    get:
+      tags:
+        - 'Administration API / Ownership'
+      summary: Get an Ownership
+      description: Get an Ownership
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved Ownership
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientOwnership'
+        "400":
+          description: Ownership not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "404":
+          description: Ownership not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+    delete:
+      tags:
+        - 'Administration API / Ownership'
+      summary: Delete an Ownership
+      description: Delete an Ownership
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successfully deleted Ownership
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Ownership not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "404":
+          description: Ownership not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+  /administration/ownerships/{client}/{bucket}/{ownership}:
+    put:
+      tags:
+        - 'Administration API / Ownership'
+      summary: Update an Ownership
+      description: Update an Ownership
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownership
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ClientOwnership'
+      responses:
+        "202":
+          description: Successfully update Ownership
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Ownership not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "404":
+          description: Ownership not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+    post:
+      tags:
+        - 'Administration API / Ownership'
+      summary: Add an Ownership
+      description: Add an Ownership
+      parameters:
+        - name: bucket
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ownership
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ClientOwnership'
+      responses:
+        "201":
+          description: Successfully added ownership
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+        "400":
+          description: Ownership not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "500":
+          description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+  /administration/topologies:
+    get:
+      tags:
+        - 'Administration API / Topology'
+      summary: Get list of remote sites from topology
+      description: Get list of remote sites from topology
       parameters:
         - name: status
           in: query
           schema:
-            enum:
-              - UP
-              - DOWN
-              - DELETED
-              - UNKNOWN
-            type: string
+            $ref: '#/components/schemas/TopologyStatus'
+            #- default: UNKNOWN
       responses:
         "200":
-          description: Successfully retrieved list of topology
+          description: Successfully retrieved list from topology
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -32,11 +509,27 @@ paths:
                   $ref: '#/components/schemas/Topology'
         "500":
           description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
     put:
       tags:
-        - 'Administration API / Topologies'
-      summary: Update a replicator in the topology
-      description: Update a replicator in the topology
+        - 'Administration API / Topology'
+      summary: Update a remote site into topology
+      description: Update a remote site into topology
       requestBody:
         content:
           application/json:
@@ -44,18 +537,77 @@ paths:
               $ref: '#/components/schemas/Topology'
       responses:
         "202":
-          description: Successfully added topology
+          description: Successfully updated remote site status
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "400":
-          description: Topology not valid
+          description: Remote site not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
-          description: Topology not found
+          description: Remote site not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
     post:
       tags:
-        - 'Administration API / Topologies'
-      summary: Add a replicator to topology
-      description: Add a replicator to topology
+        - 'Administration API / Topology'
+      summary: Add a remote site to topology
+      description: Add a remote site to topology
       requestBody:
         content:
           application/json:
@@ -63,17 +615,60 @@ paths:
               $ref: '#/components/schemas/Topology'
       responses:
         "201":
-          description: Successfully added topology
+          description: Successfully added remote site
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "400":
-          description: Topology not valid
+          description: Remote site not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal server error
-  /replicator/topologies/{site}:
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+  /administration/topologies/{site}:
     get:
       tags:
-        - 'Administration API / Topologies'
-      summary: Get a replicator from topology
-      description: Get a replicator full details from topology based on its site
+        - 'Administration API / Topology'
+      summary: Get a remote site from topology
+      description: Get a remote site from topology based on its site
       parameters:
         - name: site
           in: path
@@ -82,22 +677,81 @@ paths:
             type: string
       responses:
         "200":
-          description: Successfully retrieved topology
+          description: Successfully retrieved Remote site
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Topology'
         "400":
-          description: Topology id not valid
+          description: Remote site id not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
-          description: Topology not found
+          description: Remote site not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
     delete:
       tags:
-        - 'Administration API / Topologies'
-      summary: Delete a replicator from topology
-      description: Delete a replicator from topology
+        - 'Administration API / Topology'
+      summary: Delete a remote site from topology
+      description: Delete a remote site from topology
       parameters:
         - name: site
           in: path
@@ -106,15 +760,94 @@ paths:
             type: string
       responses:
         "204":
-          description: Successfully deleted topology
+          description: Successfully deleted Remote site
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "400":
-          description: Topology id not valid
+          description: Remote site not valid
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
-          description: Topology not found
+          description: Remote site not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal server error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
 components:
   schemas:
+    ClientBucketAccess:
+      type: object
+      properties:
+        client:
+          type: string
+        bucket:
+          type: string
+        ownership:
+          $ref: '#/components/schemas/ClientOwnership'
+    ClientOwnership:
+      enum: enum of
+        - READ
+        - WRITE
+        - READ_WRITE
+        - DELETE
+        - DELETE_READ
+        - DELETE_WRITE
+        - OWNER
+        - UNKNOWN
+      type: string
     Topology:
       type: object
       properties:
@@ -133,4 +866,3 @@ components:
         - DELETED
         - UNKNOWN
       type: string
-

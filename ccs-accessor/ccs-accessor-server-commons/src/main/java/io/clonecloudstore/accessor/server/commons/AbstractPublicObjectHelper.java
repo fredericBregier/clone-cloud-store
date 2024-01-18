@@ -20,37 +20,25 @@ import java.io.InputStream;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
+import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.common.quarkus.exception.CcsDeletedException;
-import io.clonecloudstore.common.quarkus.server.service.NativeServerResponseException;
-import io.clonecloudstore.common.quarkus.server.service.NativeStreamHandlerAbstract;
+import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.quarkus.server.service.ServerResponseFilter;
+import io.clonecloudstore.common.quarkus.server.service.ServerStreamHandlerResponseException;
+import io.clonecloudstore.common.quarkus.server.service.StreamHandlerAbstract;
 import io.clonecloudstore.common.quarkus.server.service.StreamServiceAbstract;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
+import io.clonecloudstore.driver.api.model.StorageObject;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.HeaderParam;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.accessor.server.commons.AbstractPublicBucketHelper.getTechnicalBucketName;
-import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
-import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
-import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_ENCODING;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 
-public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAbstract<AccessorObject, AccessorObject>>
+public abstract class AbstractPublicObjectHelper<H extends StreamHandlerAbstract<AccessorObject, AccessorObject>>
     extends StreamServiceAbstract<AccessorObject, AccessorObject, H> {
   private static final Logger LOGGER = Logger.getLogger(AbstractPublicObjectHelper.class);
   private static final String BUCKETNAME_OBJECT = "BucketName: %s Directory or Object ID: %s";
@@ -61,45 +49,37 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     this.service = service;
   }
 
-  public Uni<Response> listObjects(@PathParam("bucketName") final String bucketName,
-                                   @HeaderParam(ACCEPT) final String acceptHeader,
-                                   @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
-                                   @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID",
-                                       in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required
-                                       = true) @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) final String clientId,
-                                   @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                       schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_NAME_PREFIX) final String xNamePrefix,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_STATUSES) final String xStatuses,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_CREATION_BEFORE) final String xCreationBefore,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_CREATION_AFTER) final String xCreationAfter,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_EXPIRES_BEFORE) final String xExpiresBefore,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_EXPIRES_AFTER) final String xExpiresAfter,
-                                   @DefaultValue("0") @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_SIZE_LT) final long xSizeLt,
-                                   @DefaultValue("0") @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_SIZE_GT) final long xSizeGt,
-                                   @HeaderParam(AccessorConstants.HeaderFilterObject.FILTER_METADATA_EQ) final String xMetadataEq,
-                                   final HttpServerRequest request, @Context final Closer closer) {
-    final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, request.method().name());
-    final var object = new AccessorObject().setBucket(finalBucketName);
+  /**
+   * Transform StorageObject to AccessorObject without Id
+   */
+  public static AccessorObject getFromStorageObject(final StorageObject storageObject) {
+    return new AccessorObject().setBucket(storageObject.bucket()).setSite(ServiceProperties.getAccessorSite())
+        .setName(storageObject.name()).setHash(storageObject.hash()).setStatus(AccessorStatus.READY)
+        .setSize(storageObject.size()).setCreation(storageObject.creationDate()).setExpires(storageObject.expiresDate())
+        .setMetadata(storageObject.metadata());
+  }
+
+  public Uni<Response> listObjects(final String bucketName, final String acceptHeader,
+                                   final String acceptEncodingHeader, final String clientId, final String opId,
+                                   final String xNamePrefix, final String xStatuses, final String xCreationBefore,
+                                   final String xCreationAfter, final String xExpiresBefore, final String xExpiresAfter,
+                                   final long xSizeLt, final long xSizeGt, final String xMetadataEq,
+                                   final HttpServerRequest request, final Closer closer) {
+    final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, request.method().name());
+    final var object = new AccessorObject().setBucket(decodedBucket);
     return readObjectList(request, closer, object, false);
   }
 
-  public Uni<Response> checkObjectOrDirectory(@PathParam("bucketName") final String bucketName,
-                                              @PathParam("pathDirectoryOrObject") final String pathDirectoryOrObject,
-                                              @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description =
-                                                  "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
-                                                  SchemaType.STRING), required = true) @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) String clientId,
-                                              @Parameter(name = X_OP_ID, description = "Operation ID", in =
-                                                  ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                                  required = false) @HeaderParam(X_OP_ID) final String opId) {
+  public Uni<Response> checkObjectOrDirectory(final String bucketName, final String pathDirectoryOrObject,
+                                              final String clientId, final String opId) {
     return Uni.createFrom().emitter(em -> {
-      final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-      final var finalObjectName = ParametersChecker.getSanitizedName(pathDirectoryOrObject);
-      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+      final var finalObjectName = ParametersChecker.getSanitizedObjectName(pathDirectoryOrObject);
+      LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, finalObjectName);
       try {
         final var storageType =
-            service.objectOrDirectoryExists(finalBucketName, finalObjectName, false, clientId, opId, true);
+            service.objectOrDirectoryExists(decodedBucket, finalObjectName, false, clientId, opId, true);
         if (storageType.equals(StorageType.NONE)) {
           em.complete(Response.status(Response.Status.NOT_FOUND).header(AccessorConstants.Api.X_TYPE, StorageType.NONE)
               .build());
@@ -112,20 +92,14 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     });
   }
 
-  public Uni<AccessorObject> getObjectInfo(@PathParam("bucketName") final String bucketName,
-                                           @PathParam("objectName") final String objectName,
-                                           @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client" +
-                                               " ID", in = ParameterIn.HEADER, schema = @Schema(type =
-                                               SchemaType.STRING), required = true) @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) String clientId,
-                                           @Parameter(name = X_OP_ID, description = "Operation ID", in =
-                                               ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                               required = false) @HeaderParam(X_OP_ID) final String opId) {
+  public Uni<AccessorObject> getObjectInfo(final String bucketName, final String objectName, final String clientId,
+                                           final String opId) {
     return Uni.createFrom().emitter(em -> {
-      final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-      final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+      final var finalObjectName = ParametersChecker.getSanitizedObjectName(objectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, finalObjectName);
       try {
-        final var object = service.getObjectInfo(finalBucketName, finalObjectName);
+        final var object = service.getObjectInfo(decodedBucket, finalObjectName, clientId);
         em.complete(object);
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleExceptionFail(em, e);
@@ -136,46 +110,30 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
   /**
    * Returns both the content Object and the associated DTO through Headers
    */
-  public Uni<Response> getObject(@PathParam("bucketName") final String bucketName,
-                                 @PathParam("objectName") final String objectName,
-                                 @HeaderParam(ACCEPT) final String acceptHeader,
-                                 @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
-                                 @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID", in =
-                                     ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) final String clientId,
-                                 @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                     schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                 final HttpServerRequest request, @Context final Closer closer) {
-    final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-    final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
-    final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName);
-    return readObject(request, closer, object);
+  public Uni<Response> getObject(final String bucketName, final String objectName, final String acceptHeader,
+                                 final String acceptEncodingHeader, final String clientId, final String opId,
+                                 final HttpServerRequest request, final Closer closer) {
+    final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+    final var finalObjectName = ParametersChecker.getSanitizedObjectName(objectName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, finalObjectName);
+    final var object = new AccessorObject().setBucket(decodedBucket).setName(finalObjectName);
+    return readObject(request, closer, object, true);
   }
 
   /**
    * Create the Object and returns the associated DTO
    */
-  public Uni<Response> createObject(final HttpServerRequest request, @Context final Closer closer,
-                                    @PathParam("bucketName") final String bucketName,
-                                    @PathParam("objectName") final String objectName,
-                                    @DefaultValue(MediaType.APPLICATION_OCTET_STREAM) @HeaderParam(CONTENT_TYPE) final String contentTypeHeader,
-                                    @HeaderParam(CONTENT_ENCODING) final String contentEncodingHeader,
-                                    @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) final String clientId,
-                                    @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                        schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_ID) final String xObjectId,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_SITE) final String xObjectSite,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_BUCKET) final String xObjectBucket,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_NAME) final String xObjectName,
-                                    @DefaultValue("0") @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_SIZE) final long xObjectSize,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_HASH) final String xObjectHash,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_METADATA) final String xObjectMetadata,
-                                    @HeaderParam(AccessorConstants.HeaderObject.X_OBJECT_EXPIRES) final String xObjectExpires,
+  public Uni<Response> createObject(final HttpServerRequest request, final Closer closer, final String bucketName,
+                                    final String objectName, final String contentTypeHeader,
+                                    final String contentEncodingHeader, final String clientId, final String opId,
+                                    final String xObjectId, final String xObjectSite, final String xObjectBucket,
+                                    final String xObjectName, final long xObjectSize, final String xObjectHash,
+                                    final String xObjectMetadata, final String xObjectExpires,
                                     final InputStream inputStream) {
-    final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-    final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, objectName);
-    final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName).setSize(xObjectSize)
+    final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+    final var finalObjectName = ParametersChecker.getSanitizedObjectName(objectName);
+    LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, objectName);
+    final var object = new AccessorObject().setBucket(decodedBucket).setName(finalObjectName).setSize(xObjectSize)
         .setHash(xObjectHash);
     if (xObjectSize <= 0) {
       final var length = request.headers().get(CONTENT_LENGTH);
@@ -186,19 +144,14 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
     return createObject(request, closer, object, object.getSize(), object.getHash(), inputStream);
   }
 
-  public Uni<Response> deleteObject(@PathParam("bucketName") final String bucketName,
-                                    @PathParam("objectName") final String objectName,
-                                    @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID",
-                                        in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                        required = true) @HeaderParam(AccessorConstants.Api.X_CLIENT_ID) String clientId,
-                                    @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                        schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId) {
+  public Uni<Response> deleteObject(final String bucketName, final String objectName, final String clientId,
+                                    final String opId) {
     return Uni.createFrom().emitter(em -> {
-      final var finalBucketName = getTechnicalBucketName(clientId, bucketName, true);
-      final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.debugf(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
+      final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+      final var finalObjectName = ParametersChecker.getSanitizedObjectName(objectName);
+      LOGGER.debugf(BUCKETNAME_OBJECT, decodedBucket, finalObjectName);
       try {
-        service.deleteObject(finalBucketName, finalObjectName, clientId, true);
+        service.deleteObject(decodedBucket, finalObjectName, clientId, true);
         em.complete(Response.noContent().build());
       } catch (final CcsDeletedException e) {
         em.complete(Response.noContent().build());
@@ -217,11 +170,11 @@ public abstract class AbstractPublicObjectHelper<H extends NativeStreamHandlerAb
   protected Uni<Response> readObjectList(final HttpServerRequest request, final Closer closer,
                                          final AccessorObject businessIn, final boolean alreadyCompressed) {
     LOGGER.debugf("GET start");
-    getNativeStream().setup(request, closer, false, businessIn, 0, null, alreadyCompressed);
+    getNativeStream().setup(request, closer, false, businessIn, 0, null, alreadyCompressed, true);
     return Uni.createFrom().emitter(em -> {
       try {
         em.complete(getNativeStream().pullList());
-      } catch (NativeServerResponseException e) {
+      } catch (ServerStreamHandlerResponseException e) {
         em.complete(e.getResponse());
       } catch (final Exception e) {
         em.complete(createErrorResponse(e));

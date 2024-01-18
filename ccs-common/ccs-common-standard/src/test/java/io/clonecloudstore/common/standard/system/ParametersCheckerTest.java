@@ -17,7 +17,9 @@
 package io.clonecloudstore.common.standard.system;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.quarkus.test.junit.QuarkusTest;
@@ -181,12 +183,15 @@ class ParametersCheckerTest {
 
     ParametersChecker.checkSanityObjectName("validName1234/with-various.com");
     ParametersChecker.checkSanityBucketName("validname1234");
+    ParametersChecker.checkSanityBucketName("clientid-validname1234");
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> ParametersChecker.checkSanityString("test" + ";test", "test"));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> ParametersChecker.checkSanityBucketName("test@invalid"));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.checkSanityBucketName(
         "testinvalidaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.getSanitizedBucketName(null));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.getSanitizedBucketName("  "));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> ParametersChecker.checkSanityObjectName("test@invalid"));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.checkSanityObjectName(
@@ -201,9 +206,25 @@ class ParametersCheckerTest {
             "testinvalidaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "testinvalidaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
             "testinvalidaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.getSanitizedObjectName(null));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.getSanitizedObjectName("  "));
 
     ParametersChecker.checkSanityString("test");
     ParametersChecker.checkSanityString("test", "test", "", null);
+
+    Map<String, String> map = new HashMap<>();
+    ParametersChecker.checkSanityMapKey(null);
+    ParametersChecker.checkSanityMap(map);
+    map.put("validValid0_Valid", "any-thing");
+    ParametersChecker.checkSanityMap(map);
+    map.put("0_invalid_key", "any-thing");
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.checkSanityMap(map));
+    map.remove("0_invalid");
+    map.put("invalid-key", "any-thing");
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.checkSanityMap(map));
+    map.remove("invalid-key");
+    map.put("invalid key", "any-thing");
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> ParametersChecker.checkSanityMap(map));
   }
 
   @Test

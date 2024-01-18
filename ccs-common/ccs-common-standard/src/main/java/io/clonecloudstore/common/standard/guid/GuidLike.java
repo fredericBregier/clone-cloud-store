@@ -24,7 +24,7 @@ import io.clonecloudstore.common.standard.system.BaseXx;
 
 /**
  * UUID Generator with 2 longs (128 bits), compatible multi instances (through the PID,
- * but not multi servers, neither multi-sites due to lack of Mac address/Platform Id.
+ * but not multi servers, neither multi-sites due to lack of Mac address/Platform Id).
  * <br>
  * <br>
  * Inspired from com.groupon locality-uuid which used combination of internal

@@ -24,13 +24,11 @@ import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
 import io.clonecloudstore.accessor.server.FakeActionTopicConsumer;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.driver.api.DriverApiFactory;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
 import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
-import io.clonecloudstore.test.resource.MinioMongoKafkaProfile;
-import io.clonecloudstore.test.resource.s3.MinIoResource;
+import io.clonecloudstore.test.resource.AzureMongoKafkaProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
@@ -38,6 +36,7 @@ import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,48 +45,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
-@TestProfile(MinioMongoKafkaProfile.class)
+@TestProfile(AzureMongoKafkaProfile.class)
 class AccessorBucketObjectWithRemoteResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorBucketObjectWithRemoteResourceTest.class);
   @Inject
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factoryObject;
-  @Inject
-  DriverApiFactory driverApiFactory;
   private static String clientId = null;
 
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
 
-    // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
     FakeCommonBucketResourceHelper.errorCode = 0;
     FakeCommonObjectResourceHelper.errorCode = 0;
-    FakeActionTopicConsumer.reset();
   }
 
-  private long getBucketCreateFromTopic(final long desired) throws InterruptedException {
-    for (int i = 0; i < 200; i++) {
-      final var value = FakeActionTopicConsumer.getBucketCreate();
-      if (value >= desired) {
-        Log.infof("Found %d", value);
-        return value;
-      }
-      Thread.sleep(10);
-    }
-    return FakeActionTopicConsumer.getBucketCreate();
+  @BeforeEach
+  void beforeEach() {
+    FakeActionTopicConsumer.reset();
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket13";
     assertTrue(AccessorProperties.isRemoteRead());
     assertTrue(AccessorProperties.isFixOnAbsent());
     try (final var client = factoryBucket.newClient()) {
@@ -96,14 +80,14 @@ class AccessorBucketObjectWithRemoteResourceTest {
       FakeCommonBucketResourceHelper.errorCode = 404;
       assertEquals(StorageType.NONE, client.checkBucket(bucketName, clientId));
       assertThrows(CcsWithStatusException.class, () -> client.getBucket(bucketName, clientId));
-      assertEquals(0, getBucketCreateFromTopic(0));
+      assertEquals(0, FakeActionTopicConsumer.getBucketCreateFromTopic(0));
 
       // simple check existing bucket
       FakeCommonBucketResourceHelper.errorCode = 204;
       assertEquals(StorageType.BUCKET, client.checkBucket(bucketName, clientId));
       var res = client.getBucket(bucketName, clientId);
-      assertEquals(bucketName, res.getName());
-      assertEquals(1, getBucketCreateFromTopic(1));
+      assertEquals(bucketName, res.getId());
+      assertEquals(1, FakeActionTopicConsumer.getBucketCreateFromTopic(1));
     } catch (final CcsWithStatusException e) {
       fail(e);
     } catch (InterruptedException e) {
@@ -125,7 +109,7 @@ class AccessorBucketObjectWithRemoteResourceTest {
 
   @Test
   void checkObject() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket14";
     final var objectName = "dir/testcheckobject1";
     assertTrue(AccessorProperties.isRemoteRead());
     assertTrue(AccessorProperties.isFixOnAbsent());

@@ -29,9 +29,7 @@
   <artifactId>ccs-reconciliator</artifactId>
   <packaging>pom</packaging>
   <modules>
-    <module>ccs-reconciliator-model</module>
     <module>ccs-reconciliator-client</module>
-    <module>ccs-reconciliator-database</module>
     <module>ccs-reconciliator-server</module>
   </modules>
 </project>

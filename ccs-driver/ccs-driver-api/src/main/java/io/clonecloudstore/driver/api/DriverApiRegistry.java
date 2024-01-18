@@ -38,6 +38,10 @@ public class DriverApiRegistry {
           driverApiFactory.getClass().getName(), driverApiFactorySetup.getClass().getName());
       throw new IllegalArgumentException("DriverApiFactory registered twice");
     }
+    internalSetDriverApiFactory(driverApiFactorySetup);
+  }
+
+  static void internalSetDriverApiFactory(final DriverApiFactory driverApiFactorySetup) {
     LOGGER.infof("Setup DriverApiFactory to %s", driverApiFactorySetup.getClass().getName());
     driverApiFactory = driverApiFactorySetup;
   }

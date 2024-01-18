@@ -24,6 +24,8 @@ quarkus:
       idle-timeout: 1S
   devservices:
     enabled: false
+  scheduler:
+    enabled: false
   s3:
     devservices:
       enabled: false
@@ -53,7 +55,10 @@ quarkus:
     "io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi":
       url: http://localhost:8081
       verify-host: false
-    "io.clonecloudstore.topology.client.api.TopologyApi":
+    "io.clonecloudstore.administration.client.api.TopologyApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.administration.client.api.OwnershipApi":
       url: http://localhost:8081
       verify-host: false
     connect-timeout: 1000
@@ -86,6 +91,8 @@ mp:
         connector: smallrye-kafka
         topic: request-action
         retry-attempts: 10
+        group:
+          id: action
         auto:
           offset:
             reset: earliest
@@ -94,3 +101,4 @@ mp:
         connector: smallrye-kafka
         topic: request-action
         retries: 10
+        merge: true

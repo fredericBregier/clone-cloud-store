@@ -47,7 +47,6 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -67,7 +66,7 @@ class DriverS3Test {
     // Given
     Mockito.doReturn(new S3ClientFake()).when(driverS3Helper).getClient();
     Mockito.doReturn(Stream.of(S3Object.builder().build())).when(driverS3Helper)
-        .getS3ObjectsStreamFilteredInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        .getObjectsStreamFilteredInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
     Mockito.doThrow(DriverNotFoundException.class).when(driverS3Helper)
         .fromS3Object(Mockito.any(), Mockito.any(), Mockito.any());
 
@@ -78,16 +77,15 @@ class DriverS3Test {
     }
 
     // Given
-    Mockito.doReturn(true).when(driverS3Helper).existS3Bucket(Mockito.any(), Mockito.any());
-    Mockito.doReturn(false).when(driverS3Helper).existS3ObjectInBucket(Mockito.any(), Mockito.any(), Mockito.any());
+    Mockito.doReturn(true).when(driverS3Helper).existBucket(Mockito.any(), Mockito.any());
+    Mockito.doReturn(false).when(driverS3Helper).existObjectInBucket(Mockito.any(), Mockito.any(), Mockito.any());
     Mockito.doReturn(new S3ClientFake()).when(driverS3Helper).getClient();
     final var old = DriverS3Properties.getMaxPartSize();
     final var oldUnknown = DriverS3Properties.getMaxPartSizeForUnknownLength();
     try {
       DriverS3Properties.setDynamicPartSize(chunk);
       DriverS3Properties.setDynamicPartSizeForUnknownLength(chunk);
-      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig));
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig), DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       final var sha = digestInputStream.getDigestBase32();
 
@@ -95,7 +93,8 @@ class DriverS3Test {
       try (final DriverApi driver = factory.getInstance()) {
         final var storageObject = new StorageObject("bucket", "object1", sha, lenBig, null);
         status = 200;
-        assertDoesNotThrow(() -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
+        assertThrows(DriverException.class,
+            () -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
         assertThrows(DriverException.class,
             () -> driver.objectFinalizeCreateInBucket("bucket", "object1", lenBig, sha));
       }
@@ -104,17 +103,19 @@ class DriverS3Test {
         final var storageObject = new StorageObject("bucket", "object1", sha, lenBig, null);
         status = 200;
         uploadStatus = 404;
-        assertDoesNotThrow(() -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
+        assertThrows(DriverException.class,
+            () -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
         assertThrows(DriverException.class,
             () -> driver.objectFinalizeCreateInBucket("bucket", "object1", lenBig, sha));
       }
       // Then Object upload in error during last step upload (monopart)
       Mockito.doThrow(DriverException.class).when(driverS3Helper)
-          .createS3ObjectInBucketNoCheck(Mockito.any(), Mockito.any(), Mockito.any());
+          .createObjectInBucket(Mockito.any(), Mockito.any(), Mockito.any());
       try (final DriverApi driver = factory.getInstance()) {
         final var storageObject = new StorageObject("bucket", "object1", sha, 100, null);
         status = 200;
-        assertDoesNotThrow(() -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(100)));
+        assertThrows(DriverException.class,
+            () -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(100)));
         assertThrows(DriverException.class, () -> driver.objectFinalizeCreateInBucket("bucket", "object1", 100, sha));
       }
     } finally {
@@ -123,14 +124,13 @@ class DriverS3Test {
     }
 
     // Given
-    Mockito.doReturn(true).when(driverS3Helper).existS3Bucket(Mockito.any(), Mockito.any());
-    Mockito.doReturn(false).when(driverS3Helper).existS3ObjectInBucket(Mockito.any(), Mockito.any(), Mockito.any());
+    Mockito.doReturn(true).when(driverS3Helper).existBucket(Mockito.any(), Mockito.any());
+    Mockito.doReturn(false).when(driverS3Helper).existObjectInBucket(Mockito.any(), Mockito.any(), Mockito.any());
     Mockito.doReturn(new S3ClientFake()).when(driverS3Helper).getClient();
     try {
       DriverS3Properties.setDynamicPartSize(chunk);
       DriverS3Properties.setDynamicPartSizeForUnknownLength(chunk);
-      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig));
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig), DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       final var sha = digestInputStream.getDigestBase32();
 
@@ -138,7 +138,8 @@ class DriverS3Test {
       try (final DriverApi driver = factory.getInstance()) {
         final var storageObject = new StorageObject("bucket", "object1", sha, lenBig, null);
         status = 404;
-        assertDoesNotThrow(() -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
+        assertThrows(DriverException.class,
+            () -> driver.objectPrepareCreateInBucket(storageObject, new FakeInputStream(lenBig)));
         assertThrows(DriverException.class,
             () -> driver.objectFinalizeCreateInBucket("bucket", "object1", lenBig, sha));
       }
@@ -149,7 +150,7 @@ class DriverS3Test {
 
     // Given
     Mockito.doThrow(NoSuchBucketException.class).when(driverS3Helper)
-        .getS3ObjectBodyInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getObjectBodyInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
     Mockito.doReturn(new S3ClientFake()).when(driverS3Helper).getClient();
 
     // Then Bucket not found
@@ -159,7 +160,7 @@ class DriverS3Test {
 
     // Given
     Mockito.doThrow(NoSuchKeyException.class).when(driverS3Helper)
-        .getS3ObjectBodyInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getObjectBodyInBucket(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
     Mockito.doReturn(new S3ClientFake()).when(driverS3Helper).getClient();
 
     // Then Object not found

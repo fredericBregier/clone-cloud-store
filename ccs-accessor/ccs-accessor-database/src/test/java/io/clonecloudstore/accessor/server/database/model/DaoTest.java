@@ -59,10 +59,8 @@ class DaoTest {
   @Test
   void testBucket() {
     final var accessorBucket =
-        new AccessorBucket().setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now())
-            .setName(DaoAccessorBucketRepository.getBucketName(clientId, bucket))
-            .setId(DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucket))
-            .setStatus(AccessorStatus.READY);
+        new AccessorBucket().setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setId(bucket)
+            .setStatus(AccessorStatus.READY).setClientId("client");
     final DaoAccessorBucket daoAccessorBucket = new TestDaoAccessorBucket();
     daoAccessorBucket.fromDto(accessorBucket);
     final var second = daoAccessorBucket.getDto();
@@ -72,13 +70,6 @@ class DaoTest {
     secondDao.fromDto(second);
     assertEquals(daoAccessorBucket, secondDao);
     assertEquals(daoAccessorBucket.hashCode(), secondDao.hashCode());
-    assertEquals(DaoAccessorBucketRepository.getBucketName(clientId, secondDao.getId()), secondDao.getName());
-    assertEquals(DaoAccessorBucketRepository.getBucketName(clientId, secondDao.getName()), secondDao.getName());
-    assertEquals(DaoAccessorBucketRepository.getBucketTechnicalName(clientId, secondDao.getName()), secondDao.getId());
-    assertEquals(DaoAccessorBucketRepository.getPrefix(clientId) + secondDao.getName(), secondDao.getId());
-    assertEquals(DaoAccessorBucketRepository.getFinalBucketName(clientId, secondDao.getId(), false), secondDao.getId());
-    assertEquals(DaoAccessorBucketRepository.getFinalBucketName(clientId, secondDao.getName(), true),
-        secondDao.getId());
     assertTrue(daoAccessorBucket.toString().contains(AccessorProperties.getAccessorSite()));
   }
 
@@ -98,16 +89,16 @@ class DaoTest {
     accessorBucket2.setId("idbucket");
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
+    accessorBucket.setClientId("client");
+    assertFalse(accessorBucket.equals(accessorBucket2));
+    assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
+    accessorBucket2.setClientId("client");
+    assertTrue(accessorBucket.equals(accessorBucket2));
+    assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
     accessorBucket.setSite("id");
     assertFalse(accessorBucket.equals(accessorBucket2));
     assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
     accessorBucket2.setSite("id");
-    assertTrue(accessorBucket.equals(accessorBucket2));
-    assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket.setName("idbucket");
-    assertFalse(accessorBucket.equals(accessorBucket2));
-    assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket2.setName("idbucket");
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
     accessorBucket.setStatus(AccessorStatus.READY);
@@ -172,9 +163,8 @@ class DaoTest {
   @Test
   void testObject() {
     final var accessorObject =
-        new AccessorObject().setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now())
-            .setBucket(DaoAccessorBucketRepository.getBucketTechnicalName(clientId, bucket)).setName(object)
-            .setId(GuidLike.getGuid()).setStatus(AccessorStatus.READY);
+        new AccessorObject().setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setBucket(bucket)
+            .setName(object).setId(GuidLike.getGuid()).setStatus(AccessorStatus.READY);
     final DaoAccessorObject daoAccessorObject = new TestDaoAccessorObject();
     daoAccessorObject.fromDto(accessorObject);
     final var second = daoAccessorObject.getDto();
@@ -183,10 +173,10 @@ class DaoTest {
     secondDao.fromDto(second);
     assertEquals(daoAccessorObject, secondDao);
     assertEquals(daoAccessorObject.hashCode(), secondDao.hashCode());
-    assertEquals(object, ParametersChecker.getSanitizedName(object));
-    assertEquals(object, ParametersChecker.getSanitizedName("/" + object));
-    assertEquals(object, ParametersChecker.getSanitizedName("//" + object));
-    assertEquals(object, ParametersChecker.getSanitizedName("\\\\" + object));
+    assertEquals(object, ParametersChecker.getSanitizedObjectName(object));
+    assertEquals(object, ParametersChecker.getSanitizedObjectName("/" + object));
+    assertEquals(object, ParametersChecker.getSanitizedObjectName("//" + object));
+    assertEquals(object, ParametersChecker.getSanitizedObjectName("\\\\" + object));
     assertTrue(daoAccessorObject.toString().contains(AccessorProperties.getAccessorSite()));
   }
 

@@ -19,6 +19,7 @@ package io.clonecloudstore.common.quarkus.client.utils;
 import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -30,6 +31,7 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODUL
 import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @ApplicationScoped
+@Unremovable
 public class RequestHeaderFactory implements ClientHeadersFactory {
 
   @Override

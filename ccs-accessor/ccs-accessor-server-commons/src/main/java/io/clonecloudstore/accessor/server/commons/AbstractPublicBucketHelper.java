@@ -37,48 +37,6 @@ public abstract class AbstractPublicBucketHelper {
     this.service = service;
   }
 
-  /**
-   * Generate client-id prefix, used in bucket technical name.
-   *
-   * @param clientId Client ID used to identify client
-   * @return value of client-id prefix.
-   */
-  public static String getBucketPrefix(final String clientId) {
-    return clientId + "-";
-  }
-
-  /**
-   * Returns the functional name of the bucket
-   */
-  public static String getBusinessBucketName(final String clientId, final String technicalBucketName) {
-    return technicalBucketName.replace(getBucketPrefix(clientId), "");
-  }
-
-  /**
-   * Generate technical name from client-id and bucket functional name.
-   *
-   * @param clientId   Client ID used to identify client
-   * @param bucketName Functional Bucket Name
-   * @return value of bucket technical name
-   */
-  private static String getTechnicalBucketNameInternal(final String clientId, final String bucketName) {
-    return ParametersChecker.getSanitizedName(getBucketPrefix(clientId) + bucketName);
-  }
-
-  /**
-   * If Public, will return technical name, else already technical name so return the provided bucketName
-   */
-  public static String getTechnicalBucketName(final String clientId, final String bucketName, final boolean isPublic) {
-    if (isPublic) {
-      return getTechnicalBucketNameInternal(clientId, bucketName);
-    }
-    return ParametersChecker.getSanitizedName(bucketName);
-  }
-
-  static String getSanitizeBucketName(final String bucketName) {
-    return ParametersChecker.getSanitizedName(bucketName);
-  }
-
   public Uni<Collection<AccessorBucket>> getBuckets(final String clientId, final String opId) {
     LOGGER.debug("List all buckets");
     return Uni.createFrom().emitter(em -> {
@@ -95,8 +53,8 @@ public abstract class AbstractPublicBucketHelper {
     LOGGER.debugf("Get Bucket %s ", bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        final var technicalName = getTechnicalBucketName(clientId, bucketName, true);
-        if (service.checkBucket(technicalName, false, clientId, opId, true)) {
+        final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+        if (service.checkBucket(decodedBucket, false, clientId, opId, true)) {
           em.complete(Response.ok().header(AccessorConstants.Api.X_TYPE, StorageType.BUCKET).build());
         } else {
           em.complete(Response.status(Response.Status.NOT_FOUND).header(AccessorConstants.Api.X_TYPE, StorageType.NONE)
@@ -112,8 +70,8 @@ public abstract class AbstractPublicBucketHelper {
     LOGGER.debugf("Get Bucket %s - %s ", clientId, bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        final var technicalName = getTechnicalBucketName(clientId, bucketName, true);
-        final var bucket = service.getBucket(technicalName, clientId, opId, true);
+        final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+        final var bucket = service.getBucket(decodedBucket, clientId, opId, true);
         em.complete(bucket);
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleExceptionFail(em, e);
@@ -125,8 +83,8 @@ public abstract class AbstractPublicBucketHelper {
     LOGGER.debugf("Create Bucket %s - %s ", clientId, bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        final var technicalName = getTechnicalBucketName(clientId, bucketName, true);
-        final var bucket = service.createBucket(clientId, technicalName, true);
+        final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+        final var bucket = service.createBucket(decodedBucket, clientId, true);
         em.complete(bucket);
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleExceptionFail(em, e);
@@ -138,9 +96,8 @@ public abstract class AbstractPublicBucketHelper {
     LOGGER.debugf("Delete Bucket %s - %s ", clientId, bucketName);
     return Uni.createFrom().emitter(em -> {
       try {
-        // if called from Replicator, bucketName is completed
-        final var technicalName = getTechnicalBucketName(clientId, bucketName, true);
-        service.deleteBucket(clientId, technicalName, true);
+        final var decodedBucket = ParametersChecker.getSanitizedBucketName(bucketName);
+        service.deleteBucket(decodedBucket, clientId, true);
         em.complete(Response.noContent().build());
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleException(em, e);

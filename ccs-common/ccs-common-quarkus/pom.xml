@@ -92,6 +92,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.clonecloudstore.test</groupId>
+      <artifactId>ccs-test-support</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-core</artifactId>
       <version>${jmh-core.version}</version>
