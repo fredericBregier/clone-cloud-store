@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.guid.GuidLike;
+import io.clonecloudstore.common.standard.properties.ApiConstants;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.MDC;
@@ -35,14 +37,12 @@ import org.jboss.logmanager.MDC;
  */
 public abstract class SimpleClientAbstract<S extends Closeable> implements Closeable {
   private static final Logger LOGGER = Logger.getLogger(SimpleClientAbstract.class);
-  public static final String X_OP_ID = "x-clonecloudstore-op-id";
-  public static final String X_ERROR = "x-clonecloudstore-error";
-  public static final String X_MODULE = "x-clonecloudstore-module";
   public static final String MDC_COMPRESSED_CONTENT = "mdc-compressed-content";
   public static final String MDC_COMPRESSED_RESPONSE = "mdc-compressed-response";
   public static final String MDC_QUERY_HEADERS = "mdc-query-headers";
   protected static final ClientResponseExceptionMapper exceptionMapper = new ClientResponseExceptionMapper();
   private static final Map<String, Object> INPUTSTREAM_OBJECT_MAP = new ConcurrentHashMap<>();
+  private static final Map<String, Boolean> INPUTSTREAM_COMPRESSED_MAP = new ConcurrentHashMap<>();
   private S service;
   private final SimpleClientFactoryAbstract<S> factory;
   private final URI uri;
@@ -164,25 +164,49 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
+   * Set Compression status received from headers
+   */
+  public static void setCompressionStatusFromHeaders(final Boolean compressed) {
+    LOGGER.debugf("Set Compression %s %b", getMdcOpId(), compressed);
+    if (compressed != null) {
+      INPUTSTREAM_COMPRESSED_MAP.put(getMdcOpId(), compressed);
+    }
+  }
+
+  /**
    * @return received Object from Headers
    */
   public static Object getDtoFromHeaders() {
-    LOGGER.debugf("Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
+    LOGGER.debugf("Status Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
     return INPUTSTREAM_OBJECT_MAP.remove(getMdcOpId());
+  }
+
+  /**
+   * @return received Compression status from Headers
+   */
+  public static boolean getCompressionStatusFromHeaders() {
+    LOGGER.debugf("Status Contains Compression %s %b", getMdcOpId(),
+        INPUTSTREAM_COMPRESSED_MAP.containsKey(getMdcOpId()));
+    var compressed = INPUTSTREAM_COMPRESSED_MAP.remove(getMdcOpId());
+    if (compressed != null) {
+      return compressed;
+    }
+    return false;
   }
 
   /**
    * Clean all Query context
    */
   public void resetQueryContext() {
-    LOGGER.debugf("Clear Query Context");
+    LOGGER.debugf("Clear Query Status and Context (%s)", INPUTSTREAM_COMPRESSED_MAP);
     MDC.remove(MDC_COMPRESSED_CONTENT);
     MDC.remove(MDC_COMPRESSED_RESPONSE);
     MDC.removeObject(MDC_QUERY_HEADERS);
     if (opId.get() != null) {
       INPUTSTREAM_OBJECT_MAP.remove(opId.get());
+      INPUTSTREAM_COMPRESSED_MAP.remove(opId.get());
     }
-    MDC.remove(X_OP_ID);
+    MDC.remove(ApiConstants.X_OP_ID);
   }
 
   /**
@@ -193,7 +217,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   public static String setMdcOpId(final String opId) {
     final var opIdReal = ParametersChecker.isNotEmpty(opId) ? opId : GuidLike.getGuid();
     LOGGER.debugf("Renew OpId? %b (%s => %s)", !ParametersChecker.isNotEmpty(opId), opId, opIdReal);
-    MDC.put(X_OP_ID, opIdReal);
+    MDC.put(ApiConstants.X_OP_ID, opIdReal);
     QuarkusProperties.refreshModuleMdc();
     return opIdReal;
   }
@@ -202,7 +226,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
    * @return the current OpId or a new one if none
    */
   public static String getMdcOpId() {
-    var opId = MDC.get(X_OP_ID);
+    var opId = MDC.get(ApiConstants.X_OP_ID);
     if (ParametersChecker.isEmpty(opId)) {
       opId = setMdcOpId(null);
     } else {
@@ -227,7 +251,7 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
    * Reset OpId to empty
    */
   public void resetMdcOpId() {
-    MDC.remove(X_OP_ID);
+    MDC.remove(ApiConstants.X_OP_ID);
     this.opId.set(null);
   }
 

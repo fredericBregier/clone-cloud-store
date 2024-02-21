@@ -17,11 +17,9 @@
 package io.clonecloudstore.driver.s3.example.client;
 
 import io.clonecloudstore.common.quarkus.client.ClientFactoryAbstract;
-import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-@Unremovable
 public class ApiClientFactory extends ClientFactoryAbstract<ApiServiceInterface> {
   @Override
   protected Class<?> getServiceClass() {

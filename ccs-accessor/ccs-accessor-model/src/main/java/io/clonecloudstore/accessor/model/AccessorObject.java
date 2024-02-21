@@ -20,10 +20,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -35,15 +35,45 @@ import jakarta.persistence.Transient;
  */
 @RegisterForReflection
 public class AccessorObject {
+  /**
+   * Internal Id
+   */
   private String id;
+  /**
+   * Site for this Object
+   */
   private String site;
+  /**
+   * Bucket name
+   */
   private String bucket;
+  /**
+   * Object name
+   */
   private String name;
+  /**
+   * Optional: SHA 256 hash
+   */
   private String hash;
+  /**
+   * Status of this Object
+   */
   private AccessorStatus status = AccessorStatus.UNKNOWN;
+  /**
+   * Creation or Modification datetime
+   */
   private Instant creation;
+  /**
+   * Optional expiry datetime
+   */
   private Instant expires;
+  /**
+   * Length of the content of this Object
+   */
   private long size;
+  /**
+   * Metadata if any for this Object
+   */
   private final Map<String, String> metadata = new HashMap<>();
 
   public AccessorObject() {
@@ -145,6 +175,7 @@ public class AccessorObject {
   @JsonIgnore
   public AccessorObject addMetadata(final String key, final String value) {
     ParametersChecker.checkSanityString(key, value);
+    ParametersChecker.checkSanityMapKey(key);
     metadata.put(key, value);
     return this;
   }
@@ -157,9 +188,7 @@ public class AccessorObject {
   }
 
   public AccessorObject setMetadata(final Map<String, String> metadata) {
-    for (final var entry : metadata.entrySet()) {
-      ParametersChecker.checkSanityString(entry.getKey(), entry.getValue());
-    }
+    ParametersChecker.checkSanityMap(metadata);
     this.metadata.putAll(metadata);
     return this;
   }
@@ -188,12 +217,7 @@ public class AccessorObject {
     try {
       return StandardProperties.getObjectMapper().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{" + "\"id\":\"" + id + "\"" + ", \"site\":\"" + site + "\"" + ", \"bucket\":\"" + bucket + "\"" +
-          ", \"name\":\"" + name + "\"" + ", \"hash\":\"" + hash + "\"" + ", \"status\":\"" + status + "\"" +
-          ", \"creation\":" + creation + ", \"expires\":" + expires + ", \"size\":\"" + size + "\"" +
-          ", \"metadata\": {" +
-          metadata.entrySet().stream().map(d -> "\"%s\": \"%s\",".formatted(d.getKey(), d.getValue()))
-              .collect(Collectors.joining()) + "}}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 

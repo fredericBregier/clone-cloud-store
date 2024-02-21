@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.HashMap;
 
 import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BucketInfo;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.inputstream.DigestAlgo;
 import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream;
@@ -51,8 +52,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 abstract class DriverGoogleBase {
   private static final Logger LOG = Logger.getLogger(DriverGoogleBase.class);
-  private static final int len1 = 10 * 1024;
-  private static final int lenBig = 20 * 1024 * 1024;
+  // Ensure not exactly a chunk multiplier
+  private static final int len1 = 11 * 1024;
+  private static final int lenBig = 20 * 1024 * 1024 + 1024;
   // Minimal Chunk Size
   private static final int chunk = 5 * 1024 * 1024;
   protected static ApiClientFactory factory;
@@ -74,6 +76,7 @@ abstract class DriverGoogleBase {
       assertEquals(0, driverApi.bucketsCount());
       assertFalse(driverApi.bucketExists(bucket));
 
+      assertThrows(DriverNotFoundException.class, () -> driverApi.bucketGet(bucket));
       assertThrows(DriverNotFoundException.class, () -> driverApi.bucketDelete(bucket));
       assertEquals(StorageType.NONE, driverApi.directoryOrObjectExistsInBucket(bucket, object1));
       assertThrows(DriverNotFoundException.class,
@@ -92,7 +95,32 @@ abstract class DriverGoogleBase {
       assertThrows(DriverException.class, () -> driverApi.objectsCountInBucket(bucket, prefix, null, null));
       assertThrows(DriverException.class,
           () -> driverApi.objectsCountInBucket(bucket, prefix, Instant.now(), Instant.now()));
+      assertThrows(DriverException.class, () -> driverApi.objectCopy(null, null));
+      assertThrows(DriverException.class, () -> driverApi.objectCopy(bucket, object1, bucket, object1, null, null));
+      assertThrows(DriverException.class, () -> driverApi.objectCopy(bucket, object1, null, null, null, null));
+      assertThrows(DriverException.class,
+          () -> driverApi.objectCopy(bucket, object1, bucket + 1, object1 + 1, null, null));
     }
+  }
+
+  @Test
+  void nullParameters() {
+    assertThrows(DriverException.class, () -> driverHelper.createBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.importBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.deleteBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.getBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.existBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.countObjectsInBucket(null));
+    assertThrows(DriverException.class, () -> driverHelper.getObjectsIteratorFilteredInBucket(null, null, null, null));
+    assertThrows(DriverException.class, () -> driverHelper.getObjectsStreamFilteredInBucket(null, null, null, null));
+    assertThrows(DriverException.class, () -> driverHelper.existObjectInBucket(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.existDirectoryOrObjectInBucket(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.objectPrepareCreateInBucket(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.finalizeObject(null, null, null));
+    assertThrows(DriverException.class, () -> driverHelper.getObjectBodyInBucket(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.getObjectInBucket(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.objectCopyToAnother(null, null));
+    assertThrows(DriverException.class, () -> driverHelper.deleteObjectInBucket(null, null));
   }
 
   @Test
@@ -100,7 +128,7 @@ abstract class DriverGoogleBase {
     final var bucket = "test1";
     final var object1 = "dir/object1";
     final var prefix = "dir/";
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
 
     try (final var driverApi = driverApiFactory.getInstance()) {
       assertEquals(0, driverApi.bucketsStream().count());
@@ -118,6 +146,7 @@ abstract class DriverGoogleBase {
       assertEquals(1, driverApi.bucketsStream().count());
       assertEquals(1, driverApi.bucketsCount());
       assertTrue(driverApi.bucketExists(bucket));
+      assertEquals(finalStorageBucket, driverApi.bucketGet(bucket));
       assertEquals(StorageType.NONE, driverApi.directoryOrObjectExistsInBucket(bucket, object1));
       try {
         final var objectStream = driverApi.objectsStreamInBucket(bucket);
@@ -164,6 +193,16 @@ abstract class DriverGoogleBase {
       } catch (final DriverNotAcceptableException | DriverNotFoundException e) {
         fail(e);
       }
+      // Now try to import existing one
+      try {
+        ((DriverGoogle) driverApi).getDriverGoogleHelper().getStorage().create(BucketInfo.newBuilder(bucket).build())
+            .update();
+        final var storageBucketImported = driverApi.bucketImport(finalStorageBucket);
+        assertEquals(finalStorageBucket, storageBucketImported);
+        driverApi.bucketDelete(bucket);
+      } catch (final RuntimeException | DriverNotAcceptableException | DriverNotFoundException e) {
+        fail(e);
+      }
     }
   }
 
@@ -178,7 +217,7 @@ abstract class DriverGoogleBase {
     final var object1 = "dir/object1";
     final var prefix = "dir/";
 
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null);
 
     try (final var driverApi = driverApiFactory.getInstance()) {
@@ -487,6 +526,43 @@ abstract class DriverGoogleBase {
       } catch (final DriverNotFoundException e) {
         fail(e);
       }
+      start = System.nanoTime();
+      try {
+        final var storageObject1 = driverApi.objectGetMetadataInBucket(bucket, object1);
+        final var storageArchiveBucket = new StorageBucket("archive", "client", null);
+        final var storageArchiveBucket2 = driverApi.bucketCreate(storageArchiveBucket);
+        final var map = new HashMap<String, String>();
+        if (storageObject1.metadata() != null && !storageObject1.metadata().isEmpty()) {
+          map.putAll(storageObject1.metadata());
+        }
+        map.put("testbucket", storageObject1.bucket());
+        map.put("testname", storageObject1.name());
+        final var storageObjectArchive =
+            new StorageObject(storageArchiveBucket2.bucket(), storageObject1.name() + "arch", storageObject1.hash(),
+                storageObject1.size(), storageObject1.creationDate(), Instant.now().plusSeconds(100), map);
+        final var storageObjectArchiveResult = driverApi.objectCopy(storageObject1, storageObjectArchive);
+        assertEquals(storageArchiveBucket2.bucket(), storageObjectArchiveResult.bucket());
+        assertEquals(storageObjectArchive.name(), storageObjectArchiveResult.name());
+        assertNotNull(storageObjectArchiveResult.creationDate());
+        assertEquals(storageObject1.size(), storageObjectArchiveResult.size());
+        assertEquals(storageObject1.hash(), storageObjectArchiveResult.hash());
+        assertEquals(storageObjectArchive.expiresDate(), storageObjectArchiveResult.expiresDate());
+        assertEquals(storageObject1.bucket(), storageObjectArchiveResult.metadata().get("testbucket"));
+        assertEquals(storageObject1.name(), storageObjectArchiveResult.metadata().get("testname"));
+        assertEquals(StorageType.OBJECT, driverApi.directoryOrObjectExistsInBucket(storageObjectArchiveResult.bucket(),
+            storageObjectArchiveResult.name()));
+      } catch (final DriverNotAcceptableException | DriverNotFoundException e) {
+        fail(e);
+      } finally {
+        try {
+          driverApi.objectDeleteInBucket("archive", object1 + "arch");
+        } catch (final Exception ignore) {
+          // Ignore
+        }
+        driverApi.bucketDelete("archive");
+      }
+      stop = System.nanoTime();
+      LOG.infof("Copy Len: %d Duration: %d Speed: %f", length, stop - start, length / ((stop - start) / 1000.0));
       assertThrows(DriverNotAcceptableException.class, () -> driverApi.bucketDelete(bucket));
       try {
         driverApi.objectDeleteInBucket(bucket, object1);
@@ -510,7 +586,7 @@ abstract class DriverGoogleBase {
     final var object1 = "dir/object1";
     final var prefix = "dir/";
 
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null);
 
     try (final var driverApi = driverApiFactory.getInstance()) {
@@ -614,7 +690,7 @@ abstract class DriverGoogleBase {
       mem = runtime.totalMemory() - runtime.freeMemory();
       start = System.nanoTime();
       try {
-        driverHelper.writeInputStreamWCompose(storageObject, new FakeInputStream(length), blobId);
+        driverHelper.writeInputStreamCompose(storageObject, new FakeInputStream(length), blobId);
       } catch (final DriverNotFoundException | DriverAlreadyExistException e) {
         fail(e);
       }
@@ -676,7 +752,7 @@ abstract class DriverGoogleBase {
     map.put("key1", "value1");
     map.put("key2", "value2");
     var instant = Instant.now().plusSeconds(1000);
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null, instant, map);
 
     try (final var driverApi = driverApiFactory.getInstance()) {
@@ -756,7 +832,7 @@ abstract class DriverGoogleBase {
     final var bucket = "test1";
     final var prefix = "dir/";
 
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
     try (final var driverApi = driverApiFactory.getInstance()) {
       try {
         storageBucket = driverApi.bucketCreate(storageBucket);
@@ -819,8 +895,7 @@ abstract class DriverGoogleBase {
 
   @Test
   public void testDriverWithBucketAndObjectsSha() throws DriverException, NoSuchAlgorithmException, IOException {
-    final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig));
-    digestInputStream.computeDigest(DigestAlgo.SHA256);
+    final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig), DigestAlgo.SHA256);
     FakeInputStream.consumeAll(digestInputStream);
     final var sha = digestInputStream.getDigestBase32();
     testDriverWithBucketAndObjectsSha(sha, lenBig);
@@ -864,8 +939,7 @@ abstract class DriverGoogleBase {
     try {
       DriverGoogleProperties.setDynamicPartSize(chunk);
       DriverGoogleProperties.setDynamicBufSize(chunk);
-      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig));
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(lenBig), DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       final var sha = digestInputStream.getDigestBase32();
       testDriverWithBucketAndObjectsSha(sha, lenBig);
@@ -901,7 +975,7 @@ abstract class DriverGoogleBase {
     final var object1 = "dir/object1";
     final var prefix = "dir/";
 
-    var storageBucket = new StorageBucket(bucket, null);
+    var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null);
 
     try (final var driverApi = driverApiFactory.getInstance()) {

@@ -18,47 +18,38 @@ package io.clonecloudstore.test.server.service.example.client;
 
 import java.time.Instant;
 
-import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
+import io.clonecloudstore.common.quarkus.client.utils.AbstractResponseClientFilter;
+import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.test.server.service.example.model.ApiBusinessOut;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.ClientResponseContext;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import org.jboss.logging.Logger;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
-import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientResponseFilter;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
 import static io.clonecloudstore.test.server.service.example.client.ApiConstants.X_CREATION_DATE;
 import static io.clonecloudstore.test.server.service.example.client.ApiConstants.X_LEN;
 import static io.clonecloudstore.test.server.service.example.client.ApiConstants.X_NAME;
 
 @ApplicationScoped
-public class ResponseClientFilter implements ResteasyReactiveClientResponseFilter {
-  private static final Logger LOGGER = Logger.getLogger(ResponseClientFilter.class);
+public class ResponseClientFilter extends AbstractResponseClientFilter<ApiBusinessOut> {
 
   @Override
-  public void filter(final ResteasyReactiveClientRequestContext requestContext,
-                     final ClientResponseContext responseContext) {
-    LOGGER.debugf("Finalize Response: is inputStream %s : %b", requestContext.getHeaders().getFirst(HttpHeaders.ACCEPT),
-        MediaType.APPLICATION_OCTET_STREAM.equals(requestContext.getHeaders().getFirst(HttpHeaders.ACCEPT)));
-    if (MediaType.APPLICATION_OCTET_STREAM.equals(requestContext.getHeaders().getFirst(HttpHeaders.ACCEPT))) {
-      SimpleClientAbstract.setMdcOpId((String) requestContext.getHeaders().getFirst(X_OP_ID));
-      final var headers = responseContext.getHeaders();
-      LOGGER.debugf("Headers %s", headers);
-      ApiBusinessOut businessOut = new ApiBusinessOut();
-      if (headers != null) {
-        businessOut.name = headers.getFirst(X_NAME);
-        var instant = headers.getFirst(X_CREATION_DATE);
-        if (instant != null) {
-          businessOut.creationDate = Instant.parse(headers.getFirst(X_CREATION_DATE));
-        }
-        var len = headers.getFirst(X_LEN);
-        if (len != null) {
-          businessOut.len = Long.parseLong(headers.getFirst(X_LEN));
-        }
-      }
-      SimpleClientAbstract.setDtoFromHeaders(businessOut);
+  protected ApiBusinessOut getOutFromHeader(final ResteasyReactiveClientRequestContext requestContext,
+                                            final ClientResponseContext responseContext,
+                                            final MultivaluedMap<String, String> headers) {
+    if (ParametersChecker.isEmpty(headers.getFirst(X_NAME))) {
+      return null;
     }
+    final var businessOut = new ApiBusinessOut();
+    businessOut.name = headers.getFirst(X_NAME);
+    var instant = headers.getFirst(X_CREATION_DATE);
+    if (instant != null) {
+      businessOut.creationDate = Instant.parse(instant);
+    }
+    var len = headers.getFirst(X_LEN);
+    if (len != null) {
+      businessOut.len = Long.parseLong(len);
+    }
+    return businessOut;
   }
 }

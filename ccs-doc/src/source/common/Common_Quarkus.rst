@@ -240,15 +240,15 @@ right URI. Therefore the following example shall be followed:
 Server implementation
 =================================
 
-- ``io.clonecloudstore.common.quarkus.server`` contains the NativeStreamHandlerAbstract, the StreamServiceAbstract and some filters implementations for the server.
+- ``io.clonecloudstore.common.quarkus.server`` contains the StreamHandlerAbstract, the StreamServiceAbstract and some filters implementations for the server.
 
 With those abstracts, the code needed is shortest and allow to be extended to any API and usages.
 
-The abstract **StreamServiceAbstract** defines abstract methods, as **NativeStreamHandlerAbstract**, that must be
+The abstract **StreamServiceAbstract** defines abstract methods, as **StreamHandlerAbstract**, that must be
 specified within the final client implementation, in order to include business implementation.
 
 .. code-block:: java
-  :caption: Zoom on abstract methods in **NativeStreamHandlerAbstract** helper for InputStream received by the server
+  :caption: Zoom on abstract methods in **StreamHandlerAbstract** helper for InputStream received by the server
 
     /**
      * @return True if the digest is to be computed on the fly
@@ -387,7 +387,7 @@ using instanceOf check).
       extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, NativeStreamHandler> {
 
 
-The interaction with a Driver is done through the extension of **NativeStreamHandlerAbstract**.
+The interaction with a Driver is done through the extension of **StreamHandlerAbstract**.
 
 
 .. code-block:: java
@@ -395,88 +395,11 @@ The interaction with a Driver is done through the extension of **NativeStreamHan
 
   @RequestScoped
   public class NativeStreamHandler
-      extends NativeStreamHandlerAbstract<ApiBusinessIn, ApiBusinessOut> {
+      extends StreamHandlerAbstract<ApiBusinessIn, ApiBusinessOut> {
     public NativeStreamHandler() {
     }
     // Implement abstract methods
   }
-
-
-
-PriorityQueue
-**************
-
-It might be necessary to handle a PriorityQueue locally with the ability to
-manage re-prioritization (as done in the Linux scheduler).
-
-Several functions (lambda) shall be passed at construction time:
-
-.. code-block:: java
-  :caption: Example code for **PriorityQueue** creation
-
-  private static final Comparator<ElementTest> comparator = Comparator.comparingLong(o -> o.rank);
-  private static final Comparator<ElementTest> findEquals = Comparator.comparing(o -> o.uniqueId);
-  private static final UnaryOperator<ElementTest> reprioritize = e -> {
-    e.rank /= 2;
-    return e;
-  };
-  private static final int MAX_RUNNABLE = 10;
-  ManagedRunnable<ElementTest> managedRunnable =
-      new ManagedRunnable<>(MAX_RUNNABLE, comparator, findEquals, reprioritize);
-
-
-- ``MAX_RUNNABLE`` is the number of priority elements that will be managed in a
-  round-robin way equally.
-- ``comparator`` is the function to compare 2 items to find which one is priority
-  (lowest will be placed at first position).
-- ``findEquals`` is the function to find an item equals to the one passed as argument
-  (equality can be based on something different than objects are really the same).
-- ``reprioritize`` is the function that traverse all items (not already in short list live) to reorder them
-  accordingly to the new priority.
-
-The main point is that the queue is split in 2, in order to not have too much
-items running (or active) at the same time. This is fixed by the maxRunnable parameter.
-Once items are ordered according to priority, this parameter allows to consume those
-number of items in a round robin way.
-
-
-.. code-block:: java
-  :caption: Example code for **PriorityQueue** usage
-
-  // One can add items 1 by 1
-  managedRunnable.add(new ElementTest(10));
-  // This one will have a lower priority
-  managedRunnable.add(new ElementTest(20));
-  // One can add items from a collection
-  List<ElementTest> list = new ArrayList<>();
-  // This one will be latest one
-  list.add(new ElementTest(50));
-  // This one will be the first
-  list.add(new ElementTest(5));
-  managedRunnable.addAll(list);
-  // Now we can start to consume
-  while (!managedRunnable.isEmpty()) {
-    e = managedRunnable.poll();
-    if (e != null) { // Queue might be empty when poll is called
-      // Do something with e
-      ...
-      // If e needs to regain Queue as active runner
-      if (myTaskNeedsToContinue(e)) {
-        // Item will return to active items (round-robin)
-        managedRunnable.addContinue(e);
-      } else if (myTaskNeedsToBeReprioritize(e)) {
-        // Here the item will be add at the end (out of round-robin)
-        managedRunnable.add(e);
-      }
-    }
-  }
-
-One usage could be to select among a lot of actions to be done the top 10
-to apply, and then poll out next ones when able to do so.
-
-To prevent that an old entry is never planned, the ``reprioritize`` is called
-each time one element will be taken out of the round robin sub-queue, such that
-it has a chance to become the most priority one.
 
 
 TrafficShaping
@@ -496,66 +419,4 @@ this helper returns an ObjectMapper:
 
 - If Quarkus has initialized it, the one from Quarkus
 - If not, a default one, almost equivalent
-
-
-StateMachine
-**************
-
-StateMachine package allows to handle simple State Machine with various steps.
-
-
-.. code-block:: java
-  :caption: Example code for **StateMachine**
-
-  // States definition
-  public enum ExampleEnumState {
-    NONE, START, RUNNING, PAUSE, END, ERROR;
-
-    static final List<StateTransition<ExampleEnumState>> configuration;
-
-    static {
-      ExampleStateTransition[] stateTransitions = ExampleStateTransition.values();
-      configuration = new ArrayList<>(stateTransitions.length);
-      for (final ExampleStateTransition stateTransition : stateTransitions) {
-        configuration.add(stateTransitions.elt);
-      }
-    }
-
-    public static StateMachine<ExampleEnumState> newStateMachine() {
-      return new StateMachine<>(NONE, configuration);
-    }
-  }
-  // StateTransition definition
-  public enum ExampleStateTransition {
-    tNONE(NONE, START, EnumSet.of(START)),
-    tSTART(START, RUNNING, EnumSet.of(RUNNING, PAUSE, ERROR)),
-    tRUNNING(RUNNING, END, EnumSet.of(PAUSE, END, ERROR)),
-    tPAUSE(PAUSE, RUNNING), tEND(END), tERROR(ERROR);
-
-    public final StateTransition<ExampleEnumState> elt;
-
-    ExampleStateTransition(final ExampleEnumState state) {
-      elt = new StateTransition<>(state);
-    }
-
-    ExampleStateTransition(final ExampleEnumState state,
-                           final ExampleEnumState stateNext) {
-      elt = new StateTransition<>(state, stateNext);
-    }
-
-    ExampleStateTransition(final ExampleEnumState state,
-                           final ExampleEnumState stateNext,
-                           final EnumSet<ExampleEnumState> set) {
-      elt = new StateTransition<>(state, stateNext, set);
-    }
-  }
-  // Example of usages
-  final StateMachine<ExampleEnumState> stateMachine =
-        ExampleEnumState.newStateMachine();
-  stateMachine.getState(); // NONE
-  stateMachine.isReachable(END); // False
-  stateMachine.setDryState(END); // NONE
-  stateMachine.isReachable(START); // True
-  stateMachine.setState(START); // START
-  stateMachine.isTerminal(); // False
 

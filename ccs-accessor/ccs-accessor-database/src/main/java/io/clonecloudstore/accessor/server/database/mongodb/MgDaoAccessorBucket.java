@@ -68,9 +68,9 @@ public class MgDaoAccessorBucket extends DaoAccessorBucket {
   }
 
   @Override
-  public MgDaoAccessorBucket setId(final String bucketTechnicalId) {
-    ParametersChecker.checkSanityBucketName(bucketTechnicalId);
-    this.id = bucketTechnicalId;
+  public MgDaoAccessorBucket setId(final String bucketId) {
+    ParametersChecker.checkSanityBucketName(bucketId);
+    this.id = bucketId;
     return this;
   }
 }

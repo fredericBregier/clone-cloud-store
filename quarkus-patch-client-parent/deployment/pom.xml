@@ -21,7 +21,7 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>quarkus-patch-client-parent</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>quarkus-patch-client-deployment</artifactId>
@@ -62,10 +62,6 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-jsonp-deployment</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-vertx-http-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>

@@ -17,11 +17,9 @@
 package io.clonecloudstore.common.quarkus.client.example;
 
 import io.clonecloudstore.common.quarkus.client.SimpleClientFactoryAbstract;
-import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-@Unremovable
 public class SimpleApiClientFactory extends SimpleClientFactoryAbstract<ApiServiceInterface> {
   // Not overriding getServiceClass to test it
 

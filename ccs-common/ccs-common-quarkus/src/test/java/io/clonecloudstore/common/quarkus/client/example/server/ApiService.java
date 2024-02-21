@@ -78,7 +78,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
       });
     } else if (CONFLICT_NAME.equals(name)) {
       return Uni.createFrom().emitter(em -> {
-        em.complete(createErrorResponse(new CcsAlreadyExistException("Conflict")));
+        em.complete(createErrorResponse(new CcsAlreadyExistException("Conflict error")));
       });
     }
     ApiBusinessIn businessIn = new ApiBusinessIn();
@@ -100,7 +100,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
       });
     } else if (NOT_FOUND_NAME.equals(business)) {
       return Uni.createFrom().emitter(em -> {
-        em.complete(createErrorResponse(new CcsNotExistException("Not exists")));
+        em.complete(createErrorResponse(new CcsNotExistException("Not exists error")));
       });
     }
     ApiBusinessIn businessIn = new ApiBusinessIn();

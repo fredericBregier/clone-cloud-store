@@ -45,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -63,12 +64,11 @@ class MultipleActionsInputStreamTest {
     }
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> DigestAlgo.getFromName("nameFake"));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
-        () -> new MultipleActionsInputStream(null).computeDigest(DigestAlgo.SHA256));
+        () -> new MultipleActionsInputStream(null, DigestAlgo.SHA256));
     final var inputstream = new FakeInputStream(10);
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> new MultipleActionsInputStream(inputstream).computeDigest(null));
-    try (final var digestInputStream = new MultipleActionsInputStream(inputstream)) {
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+    try (final var digestInputStream = new MultipleActionsInputStream(inputstream, DigestAlgo.SHA256)) {
       assertThrows(CcsInvalidArgumentRuntimeException.class, () -> digestInputStream.read(null));
       assertThrows(CcsInvalidArgumentRuntimeException.class, () -> digestInputStream.read(null, 0, 10));
     } catch (IOException e) {
@@ -95,7 +95,9 @@ class MultipleActionsInputStreamTest {
     final String hash32;
     try (final var inputStream0 = new FakeInputStream(len, (byte) 'A');
          final var inputStream = new MultipleActionsInputStream(inputStream0, StandardProperties.getMaxWaitMs())) {
+      assertFalse(inputStream.isDigestEnabled());
       inputStream.computeDigest(digestAlgo);
+      assertTrue(inputStream.isDigestEnabled());
       long subread;
       assertTrue(inputStream.available() > 0);
       final var start = System.nanoTime();
@@ -271,7 +273,6 @@ class MultipleActionsInputStreamTest {
     final var inputStream = new FakeInputStream(BIG_LEN, (byte) 'A');
     final var start = System.nanoTime();
     final var zstdCompressInputStream = new MultipleActionsInputStream(inputStream);
-    //zstdCompressInputStream.computeOriginalSize();
     zstdCompressInputStream.compress();
     int read;
     var computedLen = 0;
@@ -493,9 +494,11 @@ class MultipleActionsInputStreamTest {
     final var bytes = new byte[StandardProperties.getBufSize()];
     final var inputStream = new FakeInputStream(LEN);
     final var start = System.nanoTime();
-    final var zstdCompressInputStream = new MultipleActionsInputStream(inputStream);
+    final var zstdCompressInputStream = MultipleActionsInputStream.create(inputStream);
     zstdCompressInputStream.compress();
     final var zstdDecompressInputStream = new MultipleActionsInputStream(zstdCompressInputStream);
+    final var second = MultipleActionsInputStream.create(zstdDecompressInputStream);
+    assertSame(zstdDecompressInputStream, second);
     zstdDecompressInputStream.decompress();
     long read;
     var computedLen = 0L;
@@ -606,18 +609,15 @@ class MultipleActionsInputStreamTest {
     final var bytes = new byte[StandardProperties.getBufSize()];
     final var inputStream = highlyCompressed ? new FakeInputStream(LENGB, (byte) 'A') : new FakeInputStream(LENGB);
     final var start = System.nanoTime();
-    final var zstdCompressInputStream = new MultipleActionsInputStream(inputStream);
-    if (digest) {
-      zstdCompressInputStream.computeDigest(DigestAlgo.SHA256);
-    }
+    final var zstdCompressInputStream = digest ? new MultipleActionsInputStream(inputStream, DigestAlgo.SHA256) :
+        new MultipleActionsInputStream(inputStream);
     zstdCompressInputStream.compress();
     if (fromServerToClient) {
       zstdCompressInputStream.asyncPipedInputStream(null);
     }
-    final var zstdDecompressInputStream = new MultipleActionsInputStream(zstdCompressInputStream);
-    if (digest) {
-      zstdDecompressInputStream.computeDigest(DigestAlgo.SHA256);
-    }
+    final var zstdDecompressInputStream =
+        digest ? new MultipleActionsInputStream(zstdCompressInputStream, DigestAlgo.SHA256) :
+            new MultipleActionsInputStream(zstdCompressInputStream);
     zstdDecompressInputStream.decompress();
     int read;
     var computedLen = 0L;

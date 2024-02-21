@@ -1,7 +1,7 @@
 Description
 ####################################
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This project uses Quarkus, the Supersonic Subatomic Java Framework and is compiled with Java 21.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
 
@@ -16,8 +16,10 @@ or in memory, neither in client application neither in front CCS services.
 To allow this, specific functionalities of Quarkus Rest services (client and server) are used, such as the possibility
 to send or receive such InputStream, chunk by chunk, and with back pressure control.
 
-  *It might be possible to use other Http Client, but one has to take care of possible limitations of such Http SDK,
-  such as to not send or receive from client side with all InputStream in memory.*
+.. note::
+
+  It might be possible to use other Http Client, but one has to take care of possible limitations of such Http SDK,
+  such as to not send or receive from client side with all InputStream in memory. Apache httpclient5 is compatible.
 
 Clone Cloud Store allows also to clone storage between various Cloud sites, even using different
 technologies (for instance, one using Amazon S3, another one using Azure Blob Storage):
@@ -27,13 +29,11 @@ technologies (for instance, one using Amazon S3, another one using Azure Blob St
   local issues, it can try to reach a copy synchronously on one of the remote sites and proceeds if it exists
   to its local restoration asynchronously.
 
-
 - It provides a Reconciliation algorithm which will compare all sites to restore existing Bucket and Objects
   everywhere. This process is not blocking, meaning the sites can continue to run as usual.
 
 - This reconciliation process allows Disaster Recovery process, without interruption of service during recovery. Note
   that new creation/deletion of Buckets or Objects is taken into account during reconciliation.
-
 
 - This reconciliation process allows Cloud migration, without interruption of service during cloning. Note
   that new creation/deletion of Buckets or Objects is taken into account during reconciliation.
@@ -55,6 +55,103 @@ A simplest implementation with 1 JVM (1 or more) is available without database, 
 It allows to test the solution with your application or to allow a smooth move to Cloud Clone Store:
 **Accessor Simple Gateway**
 
+Available functionalities
+**************************
+
+- Database: MongoDB
+- Topics: Kafka
+
+- Common
+  - Full support for InputStream within Quarkus (through a patch of Quarkus)
+  - Full support of Database choice between MongoDB and PostgreSql (by configuration)
+  - Metrics available for Prometheus or equivalent
+- Accessor
+  - Fully functional
+  - Include remote checking if locally not present (by configuration)
+  - Include remote cloning
+  - Include Public Client and Internal Client (Quarkus)
+  - Include Public Client based on Apache httpclient 5 without need of Quarkus
+  - Simple Gateway with no Database nor Remote access or cloning available
+  - Include optional Buffered Accessor relying on local space (only for unsteady Storage service)
+- Driver
+  - Support of S3, Azure Blob Storage and Google Cloud Storage
+- Replicator
+  - Fully functional for replication or preemptive remote action
+- Topology
+  - Full support for remote Clone Cloud Store sites
+- Ownership
+  - Support for ownership based on Bucket
+- Quarkus patch client: patch until Quarkus validate PR 37308
+- Reconciliator
+  - Logic in place but not yet API (so no Disaster Recovery or Cloud Migration yet)
+  - Initialization of a CCS site from a remote one or from an existing Driver Storage
+  - Missing API and Configurations
+  - Will need extra API on Replicator
+
+
+Notes of versions
+**********************
+
+0.8.0 2024/02
+==============
+
+- Fully tested Reconciliation steps
+- Accessor buffered upload to limit side effect of unsteady Storage service
+- Accessor Ownership and CRUD rights support
+- Administration Topology and Ownership support
+- Add Apache http client for Accessor Public client (no Quarkus dependency)
+- Refactorization on Server side
+- Prepare import from existing Driver Storage without CCS before
+- Compression configurable for internal services
+- Optimize Azure Driver and MongoDb Bulk operations
+- Add Metrics on Topics and Driver
+- Fix Digest implementation and Proactive Replication implementation
+- Fix doc and API
+- Clean up Logs
+
+
+0.7.0 2024/01
+==============
+
+- Support of Simple Gateway Accessor
+- First steps on Reconciliator batch
+
+0.6.0 2023/11
+==============
+
+- Patch of Quarkus to support InputStream on client side (upload and download)
+
+0.5.0 2023/10
+==============
+
+- Refactorization and simplification
+- Support of Dynamic choice of Database (MongoDB or PostgreSql) in Common
+
+0.4.0 2023/09
+==============
+
+- Performance improvements
+- Support of Proactive replication from Accessor
+
+0.3.0 2023/07
+==============
+
+- Adding Topology support to Replicator
+- Support of Public Accessor with remote access
+
+0.2.0 2023/01
+==============
+
+- Replicator support with asynchronous replication
+- Internal Accessor support
+- Support of Kafka
+
+0.1.0 2022/06
+==============
+
+- Public Accessor support
+- Driver for Amazon S3 and S3 like support
+- Support of MongoDB
 
 Status logic
 *************
@@ -81,6 +178,24 @@ Architecture
 
   Architecture on multiple sites
 
+Zoom when using Buffered Accessor
+===================================
+
+.. figure:: ../images/clone-cloud-store-diagram-Architecture-1-site-buffered.drawio.png
+  :alt: Architecture on 1 site with Buffered option
+
+  Architecture on 1 site with Buffered option
+
+Note that Buffered option shall not be used in general, except if the final Storage service is
+unsteady, therefore giving issues while uploading new Objects. This option allows to buffered locally
+on local disks (or through NAS/NFS) the object to store, and then to try to save this locally backuped
+object to the Storage service. If done, the local copy is purged. If not, it is therefore registered for
+retries in recurrent jobs later on.
+
+This option shall be used with caution due to the risk of filling local storage and therefore leading
+to "not enough space on device" error if the Storage service is down for too long.
+
+This option is also available for the Simple Gateway Accessor.
 
 Disaster Recovery or Cloud Migration
 *****************************************

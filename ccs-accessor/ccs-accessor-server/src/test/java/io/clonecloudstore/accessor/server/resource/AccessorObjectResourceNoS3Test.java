@@ -32,8 +32,8 @@ import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.MongoKafkaProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
@@ -73,23 +73,22 @@ class AccessorObjectResourceNoS3Test {
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-    DriverS3Properties.setDynamicS3Parameters("http://127.0.0.1:9999", "AccessKey", "SecretKey", "Region");
   }
 
   @BeforeEach
   void beforeEach() {
     bucketRepository = bucketRepositoryInstance.get();
     objectRepository = objectRepositoryInstance.get();
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException, CcsDbException {
-    final var finalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, BUCKET_NAME);
-    createBucketAndObject(BUCKET_NAME, finalBucketName);
+    createBucketAndObject(BUCKET_NAME);
   }
 
-  void createBucketAndObject(final String bucketName, final String finalBucketName)
-      throws CcsWithStatusException, CcsDbException {
+  void createBucketAndObject(final String bucketName) throws CcsWithStatusException, CcsDbException {
     try (final var client = factoryBucket.newClient()) {
       assertEquals(500,
           assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName, clientId)).getStatus());
@@ -125,12 +124,11 @@ class AccessorObjectResourceNoS3Test {
     }
     // With created object and bucket
     final var daoBucket = bucketRepository.createEmptyItem();
-    daoBucket.setSite(AccessorProperties.getAccessorSite()).setId(finalBucketName)
-        .setName(DaoAccessorBucketRepository.getBucketName(clientId, bucketName)).setCreation(Instant.now())
-        .setStatus(AccessorStatus.READY);
+    daoBucket.setSite(AccessorProperties.getAccessorSite()).setId(bucketName).setCreation(Instant.now())
+        .setStatus(AccessorStatus.READY).setClientId(clientId);
     bucketRepository.insert(daoBucket);
     final var dao = objectRepository.createEmptyItem();
-    dao.setId(GuidLike.getGuid()).setBucket(finalBucketName).setName(ParametersChecker.getSanitizedName(OBJECT))
+    dao.setId(GuidLike.getGuid()).setBucket(bucketName).setName(ParametersChecker.getSanitizedObjectName(OBJECT))
         .setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setStatus(AccessorStatus.READY);
     objectRepository.insert(dao);
     LOG.infof("DAO %s", dao);
@@ -161,7 +159,7 @@ class AccessorObjectResourceNoS3Test {
       Assertions.assertEquals(AccessorStatus.READY, object.getStatus());
     }
     try (final var client = factory.newClient()) {
-      assertEquals(500,
+      assertEquals(404,
           assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
     try (final var client = factory.newClient()) {
@@ -172,7 +170,6 @@ class AccessorObjectResourceNoS3Test {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     try (final var client = factory.newClient()) {

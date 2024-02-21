@@ -1,7 +1,9 @@
 BPMN for Administration
 ####################################
 
-** TODO **
+
+.. warning::
+  Still in progress
 
 Among Administration services, there are:
 
@@ -9,6 +11,7 @@ Among Administration services, there are:
 * Client application identification
 
   * Currently not implemented, but could be based on MTLS or OIDC
+  * However Ownership is implemented, based on ClientId and bucket CRUD properties
 
 * Managing Reconcilitation jobs
 

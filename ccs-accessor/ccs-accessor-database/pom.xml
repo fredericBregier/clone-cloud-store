@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-accessor</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>ccs-accessor-database</artifactId>
@@ -55,6 +55,10 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-accessor-server-commons</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-common-database</artifactId>
     </dependency>
     <dependency>
@@ -80,16 +84,6 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>mongodb</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jacoco</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

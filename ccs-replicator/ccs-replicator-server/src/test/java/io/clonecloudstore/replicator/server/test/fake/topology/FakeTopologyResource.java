@@ -19,11 +19,11 @@ package io.clonecloudstore.replicator.server.test.fake.topology;
 import java.util.Collection;
 import java.util.List;
 
+import io.clonecloudstore.accessor.config.AccessorConstants;
+import io.clonecloudstore.administration.client.api.TopologyApi;
+import io.clonecloudstore.administration.model.Topology;
+import io.clonecloudstore.administration.model.TopologyStatus;
 import io.clonecloudstore.common.quarkus.exception.CcsNotExistException;
-import io.clonecloudstore.replicator.config.ReplicatorConstants;
-import io.clonecloudstore.topology.client.api.TopologyApi;
-import io.clonecloudstore.topology.model.Topology;
-import io.clonecloudstore.topology.model.TopologyStatus;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.Path;
@@ -33,7 +33,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestPath;
 
 
-@Path(ReplicatorConstants.Api.BASE + ReplicatorConstants.Api.TOPOLOGIES)
+@Path(AccessorConstants.Api.ADMINISTRATION_ROOT + AccessorConstants.Api.COLL_TOPOLOGIES)
 public class FakeTopologyResource implements TopologyApi {
   private static final Logger LOGGER = Logger.getLogger(FakeTopologyResource.class);
   public static Topology topology = null;

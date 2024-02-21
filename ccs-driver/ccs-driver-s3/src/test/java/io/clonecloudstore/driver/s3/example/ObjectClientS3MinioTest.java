@@ -54,16 +54,12 @@ class ObjectClientS3MinioTest extends ObjectClientS3Base {
     }
     // Simulate loading the Factory from Class name
     // Bug fix on "localhost"
-    var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    DriverS3Properties.setDynamicS3Parameters(url, MinIoResource.getAccessKey(), MinIoResource.getSecretKey(),
-        MinIoResource.getRegion());
+    DriverS3Properties.setDynamicS3Parameters(MinIoResource.getUrlString(), MinIoResource.getAccessKey(),
+        MinIoResource.getSecretKey(), MinIoResource.getRegion());
     old = QuarkusProperties.serverComputeSha256();
     QuarkusProperties.setServerComputeSha256(false);
-    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen))) {
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen),
+        DigestAlgo.SHA256)) {
       FakeInputStream.consumeAll(digestInputStream);
       sha256 = digestInputStream.getDigestBase32();
     } catch (IOException | NoSuchAlgorithmException e) {

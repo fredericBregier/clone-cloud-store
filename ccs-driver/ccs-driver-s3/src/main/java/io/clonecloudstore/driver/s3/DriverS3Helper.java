@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.StorageType;
@@ -46,16 +47,17 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.io.ReleasableInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.http.ContentStreamProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Bucket;
 import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
 import software.amazon.awssdk.services.s3.model.ChecksumMode;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetBucketTaggingRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
@@ -64,14 +66,18 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListBucketsRequest;
 import software.amazon.awssdk.services.s3.model.ListBucketsResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutBucketTaggingRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectTaggingRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.s3.model.Tagging;
 
+import static io.clonecloudstore.driver.s3.DriverS3Properties.CLIENT_ID;
 import static io.clonecloudstore.driver.s3.DriverS3Properties.MAX_ITEMS;
 import static io.clonecloudstore.driver.s3.DriverS3Properties.SHA_256;
 import static io.clonecloudstore.driver.s3.DriverS3Properties.getDriverS3Host;
@@ -84,12 +90,15 @@ import static io.clonecloudstore.driver.s3.DriverS3Properties.getDriverS3Region;
  */
 @ApplicationScoped
 @Unremovable
-class DriverS3Helper {
+public class DriverS3Helper {
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
   static final String OBJECT_DOES_NOT_EXIST = "Object does not exist: ";
   static final String BUCKET_ALREADY_EXISTS = "Bucket already exists: ";
   private static final Logger LOGGER = Logger.getLogger(DriverS3Helper.class);
+  private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
+  private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
   public static final String FOR = " for ";
+  public static final String OBJECT_CANNOT_BE_CREATED_CODE = "Object cannot be created, code: ";
 
 
   DriverS3Helper() {
@@ -107,32 +116,50 @@ class DriverS3Helper {
     }
   }
 
-  StorageBucket createS3Bucket(final S3Client s3Client, final StorageBucket bucket)
+  StorageBucket createBucket(final S3Client s3Client, final StorageBucket bucket)
       throws DriverAlreadyExistException, DriverNotAcceptableException, DriverException { // NOSONAR Exception details
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       // Check if Bucket already exists
-      if (!existS3Bucket(s3Client, bucket.bucket())) {
+      if (!existBucket(s3Client, bucket.bucket())) {
         final var bucketRequest = CreateBucketRequest.builder().bucket(bucket.bucket()).build();
         internalCreateBucket(s3Client, bucket, bucketRequest);
         final var bucketRequestWait = HeadBucketRequest.builder().bucket(bucket.bucket()).build();
         // Wait until the bucket is created
         final var s3Waiter = s3Client.waiter();
         final var waiterResponse = s3Waiter.waitUntilBucketExists(bucketRequestWait);
-        final var responsed = waiterResponse.matched().response();
-        if (responsed.isEmpty() || !responsed.get().sdkHttpResponse().isSuccessful()) {
+        final var responseWait = waiterResponse.matched().response();
+        if (responseWait.isEmpty() || !responseWait.get().sdkHttpResponse().isSuccessful()) {
           // KO
           throw new DriverNotAcceptableException("Cannot create Bucket: " + bucket);
         }
-        final var response = getS3Buckets(s3Client);
-        final var buckets = response.buckets();
-        for (final var bucket1 : buckets) {
-          if (bucket1.name().equals(bucket.bucket())) {
-            return fromBucket(bucket1);
-          }
+        final var response = getBucket(s3Client, bucket.bucket());
+        if (response == null) {
+          throw new DriverException("Cannot find created Bucket: " + bucket);
         }
-        throw new DriverException("Cannot find created Bucket: " + bucket);
+        return response;
       } else {
         throw new DriverAlreadyExistException(BUCKET_ALREADY_EXISTS + bucket);
+      }
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  StorageBucket importBucket(final S3Client s3Client, final StorageBucket bucket)
+      throws DriverAlreadyExistException, DriverNotAcceptableException, DriverException { // NOSONAR Exception details
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      // Check if Bucket already exists
+      if (existBucket(s3Client, bucket.bucket())) {
+        createTag(s3Client, bucket);
+        final var response = getBucket(s3Client, bucket.bucket());
+        if (response == null) {
+          throw new DriverException("Cannot find imported Bucket: " + bucket);
+        }
+        return response;
+      } else {
+        throw new DriverNotFoundException("Bucket Not Found");
       }
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -148,14 +175,53 @@ class DriverS3Helper {
         throw new DriverNotAcceptableException(
             "Bucket cannot be created, code: " + response.sdkHttpResponse().statusCode() + FOR + bucket);
       }
+      createTag(s3Client, bucket);
     } catch (final BucketAlreadyExistsException ignored) {
       throw new DriverAlreadyExistException(BUCKET_ALREADY_EXISTS + bucket);
     }
   }
 
-  boolean existS3Bucket(final S3Client s3Client, final String bucket) throws DriverException {
-    final var bucketRequestExist = HeadBucketRequest.builder().bucket(bucket).build();
+  private static void createTag(final S3Client s3Client, final StorageBucket bucket)
+      throws DriverNotAcceptableException {
+    final var tag = Tag.builder().key(CLIENT_ID).value(bucket.clientId()).build();
+    final var tagging = Tagging.builder().tagSet(tag).build();
+    final var putTag = PutBucketTaggingRequest.builder().bucket(bucket.bucket()).tagging(tagging).build();
+    final var responseTag = s3Client.putBucketTagging(putTag);
+    if (!responseTag.sdkHttpResponse().isSuccessful()) {
+      throw new DriverNotAcceptableException(
+          "Bucket cannot be tagged, code: " + responseTag.sdkHttpResponse().statusCode() + FOR + bucket);
+    }
+  }
+
+  private StorageBucket internalGetBucket(final S3Client s3Client, final String bucket) throws DriverException {
+    final var response = getBuckets(s3Client);
+    final var buckets = response.buckets();
+    for (final var bucket1 : buckets) {
+      if (bucket1.name().equals(bucket)) {
+        final var clientId = getClientIdTag(s3Client, bucket);
+        return fromBucket(bucket1, clientId);
+      }
+    }
+    return null;
+  }
+
+  StorageBucket getBucket(final S3Client s3Client, final String bucket) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      final var storageBucket = internalGetBucket(s3Client, bucket);
+      if (storageBucket == null) {
+        throw new DriverNotFoundException("Bucket Not Found");
+      }
+      return storageBucket;
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  boolean existBucket(final S3Client s3Client, final String bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      final var bucketRequestExist = HeadBucketRequest.builder().bucket(bucket).build();
       return s3Client.headBucket(bucketRequestExist).sdkHttpResponse().isSuccessful();
     } catch (final NoSuchBucketException ignored) {
       return false;
@@ -167,7 +233,7 @@ class DriverS3Helper {
     }
   }
 
-  ListBucketsResponse getS3Buckets(final S3Client s3Client) throws DriverException {
+  ListBucketsResponse getBuckets(final S3Client s3Client) throws DriverException {
     final var listBucketsRequest = ListBucketsRequest.builder().build();
     try {
       return s3Client.listBuckets(listBucketsRequest);
@@ -178,13 +244,33 @@ class DriverS3Helper {
     }
   }
 
-  StorageBucket fromBucket(final Bucket bucket) {
-    return new StorageBucket(bucket.name(), bucket.creationDate());
+  String getClientIdTag(final S3Client s3Client, final String bucket) throws DriverException {
+    final var getTag = GetBucketTaggingRequest.builder().bucket(bucket).build();
+    try {
+      final var response = s3Client.getBucketTagging(getTag);
+      if (!response.sdkHttpResponse().isSuccessful()) {
+        throw new DriverNotFoundException("Bucket tag not found");
+      }
+      final var optional =
+          response.tagSet().stream().filter(tag -> CLIENT_ID.equals(tag.key())).map(Tag::value).findFirst();
+      if (optional.isPresent()) {
+        return optional.get();
+      }
+      throw new DriverNotFoundException("Bucket tag not found");
+    } catch (final NoSuchBucketException e) {
+      throw new DriverNotFoundException(e);
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    }
   }
 
-  void deleteS3Bucket(final S3Client s3Client, final String bucket)
+  StorageBucket fromBucket(final Bucket bucket, final String clientId) {
+    return new StorageBucket(bucket.name(), clientId, bucket.creationDate());
+  }
+
+  void deleteBucket(final S3Client s3Client, final String bucket)
       throws DriverException, DriverNotFoundException, DriverNotAcceptableException { // NOSONAR Exception details
-    if (!existS3Bucket(s3Client, bucket)) {
+    if (!existBucket(s3Client, bucket)) {
       // Not found
       throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + bucket);
     }
@@ -206,9 +292,9 @@ class DriverS3Helper {
     }
   }
 
-  long countS3ObjectsInBucket(final S3Client s3Client, final String bucket)
+  long countObjectsInBucket(final S3Client s3Client, final String bucket)
       throws DriverException, DriverNotFoundException { // NOSONAR Exception details
-    final var iterator = getS3ObjectsIteratorFilteredInBucket(s3Client, bucket, null, null, null);
+    final var iterator = getObjectsIteratorFilteredInBucket(s3Client, bucket, null, null, null);
     return SystemTools.consumeAll(iterator);
   }
 
@@ -229,9 +315,14 @@ class DriverS3Helper {
    * @param end      The objects returned will have been modified before this instant.
    * @return A {@link Stream} of {@link S3Object} objects.
    */
-  Stream<S3Object> getS3ObjectsStreamFilteredInBucket(final S3Client s3Client, final String bucket, final String prefix,
-                                                      final Instant start, final Instant end)
+  Stream<S3Object> getObjectsStreamFilteredInBucket(final S3Client s3Client, final String bucket, final String prefix,
+                                                    final Instant start, final Instant end)
       throws DriverException, DriverNotFoundException { // NOSONAR Exception details
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
     final ListObjectsV2Request request = getListObjectsV2Request(s3Client, bucket, prefix);
     try {
       if (start != null || end != null) {
@@ -256,7 +347,7 @@ class DriverS3Helper {
 
   private ListObjectsV2Request getListObjectsV2Request(final S3Client s3Client, final String bucket,
                                                        final String prefix) throws DriverException {
-    if (!existS3Bucket(s3Client, bucket)) {
+    if (!existBucket(s3Client, bucket)) {
       // Not found
       throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + bucket);
     }
@@ -287,9 +378,14 @@ class DriverS3Helper {
    * @param end      The objects returned will have been modified before this instant.
    * @return A {@link Stream} of {@link S3Object} objects.
    */
-  Iterator<S3Object> getS3ObjectsIteratorFilteredInBucket(final S3Client s3Client, final String bucket,
-                                                          final String prefix, final Instant start, final Instant end)
+  Iterator<S3Object> getObjectsIteratorFilteredInBucket(final S3Client s3Client, final String bucket,
+                                                        final String prefix, final Instant start, final Instant end)
       throws DriverException, DriverNotFoundException { // NOSONAR Exception details
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
     final ListObjectsV2Request request = getListObjectsV2Request(s3Client, bucket, prefix);
     try {
       if (start != null || end != null) {
@@ -306,11 +402,16 @@ class DriverS3Helper {
 
   StorageObject fromS3Object(final S3Client s3Client, final String bucket, final S3Object object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    return getS3ObjectInBucket(s3Client, bucket, object.key());
+    return getObjectInBucket(s3Client, bucket, object.key());
   }
 
-  StorageObject getS3ObjectInBucket(final S3Client s3Client, final String bucket, final String s3name)
+  StorageObject getObjectInBucket(final S3Client s3Client, final String bucket, final String s3name)
       throws DriverException, DriverNotFoundException { // NOSONAR Exception details
+    try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, s3name);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
     final var objectRequestExist =
         HeadObjectRequest.builder().bucket(bucket).key(s3name).checksumMode(ChecksumMode.ENABLED).build();
     var status = 500;
@@ -359,12 +460,12 @@ class DriverS3Helper {
     }
   }
 
-  InputStream getS3ObjectBodyInBucket(final S3Client s3Client, final String bucket, final String s3name,
-                                      final boolean checkExistence)
+  InputStream getObjectBodyInBucket(final S3Client s3Client, final String bucket, final String s3name,
+                                    final boolean checkExistence)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
-    if (checkExistence && !existS3DirectoryOrObjectInBucket(s3Client, bucket, s3name).equals(StorageType.OBJECT)) {
+    if (checkExistence && !existDirectoryOrObjectInBucket(s3Client, bucket, s3name).equals(StorageType.OBJECT)) {
       // Not found
-      if (!existS3Bucket(s3Client, bucket)) {
+      if (!existBucket(s3Client, bucket)) {
         throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + bucket);
       }
       throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST + bucket + ":" + s3name);
@@ -378,14 +479,14 @@ class DriverS3Helper {
     }
   }
 
-  StorageType existS3DirectoryOrObjectInBucket(final S3Client s3Client, final String bucket,
-                                               final String directoryOrObject) throws DriverException {
+  StorageType existDirectoryOrObjectInBucket(final S3Client s3Client, final String bucket,
+                                             final String directoryOrObject) throws DriverException {
     try {
       // First try for an Object then for Directory
-      if (existS3ObjectInBucket(s3Client, bucket, directoryOrObject)) {
+      if (existObjectInBucket(s3Client, bucket, directoryOrObject)) {
         return StorageType.OBJECT;
       }
-      final var iterator = getS3ObjectsIteratorFilteredInBucket(s3Client, bucket, directoryOrObject, null, null);
+      final var iterator = getObjectsIteratorFilteredInBucket(s3Client, bucket, directoryOrObject, null, null);
       var storageType = iterator.hasNext() ? StorageType.DIRECTORY : StorageType.NONE;
       SystemTools.consumeAll(iterator);
       return storageType;
@@ -397,7 +498,13 @@ class DriverS3Helper {
     }
   }
 
-  boolean existS3ObjectInBucket(final S3Client s3Client, final String bucket, final String s3name) {
+  boolean existObjectInBucket(final S3Client s3Client, final String bucket, final String s3name)
+      throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, s3name);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
     final var objectRequestExist = HeadObjectRequest.builder().bucket(bucket).key(s3name).build();
     try {
       return s3Client.headObject(objectRequestExist).sdkHttpResponse().isSuccessful();
@@ -406,11 +513,51 @@ class DriverS3Helper {
     }
   }
 
-  void deleteS3ObjectInBucket(final S3Client s3Client, final String bucket, final String s3name)
+  StorageObject objectCopyToAnother(final S3Client s3Client, final StorageObject source, final StorageObject target)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      ParametersChecker.checkParameter("Source and Target cannot be null", source, target);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+    final var builder = CopyObjectRequest.builder().sourceBucket(source.bucket()).sourceKey(source.name())
+        .destinationBucket(target.bucket()).destinationKey(target.name());
+    if (target.expiresDate() != null) {
+      builder.expires(target.expiresDate());
+    }
+    final Map<String, String> map = HashMap.newHashMap(1);
+    if (target.metadata() != null) {
+      map.putAll(target.metadata());
+    }
+    if (ParametersChecker.isNotEmpty(source.hash())) {
+      map.put(SHA_256, source.hash());
+    }
+    LOGGER.debugf("Metadata %s", map);
+    if (!map.isEmpty()) {
+      builder.metadata(map).metadataDirective(MetadataDirective.REPLACE);
+    } else {
+      builder.metadataDirective(MetadataDirective.COPY);
+    }
+    try {
+      final var response = s3Client.copyObject(builder.build());
+      if (!response.sdkHttpResponse().isSuccessful()) {
+        throw new DriverNotAcceptableException(
+            OBJECT_CANNOT_BE_CREATED_CODE + response.sdkHttpResponse().statusCode() + FOR + target.bucket() + ":" +
+                target.name());
+      }
+      return waitUntilObjectExist(s3Client, target.bucket(), target.name(), null);
+    } catch (final NoSuchKeyException | NoSuchBucketException e) {
+      throw new DriverNotFoundException(e);
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  void deleteObjectInBucket(final S3Client s3Client, final String bucket, final String s3name)
       throws DriverNotFoundException, DriverNotAcceptableException, DriverException { // NOSONAR Exception details
-    if (!existS3DirectoryOrObjectInBucket(s3Client, bucket, s3name).equals(StorageType.OBJECT)) {
+    if (!existDirectoryOrObjectInBucket(s3Client, bucket, s3name).equals(StorageType.OBJECT)) {
       // Not found
-      if (!existS3Bucket(s3Client, bucket)) {
+      if (!existBucket(s3Client, bucket)) {
         throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + bucket);
       }
       throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST + bucket + ":" + s3name);
@@ -428,37 +575,48 @@ class DriverS3Helper {
     }
   }
 
+  private StorageObject checkExistenceWithRetry(final S3Client s3Client, final String bucket, final String s3name)
+      throws DriverException {
+    StorageObject storageObject = null;
+    DriverNotFoundException notFoundException = null;
+    for (int i = 0; i < 3; i++) {
+      SystemTools.wait1ms();
+      try {
+        storageObject = getObjectInBucket(s3Client, bucket, s3name);
+        break;
+      } catch (final DriverNotFoundException e) {
+        SystemTools.wait1ms();
+        notFoundException = e;
+      }
+    }
+    if (storageObject == null) {
+      if (notFoundException != null) {
+        throw notFoundException;
+      } else {
+        throw new DriverNotFoundException("Object not found");
+      }
+    }
+    return storageObject;
+  }
+
   StorageObject waitUntilObjectExist(final S3Client s3Client, final String bucket, final String s3name,
                                      final String sha256ForTag)
       throws DriverNotAcceptableException, DriverException { // NOSONAR Exception details
-    final var objectRequestWait =
-        HeadObjectRequest.builder().bucket(bucket).key(s3name).checksumMode(ChecksumMode.ENABLED).build();
-    WaiterResponse<HeadObjectResponse> waiter = null;
-    var status = 0;
     try {
-      // Wait until the object is created
-      waiter = s3Client.waiter().waitUntilObjectExists(objectRequestWait);
-      var responsed = waiter.matched().response();
-      if (responsed.isPresent()) {
-        final var response = responsed.get();
-        status = response.sdkHttpResponse().statusCode();
-        if (response.sdkHttpResponse().isSuccessful()) {
-          if (ParametersChecker.isNotEmpty(sha256ForTag)) {
-            // Set the new Sha256 as Tag since object already created
-            // Maybe use the copy to rewrite metadata instead of Tag
-            setShaAsTagForObject(s3Client, bucket, s3name, sha256ForTag);
-          }
-          return fromS3Head(s3Client, bucket, s3name, response);
-        }
+      StorageObject storageObject = checkExistenceWithRetry(s3Client, bucket, s3name);
+      if (ParametersChecker.isNotEmpty(sha256ForTag)) {
+        // Set the new Sha256 as Tag since object already created
+        // Maybe use the copy to rewrite metadata instead of Tag
+        setShaAsTagForObject(s3Client, bucket, s3name, sha256ForTag);
+        return new StorageObject(storageObject.bucket(), storageObject.name(), sha256ForTag, storageObject.size(),
+            storageObject.creationDate(), storageObject.expiresDate(), storageObject.metadata());
       }
+      return storageObject;
     } catch (final NoSuchKeyException | NoSuchBucketException e) {
       throw new DriverNotFoundException(e);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
     }
-    var exceptioned = waiter.matched().exception();
-    exceptioned.ifPresent(LOGGER::error);
-    throw new DriverNotAcceptableException("Object cannot be created, code: " + status + FOR + bucket + ":" + s3name);
   }
 
   private static void setShaAsTagForObject(final S3Client s3Client, final String bucket, final String s3name,
@@ -468,17 +626,18 @@ class DriverS3Helper {
           PutObjectTaggingRequest.builder().bucket(bucket).key(s3name)
               .tagging(t -> t.tagSet(b -> b.key(SHA_256).value(sha256ForTag))).build());
       if (!putObjectTaggingResponse.sdkHttpResponse().isSuccessful()) {
-        LOGGER.warn("Cannot set tag");
+        LOGGER.warn("Cannot set SHA256 tag");
       }
     } catch (final RuntimeException e) {
-      LOGGER.warn("Cannot tag object: " + s3name, e);
+      LOGGER.warnf("Cannot tag object: %s (%s)", s3name, e);
     }
   }
 
-  void createS3ObjectInBucketNoCheck(final S3Client s3Client, final StorageObject object, final InputStream inputStream)
+  void createObjectInBucket(final S3Client s3Client, final StorageObject object, final InputStream inputStream)
       throws DriverException, DriverNotAcceptableException { // NOSONAR Exception details
     final RequestBody requestBody;
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, object);
       if (object.size() > 0) {
         requestBody = RequestBody.fromInputStream(inputStream, object.size());
       } else {
@@ -504,7 +663,7 @@ class DriverS3Helper {
       final var response = s3Client.putObject(builder.build(), requestBody);
       if (!response.sdkHttpResponse().isSuccessful()) {
         throw new DriverNotAcceptableException(
-            "Object cannot be created, code: " + response.sdkHttpResponse().statusCode() + FOR + object.bucket() + ":" +
+            OBJECT_CANNOT_BE_CREATED_CODE + response.sdkHttpResponse().statusCode() + FOR + object.bucket() + ":" +
                 object.name());
       }
       LOGGER.debugf("MAI %s", inputStream);

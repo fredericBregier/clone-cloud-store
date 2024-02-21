@@ -30,7 +30,7 @@ import io.clonecloudstore.common.standard.system.BaseXx;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
 
-import static io.clonecloudstore.common.standard.properties.StandardProperties.VIRTUAL_EXECUTOR_SERVICE;
+import static io.clonecloudstore.common.standard.system.SystemTools.VIRTUAL_EXECUTOR_SERVICE;
 
 public class MultipleActionsInputStream extends InputStream {
   private final InputStream inputStream;
@@ -56,11 +56,28 @@ public class MultipleActionsInputStream extends InputStream {
     return new MultipleActionsInputStream(inputStream);
   }
 
+  public static MultipleActionsInputStream create(final InputStream inputStream, final boolean digestNeeded)
+      throws NoSuchAlgorithmException {
+    if (inputStream instanceof MultipleActionsInputStream mai) {
+      return mai;
+    }
+    if (digestNeeded) {
+      return new MultipleActionsInputStream(inputStream, DigestAlgo.SHA256);
+    }
+    return new MultipleActionsInputStream(inputStream);
+  }
+
   public MultipleActionsInputStream(final InputStream inputStream) {
     this(inputStream, StandardProperties.getMaxWaitMs());
   }
 
-  public MultipleActionsInputStream(final InputStream inputStream, final long maxWaitMs) {
+  public MultipleActionsInputStream(final InputStream inputStream, final DigestAlgo digestAlgo)
+      throws NoSuchAlgorithmException {
+    this(inputStream, StandardProperties.getMaxWaitMs());
+    computeDigest(digestAlgo);
+  }
+
+  MultipleActionsInputStream(final InputStream inputStream, final long maxWaitMs) {
     ParametersChecker.checkParameter("Parameters cannot be null or empty", inputStream);
     this.inputStream = inputStream;
     this.maxWaitMs = maxWaitMs;
@@ -84,7 +101,7 @@ public class MultipleActionsInputStream extends InputStream {
     }
   }
 
-  public void computeDigest(final DigestAlgo digestAlgo) throws NoSuchAlgorithmException {
+  void computeDigest(final DigestAlgo digestAlgo) throws NoSuchAlgorithmException {
     ParametersChecker.checkParameter("Parameters cannot be null or empty", digestAlgo);
     try {
       digest = MessageDigest.getInstance(digestAlgo.algoName);
@@ -98,7 +115,7 @@ public class MultipleActionsInputStream extends InputStream {
   }
 
   public void compress(final int level) throws IOException {
-    workInputStream = new ZstdCompressInputStream(workInputStream, true, level);
+    workInputStream = new ZstdCompressInputStream(workInputStream, level);
     isCompress = true;
   }
 
@@ -160,7 +177,10 @@ public class MultipleActionsInputStream extends InputStream {
     return read;
   }
 
-  public void changeExceptionDuringCount(final boolean valid) {
+  /**
+   * Allows to prevent exception during ConsumeWhileError by enclosing call between False and True set
+   */
+  public void invalidExceptionDuringConsumeWhileErrorInputStream(final boolean valid) {
     exceptionDuringCount.set(valid);
   }
 
@@ -175,13 +195,13 @@ public class MultipleActionsInputStream extends InputStream {
 
   @Override
   public int read(final byte[] b) throws IOException {
-    ParametersChecker.checkParameter("Buffer cannot be null", b);
+    ParametersChecker.checkParameter("Buffer cannot be null", b);// NOSONAR
     return read(b, 0, b.length);
   }
 
   @Override
   public int read(final byte[] b, final int off, final int len) throws IOException {
-    ParametersChecker.checkParameter("Buffer cannot be null", b);
+    ParametersChecker.checkParameter("Buffer cannot be null", b);// NOSONAR
     check();
     final var read = workInputStream.read(b, off, len);
     if (read > 0 && digest != null) {
@@ -210,10 +230,6 @@ public class MultipleActionsInputStream extends InputStream {
       }
       inputStream.close();
     } finally {
-      if (digest != null) {
-        getDigestValue();
-        digest.reset();
-      }
       closed = true;
       countDownLatch.countDown();
     }

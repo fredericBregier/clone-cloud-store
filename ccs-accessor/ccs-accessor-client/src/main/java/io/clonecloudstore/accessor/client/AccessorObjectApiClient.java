@@ -27,9 +27,10 @@ import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
 import io.clonecloudstore.driver.api.StorageType;
@@ -68,7 +69,7 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(accessorObject, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);
@@ -86,7 +87,7 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
     try {
       return (AccessorObject) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(accessorObject, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);
@@ -98,13 +99,23 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
    */
   public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
                                                           final String clientId) throws CcsWithStatusException {
+    return getObject(bucketName, objectName, clientId, false);
+  }
+
+  /**
+   * Note: Compression is only between client and server, result InputStream is uncompressed
+   *
+   * @return both InputStream and Object DTO
+   */
+  public InputStreamBusinessOut<AccessorObject> getObject(final String bucketName, final String objectName,
+                                                          final String clientId, final boolean compressed)
+      throws CcsWithStatusException {
     this.filter = null;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName).setName(objectName);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().getObject(false, bucketName, objectName, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(compressed, accessorObject);
+    final var uni = getService().getObject(compressed, bucketName, objectName, clientId, getOpId());
+    return getInputStreamBusinessOutFromUni(true, uni);
   }
 
   /**
@@ -115,10 +126,10 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
     this.filter = filter == null ? new AccessorFilter() : filter;
     final var accessorObject = new AccessorObject();
     accessorObject.setBucket(bucketName);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, accessorObject);
-    final var uni = getService().listObjects(false, bucketName, clientId, getOpId());
-    final var inputStream = getInputStreamBusinessOutFromUni(false, true, uni).inputStream();
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), accessorObject);
+    final var uni =
+        getService().listObjects(AccessorProperties.isInternalCompression(), bucketName, clientId, getOpId());
+    final var inputStream = getInputStreamBusinessOutFromUni(true, uni).inputStream();
     return StreamIteratorUtils.getIteratorFromInputStream(inputStream, AccessorObject.class);
   }
 
@@ -127,11 +138,18 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
    */
   public AccessorObject createObject(final AccessorObject accessorObject, final String clientId, final InputStream body)
       throws CcsWithStatusException {
+    return createObject(accessorObject, clientId, body, false);
+  }
+
+  /**
+   * @return the associated DTO
+   */
+  public AccessorObject createObject(final AccessorObject accessorObject, final String clientId, final InputStream body,
+                                     final boolean compressed) throws CcsWithStatusException {
     this.filter = null;
-    // TODO choose compression model
-    final var inputStream = prepareInputStreamToSend(body, false, false, accessorObject);
+    final var inputStream = prepareInputStreamToSend(body, compressed, false, accessorObject);
     final var uni =
-        getService().createObject(false, accessorObject.getBucket(), accessorObject.getName(), clientId, getOpId(),
+        getService().createObject(compressed, accessorObject.getBucket(), accessorObject.getName(), clientId, getOpId(),
             inputStream);
     return getResultFromPostInputStreamUni(uni, inputStream);
   }
@@ -152,7 +170,7 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(accessorObject, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           e.getMessage(), e);
@@ -160,7 +178,7 @@ public class AccessorObjectApiClient extends ClientAbstract<AccessorObject, Acce
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var accessorObject = response.readEntity(AccessorObject.class);
       if (accessorObject != null) {

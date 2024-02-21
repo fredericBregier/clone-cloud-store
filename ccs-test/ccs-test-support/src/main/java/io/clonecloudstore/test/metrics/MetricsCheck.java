@@ -31,11 +31,11 @@ public class MetricsCheck {
       throws InterruptedException {
     final int maxWaitReal = maxWait >= 100 ? maxWait / 100 : 1;
     for (int i = 0; i < 100; i++) {
+      Thread.sleep(maxWaitReal);
       final double result = counter.count();
       if (result >= valueSearch) {
         return result;
       }
-      Thread.sleep(maxWaitReal);
     }
     LOGGER.errorf("Cannot find for Counter %s the value %f while having %f", counter.getId(), valueSearch,
         counter.count());

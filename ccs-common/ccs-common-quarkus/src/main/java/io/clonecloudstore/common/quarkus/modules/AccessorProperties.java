@@ -28,15 +28,29 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class AccessorProperties extends ServiceProperties {
   public static final String CCS_ACCESSOR_REMOTE_READ = "ccs.accessor.remote.read";
   public static final String CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT = "ccs.accessor.remote.fixOnAbsent";
-  public static final String CCS_ACCESSOR_INTERNAL_COMPRESSION = "ccs.accessor.internal.compression";
+  public static final String CCS_INTERNAL_COMPRESSION = "ccs.internal.compression";
+  public static final String CCS_ACCESSOR_STORE_PATH = "ccs.accessor.store.path";
+  public static final String CCS_ACCESSOR_STORE_ACTIVE = "ccs.accessor.store.active";
+  public static final String CCS_ACCESSOR_STORE_MIN_SPACE_GB = "ccs.accessor.store.min_space_gb";
+  public static final String CCS_ACCESSOR_STORE_PURGE_RETENTION_SECONDS = "ccs.accessor.store.purge.retention_seconds";
+  public static final String CCS_ACCESSOR_STORE_SCHEDULE_DELAY = "ccs.accessor.store.schedule.delay";
   private static boolean remoteRead = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_READ, false);
   private static boolean fixOnAbsent =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, false);
   private static boolean internalCompression =
-      QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_INTERNAL_COMPRESSION, false);
+      QuarkusSystemPropertyUtil.getBooleanConfig(CCS_INTERNAL_COMPRESSION, false);
+  private static boolean storeActive = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_STORE_ACTIVE, false);
+  private static final String JAVA_IO_TMPDIR = "java.io.tmpdir";
+  private static final String STORE_PATH =
+      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_PATH, System.getProperty(JAVA_IO_TMPDIR) + "/CCS");
+  private static final int STORE_MIN_SPACE_GB =
+      QuarkusSystemPropertyUtil.getIntegerConfig(CCS_ACCESSOR_STORE_MIN_SPACE_GB, 5);
+  private static long storePurgeRetentionSeconds =
+      QuarkusSystemPropertyUtil.getLongConfig(CCS_ACCESSOR_STORE_PURGE_RETENTION_SECONDS, 3600);
+  private static final String STORE_SCHEDULE_DELAY =
+      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_SCHEDULE_DELAY, "10s");
 
   protected AccessorProperties() {
-    super();
     // Nothing
   }
 
@@ -75,7 +89,6 @@ public class AccessorProperties extends ServiceProperties {
   /**
    * @return True if the internal compression is active
    */
-  // FIXME
   public static boolean isInternalCompression() {
     return internalCompression;
   }
@@ -89,9 +102,59 @@ public class AccessorProperties extends ServiceProperties {
     internalCompression = isInternalCompression;
   }
 
+  /**
+   * Warning: enable this will use local storage and could lead to out of space.
+   * The intention is to allow to be more flexible regarding Driver temporary issues.
+   *
+   * @return True if the local storage is to be uses (default false)
+   */
+  public static boolean isStoreActive() {
+    return storeActive;
+  }
+
+  public static void setStoreActive(final boolean active) {
+    storeActive = active;
+  }
+
+  /**
+   * @return the path to use for local store (default being java.io.tmpdir extended with "/CCS" such as "/tmp/CCS")
+   */
+  public static String getStorePath() {
+    return STORE_PATH;
+  }
+
+  /**
+   * @return the minimum space that must be available on local storage before trying to save the content
+   */
+  public static int getStoreMinSpaceGb() {
+    return STORE_MIN_SPACE_GB;
+  }
+
+  /**
+   * @return the delay in seconds before an upload is considered out of time and to be purged
+   */
+  public static long getStorePurgeRetentionSeconds() {
+    return storePurgeRetentionSeconds;
+  }
+
+  public static void setStorePurgeRetentionSeconds(final long retention) {
+    storePurgeRetentionSeconds = retention;
+  }
+
+  /**
+   * @return the delay in duration format between each schedule
+   */
+  public static String getStoreScheduleDelay() {
+    return STORE_SCHEDULE_DELAY;
+  }
+
   public static String confugrationToString() {
-    return String.format("%s, \"%s\":%b, \"%s\":%b, \"%s\":%b", ServiceProperties.confugrationToString(),
-        CCS_ACCESSOR_REMOTE_READ, isRemoteRead(), CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, isFixOnAbsent(),
-        CCS_ACCESSOR_INTERNAL_COMPRESSION, isInternalCompression());
+    return String.format(
+        "%s, \"%s\":%b, \"%s\":%b, \"%s\":%b, \"%s\":%b, \"%s\":\"%s\", \"%s\":%d, \"%s\":%d, \"%s\":\"%s\"",
+        ServiceProperties.confugrationToString(), CCS_ACCESSOR_REMOTE_READ, isRemoteRead(),
+        CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, isFixOnAbsent(), CCS_INTERNAL_COMPRESSION, isInternalCompression(),
+        CCS_ACCESSOR_STORE_ACTIVE, isStoreActive(), CCS_ACCESSOR_STORE_PATH, getStorePath(),
+        CCS_ACCESSOR_STORE_MIN_SPACE_GB, getStoreMinSpaceGb(), CCS_ACCESSOR_STORE_PURGE_RETENTION_SECONDS,
+        getStorePurgeRetentionSeconds(), CCS_ACCESSOR_STORE_SCHEDULE_DELAY, getStoreScheduleDelay());
   }
 }

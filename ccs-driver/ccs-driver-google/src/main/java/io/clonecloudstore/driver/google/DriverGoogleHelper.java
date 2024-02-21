@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,7 +42,8 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
-import io.clonecloudstore.common.quarkus.stream.ChunkInputStream;
+import io.clonecloudstore.common.quarkus.stream.ChunkInputStreamNotBuffered;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -59,6 +61,7 @@ import org.jboss.logging.Logger;
 
 import static io.clonecloudstore.driver.google.DriverGoogle.BUCKET_DOES_NOT_EXIST;
 import static io.clonecloudstore.driver.google.DriverGoogle.OBJECT_DOES_NOT_EXIST;
+import static io.clonecloudstore.driver.google.DriverGoogleProperties.CLIENT_ID;
 import static io.clonecloudstore.driver.google.DriverGoogleProperties.EXPIRY;
 import static io.clonecloudstore.driver.google.DriverGoogleProperties.MAX_ITEMS;
 import static io.clonecloudstore.driver.google.DriverGoogleProperties.SHA_256;
@@ -67,13 +70,20 @@ import static io.clonecloudstore.driver.google.DriverGoogleProperties.SHA_256;
 @Unremovable
 public class DriverGoogleHelper {
   private static final Logger LOGGER = Logger.getLogger(DriverGoogleHelper.class);
+  public static final String FILE_CLIENT_ID = "." + CLIENT_ID;
+  private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
+  private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
   private final Storage storage;
 
-  public DriverGoogleHelper(final Storage storage) {
+  DriverGoogleHelper(final Storage storage) {
     this.storage = storage;
   }
 
-  public Page<Bucket> getBuckets() throws DriverException {
+  Storage getStorage() {
+    return storage;
+  }
+
+  Page<Bucket> getBuckets() throws DriverException {
     try {
       return storage.list(Storage.BucketListOption.pageSize(MAX_ITEMS));
     } catch (final BaseServiceException e) {
@@ -81,45 +91,135 @@ public class DriverGoogleHelper {
     }
   }
 
-  public StorageBucket fromBucketInfo(final BucketInfo bucket) {
-    return new StorageBucket(bucket.getName(), bucket.getCreateTimeOffsetDateTime().toInstant());
+  private static boolean isFileClientId(final String name) {
+    return FILE_CLIENT_ID.equals(name);
   }
 
-  public StorageBucket createBucket(final StorageBucket bucket) throws DriverException {
+  StorageBucket fromBucketInfo(final Bucket bucket) {
+    final var labels = bucket.getLabels();
+    final String clientId;
+    // Bug with Labels: read an empty object named ".clientId_name"
+    if (labels == null || labels.isEmpty()) {
+      final BlobId blobId = BlobId.of(bucket.getName(), FILE_CLIENT_ID);
+      final var bytes = storage.readAllBytes(blobId);
+      clientId = new String(bytes, StandardCharsets.UTF_8);
+    } else {
+      clientId = labels.get(CLIENT_ID);
+    }
+    return new StorageBucket(bucket.getName(), clientId, bucket.getCreateTimeOffsetDateTime().toInstant());
+  }
+
+  StorageBucket getBucket(final String bucket) throws DriverException {
     try {
-      var result = storage.create(BucketInfo.newBuilder(bucket.bucket()).build());
-      return fromBucketInfo(result.asBucketInfo());
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      var result = storage.get(bucket);
+      if (result != null) {
+        return fromBucketInfo(result);
+      }
+      throw new DriverNotFoundException("Bucket Not Found");
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public void deleteBucket(final String bucket) throws DriverException {
+  StorageBucket createBucket(final StorageBucket bucket) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      final var map = Map.of(CLIENT_ID, bucket.clientId());
+      var result = storage.create(BucketInfo.newBuilder(bucket.bucket()).setLabels(map).build());
+      // Bug with Labels: create an object named ".clientId" with name as content
+      result = bugOnLabels(bucket, result, map);
+      return fromBucketInfo(result);
+    } catch (final BaseServiceException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  private Bucket bugOnLabels(final StorageBucket bucket, Bucket result, final Map<String, String> map) {
+    if (result.getLabels() == null || result.getLabels().isEmpty()) {
+      final BlobId blobId = BlobId.of(bucket.bucket(), FILE_CLIENT_ID);
+      final BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+      storage.create(blobInfo, bucket.clientId().getBytes(StandardCharsets.UTF_8));
+      result = result.toBuilder().setLabels(map).build();
+    }
+    return result;
+  }
+
+  StorageBucket importBucket(final StorageBucket bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
+      if (existBucket(bucket.bucket())) {
+        final var map = Map.of(CLIENT_ID, bucket.clientId());
+        var result = storage.get(bucket.bucket());
+        result = updateBucketButPossibleBugOnLabels(result, map);
+        // Bug with Labels: create an object named ".clientId" with name as content
+        result = bugOnLabels(bucket, result, map);
+        return fromBucketInfo(result);
+      }
+      throw new DriverNotFoundException("Bucket Not Found");
+    } catch (final BaseServiceException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  private static Bucket updateBucketButPossibleBugOnLabels(Bucket result, final Map<String, String> map) {
+    try {
+      result = result.toBuilder().setLabels(map).build().update();
+    } catch (final BaseServiceException ignore) {
+      // Ignore due to bug
+    }
+    return result;
+  }
+
+  void deleteBucket(final String bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       if (countObjectsInBucket(bucket) > 0) {
         throw new DriverNotAcceptableException("Bucket not empty");
       }
+      cleanBugLabelBucket(bucket);
       storage.get(bucket).delete();
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public boolean existBucket(final String bucket) throws DriverException {
+  private void cleanBugLabelBucket(final String bucket) {
+    // Bug with Labels: object named ".clientId" with name as content
     try {
+      storage.delete(bucket, FILE_CLIENT_ID);
+    } catch (final RuntimeException ignore) {
+      // Ignore
+    }
+  }
+
+  boolean existBucket(final String bucket) throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       var result = storage.get(bucket, Storage.BucketGetOption.fields());
       return result != null && result.exists();
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public long countObjectsInBucket(final String bucket) throws DriverException {
+  long countObjectsInBucket(final String bucket) throws DriverException {
     return countObjectsInBucket(bucket, null);
   }
 
   private long countObjectsInBucket(final String bucket, final String prefix) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final Page<Blob> page;
       var container = storage.get(bucket);
       if (container == null) {
@@ -133,30 +233,41 @@ public class DriverGoogleHelper {
       }
       var iterable = page.iterateAll();
       final AtomicLong count = new AtomicLong();
-      iterable.forEach(blob -> count.getAndIncrement());
+      iterable.forEach(blob -> {
+        // Bug with Labels: object named ".clientId" with name as content
+        if (!isFileClientId(blob.getName())) {
+          count.getAndIncrement();
+        }
+      });
       return count.get();
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public Iterator<Blob> getObjectsIteratorFilteredInBucket(final String bucket, final String prefix, final Instant from,
-                                                           final Instant to) throws DriverException {
+  Iterator<Blob> getObjectsIteratorFilteredInBucket(final String bucket, final String prefix, final Instant from,
+                                                    final Instant to) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final Page<Blob> page = getBlobPage(bucket, prefix);
       final var iterator = page.iterateAll().iterator();
       if (from != null || to != null) {
         return new BlobIterator(iterator, from, to);
       }
-      return iterator;
+      return new BlobIterator(iterator, null, null);
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public Stream<Blob> getObjectsStreamFilteredInBucket(final String bucket, final String prefix, final Instant from,
-                                                       final Instant to) throws DriverException {
+  Stream<Blob> getObjectsStreamFilteredInBucket(final String bucket, final String prefix, final Instant from,
+                                                final Instant to) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_CANNOT_BE_NULL, bucket);
       final Page<Blob> page;
       var container = storage.get(bucket);
       if (container == null) {
@@ -170,6 +281,10 @@ public class DriverGoogleHelper {
       final var stream = page.streamAll();
       if (from != null || to != null) {
         return stream.filter(blobItem -> {
+          // Bug with Labels: object named ".clientId" with name as content
+          if (isFileClientId(blobItem.getName())) {
+            return false;
+          }
           var lastModified = blobItem.asBlobInfo().getUpdateTimeOffsetDateTime().toInstant();
           if (from != null && from.isAfter(lastModified)) {
             return false;
@@ -180,9 +295,13 @@ public class DriverGoogleHelper {
           return true;
         });
       }
-      return stream;
+      return stream.filter(blobItem ->
+          // Bug with Labels: object named ".clientId" with name as content
+          !isFileClientId(blobItem.getName()));
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -200,7 +319,7 @@ public class DriverGoogleHelper {
     return page;
   }
 
-  public StorageObject fromBlob(final Blob object) throws DriverException {
+  StorageObject fromBlob(final Blob object) throws DriverException {
     try {
       final var map = getMetadata(object);
       final var sha256 = map.remove(SHA_256);
@@ -219,8 +338,13 @@ public class DriverGoogleHelper {
     }
   }
 
-  public boolean existObjectInBucket(final String bucket, final String object) throws DriverException {
+  boolean existObjectInBucket(final String bucket, final String object) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
+      // Bug with Labels: object named ".clientId" with name as content
+      if (isFileClientId(object)) {
+        return false;
+      }
       BlobId blobId = BlobId.of(bucket, object);
       var blob = storage.get(blobId, Storage.BlobGetOption.fields());
       return blob != null && blob.exists();
@@ -229,11 +353,22 @@ public class DriverGoogleHelper {
         return false;
       }
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public StorageType existDirectoryOrObjectInBucket(final String bucket, final String directoryOrObject)
+  StorageType existDirectoryOrObjectInBucket(final String bucket, final String directoryOrObject)
       throws DriverException {
+    try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, directoryOrObject);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+    // Bug with Labels: object named ".clientId" with name as content
+    if (isFileClientId(directoryOrObject)) {
+      return StorageType.NONE;
+    }
     try {
       if (existObjectInBucket(bucket, directoryOrObject)) {
         return StorageType.OBJECT;
@@ -253,9 +388,14 @@ public class DriverGoogleHelper {
     }
   }
 
-  public long objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
+  long objectPrepareCreateInBucket(final StorageObject object, final InputStream inputStream)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
+      ParametersChecker.checkParameter("Object cannot be null", object);
+      // Bug with Labels: object named ".clientId" with name as content
+      if (isFileClientId(object.name())) {
+        throw new DriverException("Not allowed");
+      }
       BlobId blobId = BlobId.of(object.bucket(), object.name());
       if (existObjectInBucket(object.bucket(), object.name())) {
         throw new DriverAlreadyExistException(object.bucket() + ":" + object);
@@ -267,6 +407,8 @@ public class DriverGoogleHelper {
       }
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -279,13 +421,7 @@ public class DriverGoogleHelper {
 
   long writeInputStreamDirect(final StorageObject object, final InputStream inputStream, final BlobId blobId)
       throws DriverException {
-    final var map = new HashMap<>(object.metadata());
-    if (ParametersChecker.isNotEmpty(object.hash())) {
-      map.put(SHA_256, object.hash());
-    }
-    if (ParametersChecker.isNotEmpty(object.expiresDate())) {
-      map.put(EXPIRY, object.expiresDate().toString());
-    }
+    final var map = getFinalMetadata(object);
     var bucket = storage.get(object.bucket());
     if (bucket == null) {
       throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + object.bucket());
@@ -296,11 +432,8 @@ public class DriverGoogleHelper {
     return blob.asBlobInfo().getSize();
   }
 
-  /**
-   * Slow version (up to 2 times than Direct) if gzip off, faster (up to 2 times) if gzip on
-   */
-  long writeInputStreamWriteChannel(final StorageObject object, final InputStream inputStream, final BlobId blobId)
-      throws DriverException {
+  private HashMap<String, String> getFinalMetadata(final StorageObject object)
+      throws DriverNotFoundException { // NOSONAR Exception details
     final var map = new HashMap<>(object.metadata());
     if (ParametersChecker.isNotEmpty(object.hash())) {
       map.put(SHA_256, object.hash());
@@ -308,6 +441,15 @@ public class DriverGoogleHelper {
     if (ParametersChecker.isNotEmpty(object.expiresDate())) {
       map.put(EXPIRY, object.expiresDate().toString());
     }
+    return map;
+  }
+
+  /**
+   * Slow version (up to 2 times than Direct) if gzip off, faster (up to 2 times) if gzip on
+   */
+  long writeInputStreamWriteChannel(final StorageObject object, final InputStream inputStream, final BlobId blobId)
+      throws DriverException {
+    final var map = getFinalMetadata(object);
     BlobInfo blobInfo =
         BlobInfo.newBuilder(blobId).setMetadata(map).setContentType(MediaType.APPLICATION_OCTET_STREAM).build();
     try (final var writeChannel = storage.writer(blobInfo, getBlobWriteOption())) {
@@ -336,17 +478,10 @@ public class DriverGoogleHelper {
     }
   }
 
-  private Storage.BlobTargetOption[] getBlobTargetOption() {
-    if (DriverGoogleProperties.isGoogleDisableGzip()) {
-      return new Storage.BlobTargetOption[]{Storage.BlobTargetOption.disableGzipContent()};
-    }
-    return new Storage.BlobTargetOption[0];
-  }
-
   /**
    * Slow version (2 times than Direct and slower than WriteChannel, whatever gzip)
    */
-  long writeInputStreamWCompose(final StorageObject object, final InputStream inputStream, final BlobId blobId)
+  long writeInputStreamCompose(final StorageObject object, final InputStream inputStream, final BlobId blobId)
       throws DriverException {
     List<BlobId> blobIds = new ArrayList<>();
     final var map = new HashMap<>(object.metadata());
@@ -360,22 +495,21 @@ public class DriverGoogleHelper {
     int rank = 1;
     long globalSize = object.size() > 0 ? object.size() : DriverGoogleProperties.getMaxBufSize();
     var partSizeFinal = (int) Math.min(DriverGoogleProperties.getMaxBufSize(), globalSize);
-    LOGGER.infof("PartSize %d (%d) %d", partSizeFinal, globalSize, DriverGoogleProperties.getMaxBufSize());
-    try (final var chunkInputStream = new ChunkInputStream(inputStream, object.size(), partSizeFinal)) {
+    LOGGER.debugf("PartSize %d (%d) %d", partSizeFinal, globalSize, DriverGoogleProperties.getMaxBufSize());
+    try (final var chunkInputStream = new ChunkInputStreamNotBuffered(inputStream, object.size(), partSizeFinal)) {
       while (chunkInputStream.nextChunk()) {
-        final var chunkSize = chunkInputStream.getBufferSize();
         BlobInfo blobInfoPart = BlobInfo.newBuilder(object.bucket(), object.name() + "_" + rank)
             .setContentType(MediaType.APPLICATION_OCTET_STREAM).build();
         blobIds.add(blobInfoPart.getBlobId());
-        storage.create(blobInfoPart, chunkInputStream.getBuffer(), 0, chunkSize, getBlobTargetOption());
+        storage.create(blobInfoPart, chunkInputStream, getBlobWriteOption());
         rank++;
       }
       rank--;
-      LOGGER.infof("Rank %d", rank);
+      LOGGER.debugf("Rank %d", rank);
       // Compose per 32
       double pow = 1.0 / (Math.log(32) / Math.log(rank));
       if (pow > 1.0) {
-        LOGGER.infof("Will have to compute %d in %f", rank, pow);
+        LOGGER.warnf("Should compute %d in %f", rank, pow);
         throw new DriverException("Not yet supported");
       }
       // 32 parts maximum
@@ -397,9 +531,9 @@ public class DriverGoogleHelper {
     }
   }
 
-  public StorageObject finalizeObject(final String bucket, final String object, final String sha256)
-      throws DriverException {
+  StorageObject finalizeObject(final String bucket, final String object, final String sha256) throws DriverException {
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       BlobId blobId = BlobId.of(bucket, object);
       var blob = storage.get(blobId);
       if (blob == null || !blob.exists()) {
@@ -421,11 +555,18 @@ public class DriverGoogleHelper {
       return fromBlob(blob);
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public InputStream getObjectBodyInBucket(final String bucket, final String object) throws DriverException {
+  InputStream getObjectBodyInBucket(final String bucket, final String object) throws DriverException {
+    // Bug with Labels: object named ".clientId" with name as content
+    if (isFileClientId(object)) {
+      throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST);
+    }
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       BlobId blobId = BlobId.of(bucket, object);
       var blob = storage.get(blobId, Storage.BlobGetOption.fields());
       if (blob == null || !blob.exists()) {
@@ -437,7 +578,7 @@ public class DriverGoogleHelper {
       final var outputStream = new PipedOutputStream(inputStream); // NOSONAR intentional
       final var finalInputStream =
           new InputStreamClosing(inputStream, outputStream, readChannel); // NOSONAR intentional
-      StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+      SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try {
           var read = 0;
           final var buf = new byte[StandardProperties.getBufSize()];
@@ -451,13 +592,13 @@ public class DriverGoogleHelper {
           outputStream.flush();
           outputStream.close();
         } catch (final IOException e) {
-          LOGGER.warn(e, e);
+          LOGGER.warn(e);
           finalInputStream.setException(e);
           Thread.yield();
         }
       });
       return finalInputStream;
-    } catch (final IOException e) {
+    } catch (final IOException | CcsInvalidArgumentRuntimeException e) {
       throw new DriverException(e);
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
@@ -471,8 +612,13 @@ public class DriverGoogleHelper {
     return new HashMap<>(blobItem.getMetadata());
   }
 
-  public StorageObject getObjectInBucket(final String bucket, final String object) throws DriverException {
+  StorageObject getObjectInBucket(final String bucket, final String object) throws DriverException {
+    // Bug with Labels: object named ".clientId" with name as content
+    if (isFileClientId(object)) {
+      throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST);
+    }
     try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       BlobId blobId = BlobId.of(bucket, object);
       var blob = storage.get(blobId);
       if (blob == null || !blob.exists()) {
@@ -481,11 +627,46 @@ public class DriverGoogleHelper {
       return fromBlob(blob);
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
-  public void deleteObjectInBucket(final String bucket, final String object) throws DriverException {
+  StorageObject objectCopyToAnother(final StorageObject source, final StorageObject target)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
+      ParametersChecker.checkParameter("Source or Target cannot be null", source, target);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
+    }
+    // Bug with Labels: object named ".clientId" with name as content
+    if (isFileClientId(source.name()) || isFileClientId(target.name())) {
+      throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST);
+    }
+    try {
+      BlobId sourceBlob = BlobId.of(source.bucket(), source.name());
+      BlobId targetBlob = BlobId.of(target.bucket(), target.name());
+      Storage.BlobTargetOption precondition = Storage.BlobTargetOption.doesNotExist();
+      storage.copy(Storage.CopyRequest.newBuilder().setSource(sourceBlob).setTarget(targetBlob, precondition).build());
+      Blob copiedObject = storage.get(targetBlob);
+      StorageObject targetUpdated =
+          new StorageObject(target.bucket(), target.name(), source.hash(), source.size(), Instant.now(),
+              target.expiresDate(), target.metadata());
+      final var map = getFinalMetadata(targetUpdated);
+      copiedObject = copiedObject.toBuilder().setMetadata(map).build().update();
+      return fromBlob(copiedObject);
+    } catch (final BaseServiceException e) {
+      throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    }
+  }
+
+  void deleteObjectInBucket(final String bucket, final String object) throws DriverException {
+    // Bug with Labels: object named ".clientId" with name as content
+    if (isFileClientId(object)) {
+      throw new DriverNotFoundException(OBJECT_DOES_NOT_EXIST);
+    }
+    try {
+      ParametersChecker.checkParameter(BUCKET_OR_OBJECT_CANNOT_BE_NULL, bucket, object);
       BlobId blobId = BlobId.of(bucket, object);
       var blob = storage.get(blobId, Storage.BlobGetOption.fields());
       if (blob == null || !blob.exists()) {
@@ -494,6 +675,8 @@ public class DriverGoogleHelper {
       blob.delete();
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
+    } catch (final CcsInvalidArgumentRuntimeException e) {
+      throw new DriverException(e);
     }
   }
 
@@ -503,7 +686,7 @@ public class DriverGoogleHelper {
     private final Instant end;
     private Blob blob;
 
-    public BlobIterator(final Iterator<Blob> iterator, final Instant start, final Instant end) {
+    BlobIterator(final Iterator<Blob> iterator, final Instant start, final Instant end) {
       this.iterator = iterator;
       this.start = start;
       this.end = end;
@@ -514,7 +697,9 @@ public class DriverGoogleHelper {
       while (iterator.hasNext()) {
         final var item = iterator.next();
         final var lastModified = item.asBlobInfo().getUpdateTimeOffsetDateTime().toInstant();
-        if ((start != null && start.isAfter(lastModified)) || (end != null && end.isBefore(lastModified))) {
+        // Bug with Labels: object named ".clientId" with name as content
+        if (isFileClientId(item.getName()) || (start != null && start.isAfter(lastModified)) ||
+            (end != null && end.isBefore(lastModified))) {
           continue;
         }
         return item;
@@ -602,8 +787,8 @@ public class DriverGoogleHelper {
     }
 
     @Override
-    public void mark(final int readlimit) {
-      pipedInputStream.mark(readlimit);
+    public void mark(final int readLimit) {
+      pipedInputStream.mark(readLimit);
     }
 
     @Override
@@ -620,7 +805,7 @@ public class DriverGoogleHelper {
     @Override
     public long transferTo(final OutputStream out) throws IOException {
       checkException();
-      return pipedInputStream.transferTo(out);
+      return SystemTools.transferTo(pipedInputStream, out);
     }
   }
 }

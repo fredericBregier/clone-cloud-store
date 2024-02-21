@@ -22,10 +22,12 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Checker for Parameters <br>
@@ -37,6 +39,10 @@ public final class ParametersChecker {
 
   // Default ASCII for Param check
   private static final Pattern UNPRINTABLE_PATTERN = Pattern.compile("[\\p{Cntrl}]");
+  private static final Pattern INVALID_CHAR_PATTERN = Pattern.compile("[^a-zA-Z0-9/_ .\\-]");
+  private static final Pattern SPACE_UNDERSCORE_PATTERN = Pattern.compile("[\\s_]+");
+  private static final Pattern MINUS_PATTERN = Pattern.compile("\\-+");
+
   private static final List<String> RULES = new ArrayList<>();
 
   // default parameters for XML check
@@ -49,14 +55,12 @@ public final class ParametersChecker {
   private static final String SCRIPT_TAG_ESCAPED = "&lt;script&gt;";
   private static final String SQL_COMMA_ESCAPED = ";";
   public static final int BUCKET_LENGTH = 63;
-  // FIXME Once clientId key size known, will be extracted from BUCKET_LENGTH - 1
-  public static final int BUCKET_NOSITE_LENGTH = 60;
   public static final int OBJECT_LENGTH = 1024;
   public static final int SITE_LENGTH = 256;
+  private static final Pattern METADATA_KEY_PATTERN = Pattern.compile("^([a-zA-Z_])([0-9a-zA-Z_]*)$");
   private static final Pattern BUCKET_NAME_PATTERN = Pattern.compile("^[0-9a-z\\-]{3," + BUCKET_LENGTH + "}$");
-  private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_\\./\\-]{1," + OBJECT_LENGTH + "}$");
+  private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_./\\-]{1," + OBJECT_LENGTH + "}$");
   public static final String INVALID_INPUT = "Invalid input";
-
   public static final String INVALID_URI = "Invalid uri [%s]";
 
   static {
@@ -135,9 +139,9 @@ public final class ParametersChecker {
    * @param value to check
    * @throws CcsInvalidArgumentRuntimeException if invalid
    */
-  public static String checkSanityString(final String value) throws CcsInvalidArgumentRuntimeException {
+  public static void checkSanityString(final String value) throws CcsInvalidArgumentRuntimeException {
     if (isEmpty(value)) {
-      return value;
+      return;
     }
     if (UNPRINTABLE_PATTERN.matcher(value).find()) {
       throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
@@ -147,7 +151,6 @@ public final class ParametersChecker {
         throw new CcsInvalidArgumentRuntimeException("Invalid tag sanity check");
       }
     }
-    return value;
   }
 
   /**
@@ -195,6 +198,35 @@ public final class ParametersChecker {
   public static void checkSanityObjectName(final String objectName) throws CcsInvalidArgumentRuntimeException {
     if (!OBJECT_NAME_PATTERN.matcher(objectName).find()) {
       throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param mapKey for Map key check
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static void checkSanityMapKey(final String mapKey) throws CcsInvalidArgumentRuntimeException {
+    if (ParametersChecker.isNotEmpty(mapKey) && (!METADATA_KEY_PATTERN.matcher(mapKey).find())) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param map where key and value are to be checked
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static void checkSanityMap(final Map<String, String> map) throws CcsInvalidArgumentRuntimeException {
+    if (map != null && !map.isEmpty()) {
+      for (final var entry : map.entrySet()) {
+        if (!METADATA_KEY_PATTERN.matcher(entry.getKey()).find()) {
+          throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+        }
+        checkSanityString(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -269,16 +301,58 @@ public final class ParametersChecker {
     }
   }
 
+  /**
+   * @return the sanitized name
+   */
   public static String getSanitizedName(final String objectName) {
     if (isEmpty(objectName)) {
       return null;
     }
     final var decoded = urlDecodePathParam(objectName);
+    checkSanityString(objectName);
     var name = decoded.replace('\\', '/').replace("//", "/");
+    name = StringUtils.stripAccents(name);
+    name = SPACE_UNDERSCORE_PATTERN.matcher(name).replaceAll(" ");
+    name = INVALID_CHAR_PATTERN.matcher(name).replaceAll("");
+    name = MINUS_PATTERN.matcher(name).replaceAll("-");
+    name = name.trim();
+    name = SPACE_UNDERSCORE_PATTERN.matcher(name).replaceAll("_");
     if (name.startsWith("/")) {
       name = name.substring(1);
     }
     return name;
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param bucketName to check
+   * @return the sanitized name
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static String getSanitizedBucketName(final String bucketName) throws CcsInvalidArgumentRuntimeException {
+    final var sanitized = getSanitizedName(bucketName);
+    if (sanitized == null) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+    checkSanityBucketName(sanitized);
+    return sanitized;
+  }
+
+  /**
+   * Check external argument to avoid Path Traversal attack
+   *
+   * @param objectName to check
+   * @return the sanitized name
+   * @throws CcsInvalidArgumentRuntimeException if invalid
+   */
+  public static String getSanitizedObjectName(final String objectName) throws CcsInvalidArgumentRuntimeException {
+    final var sanitized = getSanitizedName(objectName);
+    if (sanitized == null) {
+      throw new CcsInvalidArgumentRuntimeException(INVALID_INPUT);
+    }
+    checkSanityObjectName(sanitized);
+    return sanitized;
   }
 
   public static String urlDecodePathParam(final String path) {

@@ -25,13 +25,15 @@ import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
+import io.clonecloudstore.administration.client.OwnershipApiClientFactory;
+import io.clonecloudstore.administration.model.ClientOwnership;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
-import io.clonecloudstore.driver.s3.DriverS3Properties;
 import io.clonecloudstore.test.resource.MongoKafkaProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -62,24 +64,26 @@ class AccessorObjectInternalResourceNoS3Test {
   @Inject
   Instance<DaoAccessorBucketRepository> bucketRepositoryInstance;
   DaoAccessorBucketRepository bucketRepository;
+  @Inject
+  OwnershipApiClientFactory ownershipApiClientFactory;
   private static String clientId = null;
 
   @BeforeAll
   static void setup() {
     clientId = UUID.randomUUID().toString();
-    DriverS3Properties.setDynamicS3Parameters("http://127.0.0.1:9999", "AccessKey", "SecretKey", "Region");
   }
 
   @BeforeEach
   void beforeEach() {
     bucketRepository = bucketRepositoryInstance.get();
     objectRepository = objectRepositoryInstance.get();
+    // Clean all
+    CleanupTestUtil.cleanUp();
   }
 
   @Test
   void createBucketAndObjectReplicator() throws CcsWithStatusException, CcsDbException {
-    final var finalBucketName = DaoAccessorBucketRepository.getBucketTechnicalName(clientId, BUCKET_NAME + "2");
-    createBucketAndObject(finalBucketName);
+    createBucketAndObject(BUCKET_NAME + "2");
   }
 
   void createBucketAndObject(final String bucketName) throws CcsWithStatusException, CcsDbException {
@@ -106,15 +110,29 @@ class AccessorObjectInternalResourceNoS3Test {
     }
     // With created object and bucket
     final var daoBucket = bucketRepository.createEmptyItem();
-    daoBucket.setSite(AccessorProperties.getAccessorSite()).setId(bucketName)
-        .setName(DaoAccessorBucketRepository.getBucketName(clientId, bucketName)).setCreation(Instant.now())
-        .setStatus(AccessorStatus.READY);
+    daoBucket.setSite(AccessorProperties.getAccessorSite()).setId(bucketName).setCreation(Instant.now())
+        .setStatus(AccessorStatus.READY).setClientId(clientId);
     bucketRepository.insert(daoBucket);
     final var dao = objectRepository.createEmptyItem();
-    dao.setId(GuidLike.getGuid()).setBucket(bucketName).setName(ParametersChecker.getSanitizedName(OBJECT))
+    dao.setId(GuidLike.getGuid()).setBucket(bucketName).setName(ParametersChecker.getSanitizedObjectName(OBJECT))
         .setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setStatus(AccessorStatus.READY);
     objectRepository.insert(dao);
     LOG.infof("DAO %s", dao);
+    // First no Ownership set
+    try (final var client = factory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, false);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.NONE, objectType);
+    }
+    try (final var client = factory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId, false);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.NONE, objectType);
+    }
+    // Now with ownership
+    try (final var clientOwnership = ownershipApiClientFactory.newClient()) {
+      clientOwnership.add(clientId, bucketName, ClientOwnership.OWNER);
+    }
     try (final var client = factory.newClient()) {
       final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId, false);
       LOG.infof("ObjectType: %s", objectType);
@@ -141,7 +159,7 @@ class AccessorObjectInternalResourceNoS3Test {
       Assertions.assertEquals(AccessorStatus.READY, object.getStatus());
     }
     try (final var client = factory.newClient()) {
-      assertEquals(500,
+      assertEquals(404,
           assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
     }
     try (final var client = factory.newClient()) {
@@ -152,7 +170,6 @@ class AccessorObjectInternalResourceNoS3Test {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
   }

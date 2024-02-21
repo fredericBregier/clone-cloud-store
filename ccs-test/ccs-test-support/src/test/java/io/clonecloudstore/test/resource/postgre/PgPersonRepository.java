@@ -16,12 +16,10 @@
 
 package io.clonecloudstore.test.resource.postgre;
 
-import io.quarkus.arc.Unremovable;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-@Unremovable
 public class PgPersonRepository implements PanacheRepository<PgPersonEntity> {
   public PgPersonEntity findByName(final String name) {
     return find("name", name).firstResult();

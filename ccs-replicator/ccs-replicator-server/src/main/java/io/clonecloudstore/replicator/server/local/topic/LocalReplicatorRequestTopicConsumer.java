@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import io.clonecloudstore.administration.model.Topology;
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
@@ -32,32 +34,32 @@ import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.clonecloudstore.replicator.server.local.application.LocalReplicatorService;
 import io.clonecloudstore.replicator.server.remote.client.RemoteReplicatorApiClientFactory;
-import io.clonecloudstore.topology.model.Topology;
-import io.smallrye.common.annotation.Blocking;
+import io.quarkus.arc.Unremovable;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
+import static io.clonecloudstore.common.quarkus.metrics.BulkMetrics.TAG_REPLICATE;
+
 @ApplicationScoped
+@Unremovable
 public class LocalReplicatorRequestTopicConsumer {
   private static final Logger LOGGER = Logger.getLogger(LocalReplicatorRequestTopicConsumer.class);
   private final RemoteReplicatorApiClientFactory remoteReplicatorApiClientFactory;
   private final LocalReplicatorService replicatorService;
+  private final BulkMetrics bulkMetrics;
 
   public LocalReplicatorRequestTopicConsumer(final RemoteReplicatorApiClientFactory remoteReplicatorApiClientFactory,
-                                             final LocalReplicatorService replicatorService) {
+                                             final LocalReplicatorService replicatorService,
+                                             final BulkMetrics bulkMetrics) {
     this.remoteReplicatorApiClientFactory = remoteReplicatorApiClientFactory;
     this.replicatorService = replicatorService;
-  }
-
-  private void prepareSend(final ReplicatorOrder replicatorOrder,
-                           final Map<String, List<ReplicatorOrder>> mapItemsPerTarget) {
-    final var list = mapItemsPerTarget.computeIfAbsent(replicatorOrder.toSite(), k -> new ArrayList<>());
-    list.add(replicatorOrder);
+    this.bulkMetrics = bulkMetrics;
   }
 
   @Incoming(ReplicatorConstants.Topic.REPLICATOR_REQUEST_IN)
-  @Blocking
+  @Blocking(ordered = true)
   public void consumeOrder(final List<ReplicatorOrder> replicatorOrders) {
     QuarkusProperties.refreshModuleMdc();
     final Map<String, Topology> mapTopologies;
@@ -100,11 +102,19 @@ public class LocalReplicatorRequestTopicConsumer {
         } else {
           client.createOrders(list).await().atMost(QuarkusProperties.getDurationResponseTimeout()).close();
         }
+        bulkMetrics.incrementCounter(list.size(), LocalReplicatorRequestTopicConsumer.class, BulkMetrics.KEY_ORDER,
+            TAG_REPLICATE);
       } catch (final RuntimeException e) {
         // Ignored
-        LOGGER.infof(e.getMessage());
+        LOGGER.debugf("Ignored: %s", e.getMessage());
       }
     }
+  }
+
+  private void prepareSend(final ReplicatorOrder replicatorOrder,
+                           final Map<String, List<ReplicatorOrder>> mapItemsPerTarget) {
+    final var list = mapItemsPerTarget.computeIfAbsent(replicatorOrder.toSite(), k -> new ArrayList<>());
+    list.add(replicatorOrder);
   }
 
   private void prepareOrders(final List<ReplicatorOrder> replicatorOrders,

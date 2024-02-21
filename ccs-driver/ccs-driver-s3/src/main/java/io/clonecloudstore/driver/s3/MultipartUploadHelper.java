@@ -29,7 +29,6 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import software.amazon.awssdk.core.io.ReleasableInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.http.ContentStreamProvider;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
@@ -94,8 +93,8 @@ class MultipartUploadHelper {
         requestBody = RequestBody.fromInputStream(inputStream, len);
       } else {
         LOGGER.warn("Unknown length shall not be OK with multipart");
-        final ContentStreamProvider provider = () -> ReleasableInputStream.wrap(inputStream).disableClose();
-        requestBody = RequestBody.fromContentProvider(provider, MediaType.APPLICATION_OCTET_STREAM);
+        InputStream nonCloseable = ReleasableInputStream.wrap(inputStream).disableClose();
+        requestBody = RequestBody.fromContentProvider(() -> nonCloseable, MediaType.APPLICATION_OCTET_STREAM);
       }
       final var uploadPartResponse = s3Client.uploadPart(
           UploadPartRequest.builder().bucket(bucket).key(destinationKey).uploadId(uploadId).partNumber(partNumber)
@@ -160,13 +159,13 @@ class MultipartUploadHelper {
             found = true;
             break;
           } else {
-            LOGGER.info("Recv but Wrong eTag: " + part.partNumber() + ' ' + part.eTag() + " vs " + part1.eTag() + ' ' +
-                part.size() + ' ' + part.lastModified());
+            LOGGER.warnf("Recv but Wrong eTag: %d %s vs %s %d %s", part.partNumber(), part.eTag(), part1.eTag(),
+                part.size(), part.lastModified());
           }
         }
       }
       if (!found) {
-        LOGGER.error("Completed Part not found: " + part1.partNumber() + ' ' + part1.eTag());
+        LOGGER.errorf("Completed Part not found: %d %s", part1.partNumber(), part1.eTag());
         throw new DriverException("Completed Part not found: " + part1.partNumber() + ' ' + part1.eTag());
       }
     }

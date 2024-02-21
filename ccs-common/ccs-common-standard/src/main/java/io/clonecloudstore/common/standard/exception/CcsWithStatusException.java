@@ -31,6 +31,12 @@ public class CcsWithStatusException extends Exception {
     this.status = status;
   }
 
+  public CcsWithStatusException(final Object businessIn, final int status, final String message) {
+    super(message);
+    this.businessIn = businessIn;
+    this.status = status;
+  }
+
   public CcsWithStatusException(final Object businessIn, final int status, final String message,
                                 final Throwable cause) {
     super(message, cause);

@@ -88,7 +88,8 @@ public class AccessorObjectTest {
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
-    accessorObject.setBucket("correct-bucket-0");
+    accessorObject.setBucket("correct-name");
+    accessorObject.setBucket("correctbucket");
     try {
       accessorObject.setName(WRONG_CHAR);
       Assertions.fail("Should failed");
@@ -109,7 +110,7 @@ public class AccessorObjectTest {
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
-    accessorObject.setName("correct-Name._123-valid");
+    accessorObject.setName("correct-Name._123-valid.ext");
     final Map<String, String> map = new HashMap<>();
     map.put(WRONG_CHAR, "value");
     try {

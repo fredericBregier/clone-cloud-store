@@ -16,300 +16,59 @@
 
 package io.clonecloudstore.accessor.server.resource.internal;
 
-import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.server.application.AccessorObjectService;
-import io.clonecloudstore.accessor.server.application.ObjectNativeStreamHandler;
-import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
-import io.clonecloudstore.common.quarkus.server.service.NativeServerResponseException;
-import io.clonecloudstore.common.quarkus.server.service.ServerResponseFilter;
-import io.clonecloudstore.common.quarkus.server.service.StreamServiceAbstract;
-import io.clonecloudstore.common.standard.system.ParametersChecker;
-import io.clonecloudstore.driver.api.StorageType;
+import io.clonecloudstore.accessor.server.application.ObjectStreamHandler;
+import io.clonecloudstore.accessor.server.commons.AbstractAccessorPrivateObjectResource;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.HEAD;
-import jakarta.ws.rs.HeaderParam;
-import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.eclipse.microprofile.openapi.annotations.Operation;
-import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.headers.Header;
-import org.eclipse.microprofile.openapi.annotations.media.Content;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
-import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
-import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.reactive.RestPath;
 
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.INTERNAL_ROOT;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_INTERNAL;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_OBJECT;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
-import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_CREATION_AFTER;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_CREATION_BEFORE;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_EXPIRES_AFTER;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_EXPIRES_BEFORE;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_METADATA_EQ;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_NAME_PREFIX;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_SIZE_GT;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_SIZE_LT;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderFilterObject.FILTER_STATUSES;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_BUCKET;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_CREATION;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_EXPIRES;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_HASH;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_ID;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_METADATA;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_NAME;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SITE;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_SIZE;
-import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_STATUS;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
-import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
-import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
 /**
  * Object API Resource
  */
 @Path(INTERNAL_ROOT)
-public class AccessorObjectInternalResource
-    extends StreamServiceAbstract<AccessorObject, AccessorObject, ObjectNativeStreamHandler> {
-  private static final Logger LOGGER = Logger.getLogger(AccessorObjectInternalResource.class);
-  private static final String BUCKETNAME_OBJECT = "BucketName: %s Directory or Object ID: %s";
-
-  private final AccessorObjectService service;
-
+public class AccessorObjectInternalResource extends AbstractAccessorPrivateObjectResource<ObjectStreamHandler> {
   public AccessorObjectInternalResource(final AccessorObjectService service) {
-    this.service = service;
+    super(service);
   }
 
-  @Tag(name = TAG_INTERNAL + TAG_OBJECT)
-  @Path("{bucketName}")
-  @PUT
-  @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @Operation(summary = "List objects from filter", description = "List objects from filter as a Stream of Json lines")
-  @Parameters({
-      @Parameter(name = ACCEPT, description = "Must contain application/octet-stream", in = ParameterIn.HEADER,
-          schema = @Schema(type = SchemaType.STRING), required = true),
-      @Parameter(name = ACCEPT_ENCODING, description = "May contain ZSTD for compression", in = ParameterIn.HEADER,
-          schema = @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = X_CLIENT_ID, description = "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
-          SchemaType.STRING), required = true),
-      @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type =
-          SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_NAME_PREFIX, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_STATUSES, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_CREATION_BEFORE, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_CREATION_AFTER, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_EXPIRES_BEFORE, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_EXPIRES_AFTER, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = FILTER_SIZE_LT, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type
-          = SchemaType.INTEGER), required = false),
-      @Parameter(name = FILTER_SIZE_GT, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type
-          = SchemaType.INTEGER), required = false),
-      @Parameter(name = FILTER_METADATA_EQ, description = "Operation ID", in = ParameterIn.HEADER, schema =
-      @Schema(type = SchemaType.STRING), required = false)})
-  @RequestBody(required = false, content = {}, description = "No content", ref = "Void")
-  @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType =
-      MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")))
-  @APIResponse(responseCode = "200", description = "OK")
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+  @Override
   @Blocking
-  public Uni<Response> listObjects(@RestPath final String bucketName, @HeaderParam(ACCEPT) final String acceptHeader,
-                                   @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
-                                   @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID",
-                                       in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required
-                                       = true) @HeaderParam(X_CLIENT_ID) final String clientId,
-                                   @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                       schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                   @HeaderParam(FILTER_NAME_PREFIX) final String xNamePrefix,
-                                   @HeaderParam(FILTER_STATUSES) final String xStatuses,
-                                   @HeaderParam(FILTER_CREATION_BEFORE) final String xCreationBefore,
-                                   @HeaderParam(FILTER_CREATION_AFTER) final String xCreationAfter,
-                                   @HeaderParam(FILTER_EXPIRES_BEFORE) final String xExpiresBefore,
-                                   @HeaderParam(FILTER_EXPIRES_AFTER) final String xExpiresAfter,
-                                   @DefaultValue("0") @HeaderParam(FILTER_SIZE_LT) final long xSizeLt,
-                                   @DefaultValue("0") @HeaderParam(FILTER_SIZE_GT) final long xSizeGt,
-                                   @HeaderParam(FILTER_METADATA_EQ) final String xMetadataEq,
-                                   final HttpServerRequest request, @Context final Closer closer) {
-    final var finalBucketName = DaoAccessorBucketRepository.getRealBucketName(clientId, bucketName, false);
-    LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, request.method().name());
-    final var object = new AccessorObject().setBucket(finalBucketName);
-    // TODO choose compression model
-    return readObjectList(request, closer, object, false);
+  public Uni<Response> listObjects(final String bucketName, final String acceptHeader,
+                                   final String acceptEncodingHeader, final String clientId, final String opId,
+                                   final String xNamePrefix, final String xStatuses, final String xCreationBefore,
+                                   final String xCreationAfter, final String xExpiresBefore, final String xExpiresAfter,
+                                   final long xSizeLt, final long xSizeGt, final String xMetadataEq,
+                                   final HttpServerRequest request, final Closer closer) {
+    return super.listObjects(bucketName, acceptHeader, acceptEncodingHeader, clientId, opId, xNamePrefix, xStatuses,
+        xCreationBefore, xCreationAfter, xExpiresBefore, xExpiresAfter, xSizeLt, xSizeGt, xMetadataEq, request, closer);
   }
 
-  @Tag(name = TAG_INTERNAL + TAG_OBJECT)
-  @Path("{bucketName}/{pathDirectoryOrObject:.+}")
-  @HEAD
-  @Operation(summary = "Check if object or directory exist", description = "Check if object or directory exist " +
-      "(fullcheck true implies check down to Storage) ")
-  @APIResponse(responseCode = "204", description = "OK", headers = {
-      @Header(name = X_TYPE, description = "Type as StorageType", schema = @Schema(type = SchemaType.STRING,
-          enumeration = {
-          "NONE", "BUCKET", "DIRECTORY", "OBJECT"}))})
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+  @Override
   @Blocking
-  public Uni<Response> checkObjectOrDirectory(@PathParam("bucketName") String bucketName,
-                                              @PathParam("pathDirectoryOrObject") String pathDirectoryOrObject,
-                                              @Parameter(name = FULL_CHECK, description = "If True implies Storage " +
-                                                  "checking", in = ParameterIn.QUERY, schema = @Schema(type =
-                                                  SchemaType.BOOLEAN), required = false) @DefaultValue("false") @QueryParam(FULL_CHECK) boolean fullCheck,
-                                              @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description =
-                                                  "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
-                                                  SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,
-                                              @Parameter(name = X_OP_ID, description = "Operation ID", in =
-                                                  ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                                  required = false) @HeaderParam(X_OP_ID) final String opId) {
-    return Uni.createFrom().emitter(em -> {
-      final var finalBucketName = DaoAccessorBucketRepository.getRealBucketName(clientId, bucketName, false);
-      final var finalObjectName = ParametersChecker.getSanitizedName(pathDirectoryOrObject);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
-      try {
-        final var storageType = service.objectOrDirectoryExists(finalBucketName, finalObjectName, fullCheck);
-        if (storageType.equals(StorageType.NONE)) {
-          em.complete(Response.status(Response.Status.NOT_FOUND).header(X_TYPE, StorageType.NONE).build());
-        } else {
-          em.complete(Response.ok().header(X_TYPE, storageType).build());
-        }
-      } catch (final RuntimeException e) {
-        ServerResponseFilter.handleException(em, e);
-      }
-    });
+  public Uni<Response> checkObjectOrDirectory(final String bucketName, final String pathDirectoryOrObject,
+                                              final boolean fullCheck, final String clientId, final String opId) {
+    return super.checkObjectOrDirectory(bucketName, pathDirectoryOrObject, fullCheck, clientId, opId);
   }
 
-  @Tag(name = TAG_INTERNAL + TAG_OBJECT)
-  @Path("{bucketName}/{objectName:.+}")
-  @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  @Operation(summary = "Get object", description = "Get object binary with type application/octet-stream and get " +
-      "object metadata with type application/json")
-  @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
-      schema = @Schema(implementation = AccessorObject.class)))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
-  public Uni<AccessorObject> getObjectInfo(@PathParam("bucketName") String bucketName,
-                                           @PathParam("objectName") String objectName,
-                                           @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client" +
-                                               " ID", in = ParameterIn.HEADER, schema = @Schema(type =
-                                               SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,
-                                           @Parameter(name = X_OP_ID, description = "Operation ID", in =
-                                               ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING),
-                                               required = false) @HeaderParam(X_OP_ID) final String opId) {
-    return Uni.createFrom().emitter(em -> {
-      final var finalBucketName = DaoAccessorBucketRepository.getRealBucketName(clientId, bucketName, false);
-      final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-      LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
-      try {
-        final var object = service.getObjectInfo(finalBucketName, finalObjectName);
-        em.complete(object);
-      } catch (final RuntimeException e) {
-        ServerResponseFilter.handleExceptionFail(em, e);
-      }
-    });
-  }
-
-  /**
-   * Returns both the content Object and the associated DTO through Headers
-   */
-  @Tag(name = TAG_INTERNAL + TAG_OBJECT)
-  @Path("{bucketName}/{objectName:.+}")
-  @GET
-  @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @Operation(summary = "Get object", description = "Get object binary with type application/octet-stream and get " +
-      "object metadata with type application/json")
-  @Parameters({
-      @Parameter(name = ACCEPT, description = "Must contain application/octet-stream", in = ParameterIn.HEADER,
-          schema = @Schema(type = SchemaType.STRING), required = true),
-      @Parameter(name = ACCEPT_ENCODING, description = "May contain ZSTD for compression", in = ParameterIn.HEADER,
-          schema = @Schema(type = SchemaType.STRING), required = false),
-      @Parameter(name = X_CLIENT_ID, description = "Client ID", in = ParameterIn.HEADER, schema = @Schema(type =
-          SchemaType.STRING), required = true),
-      @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER, schema = @Schema(type =
-          SchemaType.STRING), required = false)})
-  @RequestBody(required = false, content = {}, description = "No content", ref = "Void")
-  @APIResponse(responseCode = "200", description = "OK", headers = {
-      @Header(name = X_OBJECT_ID, description = "Id", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_SITE, description = "Site", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_BUCKET, description = "Bucket Name", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_NAME, description = "Object Name", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_CREATION, description = "Creation Date", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_SIZE, description = "Object Size", schema = @Schema(type = SchemaType.INTEGER)),
-      @Header(name = X_OBJECT_HASH, description = "Object Hash SHA-256", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_METADATA, description = "Object Metadata", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_STATUS, description = "Object Status", schema = @Schema(type = SchemaType.STRING)),
-      @Header(name = X_OBJECT_EXPIRES, description = "Expiration Date", schema = @Schema(type = SchemaType.STRING))},
-      content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING,
-          format = "binary")))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Object not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+  @Override
   @Blocking
-  public Uni<Response> getObject(@RestPath final String bucketName, @RestPath final String objectName,
-                                 @HeaderParam(ACCEPT) final String acceptHeader,
-                                 @HeaderParam(ACCEPT_ENCODING) final String acceptEncodingHeader,
-                                 @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID", in =
-                                     ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) final String clientId,
-                                 @Parameter(name = X_OP_ID, description = "Operation ID", in = ParameterIn.HEADER,
-                                     schema = @Schema(type = SchemaType.STRING), required = false) @HeaderParam(X_OP_ID) final String opId,
-                                 final HttpServerRequest request, @Context final Closer closer) {
-    final var finalBucketName = DaoAccessorBucketRepository.getRealBucketName(clientId, bucketName, false);
-    final var finalObjectName = ParametersChecker.getSanitizedName(objectName);
-    LOGGER.infof(BUCKETNAME_OBJECT, finalBucketName, finalObjectName);
-    final var object = new AccessorObject().setBucket(finalBucketName).setName(finalObjectName);
-    // TODO choose compression model
-    return readObject(request, closer, object, false);
+  public Uni<AccessorObject> getObjectInfo(final String bucketName, final String objectName, final String clientId,
+                                           final String opId) {
+    return super.getObjectInfo(bucketName, objectName, clientId, opId);
   }
 
-  /**
-   * Listing of Objects
-   *
-   * @param alreadyCompressed If True, and if the InputStream is to be compressed, will be kept as is; else will
-   *                          compress the InputStream if it has to be
-   */
-  protected Uni<Response> readObjectList(final HttpServerRequest request, final Closer closer,
-                                         final AccessorObject businessIn, final boolean alreadyCompressed) {
-    LOGGER.debugf("GET start");
-    getNativeStream().setup(request, closer, false, businessIn, 0, null, alreadyCompressed);
-    return Uni.createFrom().emitter(em -> {
-      try {
-        em.complete(getNativeStream().pullList());
-      } catch (NativeServerResponseException e) {
-        em.complete(e.getResponse());
-      } catch (final Exception e) {
-        em.complete(createErrorResponse(e));
-      }
-    });
+  @Override
+  @Blocking
+  public Uni<Response> getObject(final String bucketName, final String objectName, final String acceptHeader,
+                                 final String acceptEncodingHeader, final String clientId, final String opId,
+                                 final HttpServerRequest request, final Closer closer) {
+    return super.getObject(bucketName, objectName, acceptHeader, acceptEncodingHeader, clientId, opId, request, closer);
   }
 }

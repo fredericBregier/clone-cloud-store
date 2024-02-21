@@ -1,7 +1,9 @@
 Open API
 *************
 
-** TODO **
+
+.. warning::
+  Still in progress
 
 .. openapi:: openapi/reconciliator-openapi.yaml
   :examples:

@@ -25,7 +25,7 @@ import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
 import io.clonecloudstore.common.quarkus.properties.JsonUtil;
 import io.clonecloudstore.common.quarkus.server.service.StreamServiceAbstract;
 import io.clonecloudstore.common.standard.guid.GuidLike;
@@ -57,17 +57,18 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestPath;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_INTERNAL;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT_ENCODING;
 
 @Path(AccessorConstants.Api.INTERNAL_ROOT)
 public class FakeObjectInternalService
-    extends StreamServiceAbstract<AccessorObject, AccessorObject, FakeNativeStreamHandler> {
+    extends StreamServiceAbstract<AccessorObject, AccessorObject, FakeStreamHandler> {
   public static int errorCode = 0;
   public static long length = 0;
 
-  @Tag(name = AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}")
   @PUT
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -104,8 +105,7 @@ public class FakeObjectInternalService
           "metadatata containing", in = ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required =
           false)})
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType =
-      MediaType.APPLICATION_OCTET_STREAM))
-  @APIResponse(responseCode = "200", description = "OK")
+      MediaType.APPLICATION_OCTET_STREAM, schema = @Schema(type = SchemaType.STRING, format = "binary")))
   @APIResponse(responseCode = "400", description = "Bad Request")
   @APIResponse(responseCode = "401", description = "Unauthorized")
   @APIResponse(responseCode = "404", description = "Bucket not found")
@@ -129,7 +129,7 @@ public class FakeObjectInternalService
                                       final HttpServerRequest request, @Context final Closer closer) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
-        throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+        throw CcsServerExceptionMapper.getCcsException(errorCode);
       }
       final var accessorObject =
           new AccessorObject().setName("testName").setSite("site").setStatus(AccessorStatus.READY)
@@ -144,7 +144,7 @@ public class FakeObjectInternalService
     });
   }
 
-  @Tag(name = AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{pathDirectoryOrObject:.+}")
   @HEAD
   @Operation(summary = "Check if object or directory exist", description = "Check if object or directory exist")
@@ -165,7 +165,7 @@ public class FakeObjectInternalService
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
         if (errorCode != 404) {
-          throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+          throw CcsServerExceptionMapper.getCcsException(errorCode);
         }
         em.complete((Response.status(Response.Status.NOT_FOUND).header(AccessorConstants.Api.X_TYPE, StorageType.NONE)
             .build()));
@@ -175,7 +175,7 @@ public class FakeObjectInternalService
     });
   }
 
-  @Tag(name = AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{objectName:.+}")
   @GET
   @Produces(MediaType.APPLICATION_JSON)
@@ -197,7 +197,7 @@ public class FakeObjectInternalService
                                                required = false) @DefaultValue("") @HeaderParam(X_OP_ID) final String opId) {
     return Uni.createFrom().emitter(em -> {
       if (errorCode > 0) {
-        throw CcsServerGenericExceptionMapper.getCcsException(errorCode);
+        throw CcsServerExceptionMapper.getCcsException(errorCode);
       }
       final var accessorObject =
           new AccessorObject().setName(objectName).setSite("site").setStatus(AccessorStatus.READY)
@@ -206,7 +206,7 @@ public class FakeObjectInternalService
     });
   }
 
-  @Tag(name = AccessorConstants.Api.TAG_OBJECT)
+  @Tag(name = TAG_INTERNAL + AccessorConstants.Api.TAG_OBJECT)
   @Path("{bucketName}/{objectName:.+}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -241,7 +241,8 @@ public class FakeObjectInternalService
       @Header(name = AccessorConstants.HeaderObject.X_OBJECT_STATUS, description = "Object Status", schema =
       @Schema(type = SchemaType.STRING)),
       @Header(name = AccessorConstants.HeaderObject.X_OBJECT_EXPIRES, description = "Expiration Date", schema =
-      @Schema(type = SchemaType.STRING))}, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM))
+      @Schema(type = SchemaType.STRING))}, content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM, schema
+      = @Schema(type = SchemaType.STRING, format = "binary")))
   @APIResponse(responseCode = "400", description = "Bad Request")
   @APIResponse(responseCode = "401", description = "Unauthorized")
   @APIResponse(responseCode = "404", description = "Object not found")
@@ -254,6 +255,9 @@ public class FakeObjectInternalService
                                  @DefaultValue("") @HeaderParam(X_OP_ID) final String opId,
                                  final HttpServerRequest request, @Context final Closer closer) {
     final var accessorObject = new AccessorObject().setName(objectName).setSite("site").setBucket(bucketName);
+    if (errorCode > 0) {
+      throw CcsServerExceptionMapper.getCcsException(errorCode);
+    }
     // use InputStream abstract implementation
     return readObject(request, closer, accessorObject, false);
   }

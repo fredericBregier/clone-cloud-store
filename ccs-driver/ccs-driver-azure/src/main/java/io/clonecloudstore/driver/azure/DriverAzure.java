@@ -19,12 +19,10 @@ package io.clonecloudstore.driver.azure;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
 import com.azure.storage.blob.models.BlobItem;
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.DriverApi;
 import io.clonecloudstore.driver.api.StorageType;
@@ -35,9 +33,8 @@ import io.clonecloudstore.driver.api.exception.DriverNotFoundException;
 import io.clonecloudstore.driver.api.exception.DriverRuntimeException;
 import io.clonecloudstore.driver.api.model.StorageBucket;
 import io.clonecloudstore.driver.api.model.StorageObject;
+import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
-
-import static io.clonecloudstore.common.standard.properties.StandardProperties.STANDARD_EXECUTOR_SERVICE;
 
 /**
  * Azure Driver
@@ -45,11 +42,16 @@ import static io.clonecloudstore.common.standard.properties.StandardProperties.S
 public class DriverAzure implements DriverApi {
   private static final Logger LOGGER = Logger.getLogger(DriverAzure.class);
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
-  private static final Map<String, TransferStatus> storageObjectCreations = new ConcurrentHashMap<>();
   private final DriverAzureHelper driverAzureHelper;
+  private final BulkMetrics bulkMetrics;
 
   protected DriverAzure(final DriverAzureHelper driverAzureHelper) throws DriverRuntimeException {
     this.driverAzureHelper = driverAzureHelper;
+    bulkMetrics = CDI.current().select(BulkMetrics.class).get();
+  }
+
+  DriverAzureHelper getDriverAzureHelper() {
+    return driverAzureHelper;
   }
 
   @Override
@@ -57,6 +59,7 @@ public class DriverAzure implements DriverApi {
     try {
       // Count  buckets
       final var response = driverAzureHelper.getBuckets();
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_COUNT);
       return response.stream().count();
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -68,6 +71,7 @@ public class DriverAzure implements DriverApi {
     try {
       // List first level buckets from
       final var response = driverAzureHelper.getBuckets();
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_STREAM);
       return response.stream().map(driverAzureHelper::fromBlobContainerItem);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -84,12 +88,41 @@ public class DriverAzure implements DriverApi {
   }
 
   @Override
+  public StorageBucket bucketGet(final String bucket)
+      throws DriverNotFoundException, DriverException { // NOSONAR Exception details
+    try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_READ);
+      return driverAzureHelper.getBucket(bucket);
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    }
+  }
+
+  @Override
   public StorageBucket bucketCreate(final StorageBucket bucket)
       throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
       return driverAzureHelper.createBucket(bucket);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageBucket bucketImport(final StorageBucket bucket)
+      throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_CREATE);
+      return driverAzureHelper.importBucket(bucket);
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
     }
   }
 
@@ -97,15 +130,20 @@ public class DriverAzure implements DriverApi {
   public void bucketDelete(final String bucket)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_DELETE);
       driverAzureHelper.deleteBucket(bucket);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
     }
   }
 
   @Override
   public boolean bucketExists(final String bucket) throws DriverException {
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_EXISTS);
       return driverAzureHelper.existBucket(bucket);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -117,6 +155,7 @@ public class DriverAzure implements DriverApi {
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
       // Count  objects from  bucket if it exists
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
       return driverAzureHelper.countObjectsInBucket(bucket);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -128,6 +167,7 @@ public class DriverAzure implements DriverApi {
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
       final var iterator = driverAzureHelper.getObjectsIteratorFilteredInBucket(bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COUNT);
       return SystemTools.consumeAll(iterator);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -150,6 +190,7 @@ public class DriverAzure implements DriverApi {
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
       final var stream = driverAzureHelper.getObjectsStreamFilteredInBucket(bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
       return stream.map(object -> {
         try {
           return driverAzureHelper.fromBlobItem(bucket, object);
@@ -160,6 +201,9 @@ public class DriverAzure implements DriverApi {
       });
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
     }
   }
 
@@ -179,9 +223,13 @@ public class DriverAzure implements DriverApi {
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
       final var iterator = driverAzureHelper.getObjectsIteratorFilteredInBucket(bucket, prefix, from, to);
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_STREAM);
       return new StorageObjectIterator(iterator, bucket);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
     }
   }
 
@@ -189,9 +237,13 @@ public class DriverAzure implements DriverApi {
   public StorageType directoryOrObjectExistsInBucket(final String bucket, final String directoryOrObject)
       throws DriverException {
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_EXISTS);
       return driverAzureHelper.existDirectoryOrObjectInBucket(bucket, directoryOrObject);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_BUCKET, BulkMetrics.TAG_ERROR_READ);
+      throw e;
     }
   }
 
@@ -203,26 +255,14 @@ public class DriverAzure implements DriverApi {
         throw new DriverNotFoundException(BUCKET_DOES_NOT_EXIST + object.bucket());
       }
       checkExistingObjectOnStorage(object);
-      final var countDownLatch = new CountDownLatch(1);
-      final var transferStatus = new TransferStatus();
-      transferStatus.countDownLatch = countDownLatch;
-      transferStatus.exception = null;
-      transferStatus.size = 0;
-      storageObjectCreations.put(object.bucket() + '/' + object.name(), transferStatus);
-      STANDARD_EXECUTOR_SERVICE.execute(() -> {
-        try {
-          transferStatus.size = driverAzureHelper.objectPrepareCreateInBucket(object, inputStream);
-          SystemTools.silentlyCloseNoException(inputStream);
-        } catch (final DriverException e) {
-          transferStatus.exception = e;
-          LOGGER.error(e, e);
-        } finally {
-          countDownLatch.countDown();
-        }
-      });
-      Thread.yield();
+      var size = driverAzureHelper.objectPrepareCreateInBucket(object, inputStream);
+      LOGGER.infof("Imported object %s of size %d", object, size);
+      SystemTools.silentlyCloseNoException(inputStream);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
     }
   }
 
@@ -242,18 +282,7 @@ public class DriverAzure implements DriverApi {
                                                     final String sha256)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
     try {
-      final var transferStatus = storageObjectCreations.remove(bucket + '/' + object);
-      if (transferStatus == null) {
-        throw new DriverException("Request not found while finishing creation request: " + bucket + '/' + object);
-      }
-      await(transferStatus);
-      final var exception = transferStatus.exception;
-      if (exception != null) {
-        if (exception instanceof DriverException e) {
-          throw e;
-        }
-        throw new DriverException("Issue during creation", exception);
-      }
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_CREATE);
       return finalizeStorageObject(bucket, object, realLen, sha256);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -269,22 +298,32 @@ public class DriverAzure implements DriverApi {
     }
   }
 
-  private static void await(final TransferStatus transferStatus) {
-    try {
-      transferStatus.countDownLatch.await();
-    } catch (final InterruptedException e) {
-      transferStatus.exception = e;
-      Thread.currentThread().interrupt();
-    }
-  }
-
   @Override
   public InputStream objectGetInputStreamInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ);
       return driverAzureHelper.getObjectBodyInBucket(bucket, object);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_READ);
+      throw e;
+    }
+  }
+
+  @Override
+  public StorageObject objectCopy(final StorageObject objectSource, final StorageObject objectTarget)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    try {
+      validCopy(objectSource, objectTarget);
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_COPY);
+      return driverAzureHelper.objectCopyToAnother(objectSource, objectTarget);
+    } catch (final RuntimeException e) {
+      throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_WRITE);
+      throw e;
     }
   }
 
@@ -292,6 +331,7 @@ public class DriverAzure implements DriverApi {
   public StorageObject objectGetMetadataInBucket(final String bucket, final String object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_READ_MD);
       return driverAzureHelper.getObjectInBucket(bucket, object);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
@@ -302,21 +342,19 @@ public class DriverAzure implements DriverApi {
   public void objectDeleteInBucket(final String bucket, final String object)
       throws DriverNotAcceptableException, DriverNotFoundException, DriverException { // NOSONAR Exception details
     try {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_DELETE);
       driverAzureHelper.deleteObjectInBucket(bucket, object);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
+    } catch (final DriverException e) {
+      bulkMetrics.incrementCounter(1, DriverAzure.class, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_ERROR_DELETE);
+      throw e;
     }
   }
 
   @Override
   public void close() {
     // Empty
-  }
-
-  private static class TransferStatus {
-    CountDownLatch countDownLatch;
-    Exception exception;
-    long size;
   }
 
   private class StorageObjectIterator implements Iterator<StorageObject> {

@@ -25,7 +25,7 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-parent</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -33,12 +33,13 @@
     <module>ccs-accessor-model</module>
     <module>ccs-accessor-client</module>
     <module>ccs-accessor-client-internal</module>
-    <module>ccs-accessor-client-netty</module>
+    <module>ccs-accessor-client-apache</module>
     <module>ccs-accessor-database</module>
+    <module>ccs-accessor-server-commons</module>
     <module>ccs-accessor-server</module>
+    <module>ccs-accessor-simple-gateway</module>
     <module>ccs-accessor-replicator</module>
     <module>ccs-test-fake-accessor</module>
-      <module>ccs-accessor-simple-gateway</module>
   </modules>
 
   <dependencies>

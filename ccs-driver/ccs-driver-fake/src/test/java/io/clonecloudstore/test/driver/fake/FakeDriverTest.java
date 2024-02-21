@@ -76,14 +76,12 @@ class FakeDriverTest {
             LOG.error(e.getMessage());
           }
         }
-        ;
         try {
           driver.bucketDelete(bucket.bucket());
         } catch (final Exception e) {
           LOG.error(e.getMessage());
         }
       }
-      ;
       FakeDriverFactory.cleanUp();
     } catch (final Exception e) {
       LOG.error(e.getMessage());
@@ -94,7 +92,7 @@ class FakeDriverTest {
   void test1NoBuckets() {
     final var bucket = "test1";
     final var object1 = "object1";
-    final var storageBucket = new StorageBucket(bucket, Instant.now());
+    final var storageBucket = new StorageBucket(bucket, "client", Instant.now());
     try (final var driver = factory.getInstance()) {
       assertEquals(0, driver.bucketsCount());
       assertEquals(0, driver.bucketsStream().count());
@@ -145,7 +143,7 @@ class FakeDriverTest {
   void test2CreateAndDeleteBucket() {
     final var bucket = "test1";
     final var object1 = "object1";
-    final var storageBucket = new StorageBucket(bucket, Instant.now());
+    final var storageBucket = new StorageBucket(bucket, "client", Instant.now());
     try (final var driver = factory.getInstance()) {
       assertEquals(0, driver.bucketsCount());
       assertEquals(0, driver.bucketsStream().count());
@@ -228,7 +226,7 @@ class FakeDriverTest {
     final var object2 = directory2 + "object2";
     final long len1 = 1000;
     final long len2 = 2000;
-    final var storageBucket = new StorageBucket(bucket, Instant.now());
+    final var storageBucket = new StorageBucket(bucket, "client", Instant.now());
     final var object = new StorageObject(bucket, object1, null, len1, Instant.now().plusSeconds(1));
     try (final var driver = factory.getInstance()) {
       assertFalse(driver.bucketExists(bucket));
@@ -510,7 +508,7 @@ class FakeDriverTest {
     final var object2 = directory2 + "object2";
     final long len1 = 1000;
     final long len2 = 2000;
-    final var storageBucket = new StorageBucket(bucket, Instant.now());
+    final var storageBucket = new StorageBucket(bucket, "client", Instant.now());
     final var object = new StorageObject(bucket, object1, null, len1, Instant.now().plusSeconds(1));
     try (final var driver = factory.getInstance()) {
       FakeDriverFactory.cleanUp();

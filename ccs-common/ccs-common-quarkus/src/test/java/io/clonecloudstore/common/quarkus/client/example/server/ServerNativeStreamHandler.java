@@ -38,7 +38,7 @@ import jakarta.enterprise.context.RequestScoped;
 import org.jboss.logging.Logger;
 
 import static io.clonecloudstore.common.quarkus.client.example.ApiConstants.X_NAME;
-import static io.clonecloudstore.common.standard.properties.StandardProperties.STANDARD_EXECUTOR_SERVICE;
+import static io.clonecloudstore.common.standard.system.SystemTools.STANDARD_EXECUTOR_SERVICE;
 
 @RequestScoped
 public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBusinessIn, ApiBusinessOut> {
@@ -52,11 +52,6 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
   protected void clear() {
     semaphore.release();
     super.clear();
-  }
-
-  @Override
-  protected boolean checkDigestToCumpute(final ApiBusinessIn businessIn) {
-    return true;
   }
 
   @Override

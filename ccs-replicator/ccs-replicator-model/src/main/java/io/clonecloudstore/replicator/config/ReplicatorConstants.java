@@ -17,7 +17,12 @@
 package io.clonecloudstore.replicator.config;
 
 public class ReplicatorConstants {
-
+  /**
+   * /replicator/local : for local access requests for remote (ex: Accessor -> Replicator)
+   * Can concern: Bucket/Object (Read/Check) or Reconciliation (Creation/Check)
+   * /replicator/remote : for remote access requests from local (ex: Replicator -> Replicator)
+   * Can concern: Bucket/Object (Read/Check) or Reconciliation (Creation/Check)
+   */
   private ReplicatorConstants() {
   }
 
@@ -26,33 +31,6 @@ public class ReplicatorConstants {
     UPDATE,
     DELETE,
     UNKNOWN
-  }
-
-  /**
-   * /replicator/local : for local access requests for remote (ex: Accessor -> Replicator)
-   * Can concern: Bucket/Object (Read/Check) or Reconciliation (Creation/Check)
-   * /replicator/remote : for remote access requests from local (ex: Replicator -> Replicator)
-   * Can concern: Bucket/Object (Read/Check) or Reconciliation (Creation/Check)
-   * /replicator/topologies : for topology requests (CRUD)
-   */
-  public static final class Api {
-    public static final String TAG_REPLICATOR = "Replicator";
-    public static final String BASE = "/replicator";
-    public static final String REMOTE = "/remote";
-    public static final String LOCAL = "/local";
-    public static final String COLL_BUCKETS = "/buckets";
-    public static final String COLL_ORDERS = "/orders";
-    public static final String COLL_ORDERS_MULTIPLE = "/multiple";
-    public static final String COLL_RECONCILIATIONS = "/reconciliations";
-    public static final String TOPOLOGIES = "/topologies";
-    /**
-     * Specific Header for Target from Topology
-     */
-    public static final String X_TARGET_ID = "x-clonecloudstore-target-id";
-
-    private Api() {
-      // Empty
-    }
   }
 
   /**

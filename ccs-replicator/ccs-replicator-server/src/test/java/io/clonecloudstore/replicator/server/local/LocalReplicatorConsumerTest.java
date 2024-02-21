@@ -18,15 +18,15 @@ package io.clonecloudstore.replicator.server.local;
 
 import java.util.concurrent.TimeUnit;
 
+import io.clonecloudstore.administration.client.TopologyApiClientFactory;
+import io.clonecloudstore.administration.model.Topology;
+import io.clonecloudstore.administration.model.TopologyStatus;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.server.test.fake.accessor.FakeAccessorTopicConsumer;
 import io.clonecloudstore.replicator.server.test.fake.topology.FakeTopologyResource;
 import io.clonecloudstore.replicator.topic.LocalBrokerService;
 import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
 import io.clonecloudstore.test.resource.kafka.KafkaProfile;
-import io.clonecloudstore.topology.client.TopologyApiClientFactory;
-import io.clonecloudstore.topology.model.Topology;
-import io.clonecloudstore.topology.model.TopologyStatus;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -34,7 +34,7 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_ID;
+import static io.clonecloudstore.replicator.server.test.conf.Constants.BUCKET_NAME;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.CLIENT_ID;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.OBJECT_PATH;
 import static io.clonecloudstore.replicator.server.test.conf.Constants.TOPOLOGY_NAME;
@@ -61,11 +61,11 @@ class LocalReplicatorConsumerTest {
   @Test
   void testRemoteEmitter() throws InterruptedException {
     LOGGER.infof("Check ReplicateOrder");
-    localBrokerService.createBucket(BUCKET_ID, CLIENT_ID);
-    localBrokerService.createObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, 120, "hash");
+    localBrokerService.createBucket(BUCKET_NAME, CLIENT_ID);
+    localBrokerService.createObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, 120, "hash");
 
     var replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertNull(replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
@@ -73,18 +73,18 @@ class LocalReplicatorConsumerTest {
     assertEquals(ReplicatorConstants.Action.CREATE, replicatorOrder.action());
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertEquals(OBJECT_PATH, replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(120, replicatorOrder.size());
     assertEquals("hash", replicatorOrder.hash());
     assertEquals(ReplicatorConstants.Action.CREATE, replicatorOrder.action());
 
-    localBrokerService.deleteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID);
-    localBrokerService.deleteBucket(BUCKET_ID, CLIENT_ID);
+    localBrokerService.deleteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID);
+    localBrokerService.deleteBucket(BUCKET_NAME, CLIENT_ID);
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertEquals(OBJECT_PATH, replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
@@ -92,20 +92,20 @@ class LocalReplicatorConsumerTest {
     assertEquals(ReplicatorConstants.Action.DELETE, replicatorOrder.action());
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertNull(replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
     assertNull(replicatorOrder.hash());
     assertEquals(ReplicatorConstants.Action.DELETE, replicatorOrder.action());
 
-    localBrokerService.createBucket(BUCKET_ID, CLIENT_ID);
-    localBrokerService.createObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID, 120, "hash");
-    localBrokerService.deleteObject(BUCKET_ID, OBJECT_PATH, CLIENT_ID);
-    localBrokerService.deleteBucket(BUCKET_ID, CLIENT_ID);
+    localBrokerService.createBucket(BUCKET_NAME, CLIENT_ID);
+    localBrokerService.createObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID, 120, "hash");
+    localBrokerService.deleteObject(BUCKET_NAME, OBJECT_PATH, CLIENT_ID);
+    localBrokerService.deleteBucket(BUCKET_NAME, CLIENT_ID);
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertNull(replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
@@ -113,7 +113,7 @@ class LocalReplicatorConsumerTest {
     assertEquals(ReplicatorConstants.Action.CREATE, replicatorOrder.action());
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertEquals(OBJECT_PATH, replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(120, replicatorOrder.size());
@@ -121,7 +121,7 @@ class LocalReplicatorConsumerTest {
     assertEquals(ReplicatorConstants.Action.CREATE, replicatorOrder.action());
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertEquals(OBJECT_PATH, replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
@@ -129,7 +129,7 @@ class LocalReplicatorConsumerTest {
     assertEquals(ReplicatorConstants.Action.DELETE, replicatorOrder.action());
 
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.take();
-    assertEquals(BUCKET_ID, replicatorOrder.bucketName());
+    assertEquals(BUCKET_NAME, replicatorOrder.bucketName());
     assertNull(replicatorOrder.objectName());
     assertEquals(CLIENT_ID, replicatorOrder.clientId());
     assertEquals(0, replicatorOrder.size());
@@ -139,7 +139,7 @@ class LocalReplicatorConsumerTest {
     // Now with error since no Topology available
     topologyApiClientFactory.clearCache();
     FakeTopologyResource.topology = null;
-    localBrokerService.createBucket(BUCKET_ID, CLIENT_ID);
+    localBrokerService.createBucket(BUCKET_NAME, CLIENT_ID);
     replicatorOrder = FakeAccessorTopicConsumer.replicatorOrders.poll(100, TimeUnit.MILLISECONDS);
     assertNull(replicatorOrder);
   }

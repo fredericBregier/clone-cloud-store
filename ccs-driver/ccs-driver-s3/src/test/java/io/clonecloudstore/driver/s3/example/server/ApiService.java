@@ -55,7 +55,7 @@ import org.jboss.resteasy.reactive.RestHeader;
 import org.jboss.resteasy.reactive.RestPath;
 
 @Path(ApiConstants.API_ROOT)
-public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, NativeStreamHandler> {
+public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, StreamHandler> {
   public static final String NOT_ACCEPTABLE_NAME = "notAcceptableName";
   public DriverApiFactory driverApiFactory;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
@@ -110,7 +110,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
   public Uni<StorageBucket> bucketCreate(@RestPath("bucket") final String bucket) {
     return Uni.createFrom().emitter(em -> {
       try (final var driverApi = driverApiFactory.getInstance()) {
-        final var bucket1 = new StorageBucket(bucket, null);
+        final var bucket1 = new StorageBucket(bucket, "client", null);
         final var storageBucket = driverApi.bucketCreate(bucket1);
         em.complete(storageBucket);
       } catch (final DriverNotAcceptableException e) {
@@ -208,8 +208,7 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
     final var sHash = ParametersChecker.isEmpty(hash) ? null : hash;
     final var businessIn = new StorageObject(bucket, decodedName, sHash, len, null);
     // use InputStream abstract implementation
-    // TODO choose compression model
-    return createObject(request, closer, businessIn, businessIn.size(), businessIn.hash(), false, inputStream);
+    return createObject(request, closer, businessIn, businessIn.size(), businessIn.hash(), inputStream);
   }
 
   // REST API for sending InputStream back to client
@@ -225,7 +224,6 @@ public class ApiService extends StreamServiceAbstract<StorageObject, StorageObje
     // Business code should come here
     final var businessIn = new StorageObject(bucket, decodedName, null, len, null);
     // use InputStream abstract implementation
-    // TODO choose compression model
     return readObject(request, closer, businessIn, false);
   }
 

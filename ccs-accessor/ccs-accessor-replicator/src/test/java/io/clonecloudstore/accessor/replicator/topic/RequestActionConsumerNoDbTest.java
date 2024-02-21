@@ -26,7 +26,7 @@ import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.replicator.test.FakeReplicatorProducer;
-import io.clonecloudstore.accessor.replicator.test.fake.FakeNativeStreamHandlerImpl;
+import io.clonecloudstore.accessor.replicator.test.fake.FakeStreamHandlerImpl;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.inputstream.DigestAlgo;
@@ -79,8 +79,8 @@ class RequestActionConsumerNoDbTest {
         assertFalse(driver.bucketExists(CLIENTID_BUCKET0));
       }
     }
-    FakeNativeStreamHandlerImpl.fakeInputStream = null;
-    FakeNativeStreamHandlerImpl.fakeAnswer = null;
+    FakeStreamHandlerImpl.fakeInputStream = null;
+    FakeStreamHandlerImpl.fakeAnswer = null;
   }
 
   @Test
@@ -110,16 +110,16 @@ class RequestActionConsumerNoDbTest {
       Thread.sleep(WAIT_FOR_CONSUME);
       assertEquals(StorageType.NONE, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME));
       // Virtually Create Object on Remote
-      final var digestInputStream = new MultipleActionsInputStream(new FakeInputStream(120L, (byte) 'A'));
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+      final var digestInputStream =
+          new MultipleActionsInputStream(new FakeInputStream(120L, (byte) 'A'), DigestAlgo.SHA256);
       FakeInputStream.consumeAll(digestInputStream);
       final var hash = digestInputStream.getDigestBase32();
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
-      FakeNativeStreamHandlerImpl.fakeAnswer = new HashMap<>();
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeAnswer = new HashMap<>();
       final var accessorObject =
           new AccessorObject().setBucket(CLIENTID_BUCKET).setCreation(Instant.now()).setId(GuidLike.getGuid())
               .setSize(120).setHash(hash).setName(OBJECT_NAME).setSite(FROM).setStatus(AccessorStatus.READY);
-      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeNativeStreamHandlerImpl.fakeAnswer);
+      AccessorHeaderDtoConverter.objectToMap(accessorObject, FakeStreamHandlerImpl.fakeAnswer);
     }
     LOG.info("Check Delete of Object");
     // Check delete for Object
@@ -134,7 +134,7 @@ class RequestActionConsumerNoDbTest {
     // Check delete for Bucket
     try (final var driver = storageDriverFactory.getInstance()) {
       // First recreate Object to check nonempty bucket
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       final var orderObject2 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.CREATE);
       emitter.send(orderObject2);
       Thread.sleep(WAIT_FOR_CONSUME);
@@ -158,7 +158,7 @@ class RequestActionConsumerNoDbTest {
       final var orderBucket2 = new ReplicatorOrder(orderBucket, ReplicatorConstants.Action.CREATE);
       final var orderObject3 = new ReplicatorOrder(orderObject, ReplicatorConstants.Action.DELETE);
       final var orderBucket3 = new ReplicatorOrder(orderBucket, ReplicatorConstants.Action.DELETE);
-      FakeNativeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
+      FakeStreamHandlerImpl.fakeInputStream = new FakeInputStream(120L, (byte) 'A');
       emitter.send(orderBucket2);
       emitter.send(orderObject2);
       emitter.send(orderObject3);

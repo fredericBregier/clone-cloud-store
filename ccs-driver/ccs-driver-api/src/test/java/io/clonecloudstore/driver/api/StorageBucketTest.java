@@ -35,8 +35,8 @@ class StorageBucketTest {
 
   @Test
   void checkBean() {
-    final var bucket = new StorageBucket("name", Instant.now());
-    final var bucket1 = new StorageBucket(bucket.bucket(), bucket.creationDate());
+    final var bucket = new StorageBucket("name", "client", Instant.now());
+    final var bucket1 = new StorageBucket(bucket.bucket(), bucket.clientId(), bucket.creationDate());
     assertEquals(bucket1, bucket);
     assertEquals(bucket1, bucket);
     assertEquals(bucket1.hashCode(), bucket.hashCode());
@@ -44,10 +44,10 @@ class StorageBucketTest {
     assertTrue(bucket1.toString().contains(bucket1.bucket()));
     assertTrue(bucket1.toString().contains(bucket1.creationDate().toString()));
     Log.info(bucket);
-    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new StorageBucket("test@test", null));
-    final var bucket2 = new StorageBucket(null, null);
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new StorageBucket("test@test", "client", null));
+    final var bucket2 = new StorageBucket(null, null, null);
     assertNotEquals(bucket, bucket2);
-    assertEquals(-1, bucket2.hashCode());
+    assertNotEquals(-1, bucket2.hashCode());
     assertFalse(bucket.equals(new Object()));
   }
 }

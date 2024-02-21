@@ -21,8 +21,8 @@ import java.util.Collection;
 
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
-import io.clonecloudstore.common.quarkus.client.ClientResponseExceptionMapper;
-import io.clonecloudstore.common.quarkus.client.RequestHeaderFactory;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
+import io.clonecloudstore.common.quarkus.client.utils.RequestHeaderFactory;
 import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -54,7 +54,9 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_BUCKE
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.TAG_INTERNAL;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 /**
  * API REST for Accessor Bucket for Internals between Clone Cloud Store services
@@ -73,10 +75,21 @@ public interface AccessorBucketInternalApi extends Closeable {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
-      schema = @Schema(implementation = AccessorBucket.class)))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      schema = @Schema(implementation = AccessorBucket.class)), headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   Uni<Collection<AccessorBucket>> getBuckets(
       @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID", in = ParameterIn.HEADER,
           schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,
@@ -91,11 +104,25 @@ public interface AccessorBucketInternalApi extends Closeable {
   @APIResponse(responseCode = "204", description = "OK", headers = {
       @Header(name = X_TYPE, description = "Type as StorageType", schema = @Schema(type = SchemaType.STRING,
           enumeration = {
-          "NONE", "BUCKET", "DIRECTORY", "OBJECT"}))})
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+          "NONE", "BUCKET", "DIRECTORY", "OBJECT"})),
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Bucket not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   Uni<Response> checkBucket(@PathParam("bucketName") String bucketName,
                             @Parameter(name = FULL_CHECK, description = "If True implies Storage checking", in =
                                 ParameterIn.QUERY, schema = @Schema(type = SchemaType.BOOLEAN), required = false) @DefaultValue("false") @QueryParam(FULL_CHECK) boolean fullCheck,
@@ -110,12 +137,29 @@ public interface AccessorBucketInternalApi extends Closeable {
   @Operation(summary = "Get bucket metadata", description = "Get bucket metadata")
   @Produces(MediaType.APPLICATION_JSON)
   @APIResponse(responseCode = "200", description = "OK", content = @Content(mediaType = MediaType.APPLICATION_JSON,
-      schema = @Schema(implementation = AccessorBucket.class)))
-  @APIResponse(responseCode = "400", description = "Bad Request")
-  @APIResponse(responseCode = "401", description = "Unauthorized")
-  @APIResponse(responseCode = "404", description = "Bucket not found")
-  @APIResponse(responseCode = "410", description = "Bucket deleted")
-  @APIResponse(responseCode = "500", description = "Internal Error")
+      schema = @Schema(implementation = AccessorBucket.class)), headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "400", description = "Bad Request", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "401", description = "Unauthorized", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "404", description = "Bucket not found", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "410", description = "Bucket deleted", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
+  @APIResponse(responseCode = "500", description = "Internal Error", headers = {
+      @Header(name = X_OP_ID, description = "Operation ID", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_MODULE, description = "Module Id", schema = @Schema(type = SchemaType.STRING)),
+      @Header(name = X_ERROR, description = "Error Message", schema = @Schema(type = SchemaType.STRING))})
   Uni<AccessorBucket> getBucket(@PathParam("bucketName") String bucketName,
                                 @Parameter(name = AccessorConstants.Api.X_CLIENT_ID, description = "Client ID", in =
                                     ParameterIn.HEADER, schema = @Schema(type = SchemaType.STRING), required = true) @HeaderParam(X_CLIENT_ID) String clientId,

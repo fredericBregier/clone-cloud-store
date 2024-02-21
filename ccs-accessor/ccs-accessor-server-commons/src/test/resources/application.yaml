@@ -1,0 +1,47 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+  http:
+    test-timeout: 3S
+  vertx:
+    warning-exception-time: 10S
+    max-event-loop-execute-time: 10S
+    eventbus:
+      connect-timeout: 1S
+      idle-timeout: 1S
+  devservices:
+    enabled: false
+  scheduler:
+    enabled: false
+  s3:
+    devservices:
+      enabled: false
+  rest-client:
+    "io.clonecloudstore.accessor.client.api.AccessorBucketApi":
+      url: http://localhost:8081
+      verify-host: false
+    "io.clonecloudstore.accessor.client.api.AccessorObjectApi":
+      url: http://localhost:8081
+      verify-host: false
+    connect-timeout: 1000
+    read-timeout: 1000
+  hibernate-orm:
+    enabled: false
+
+ccs:
+  driverMaxChunkSize: 134217728
+  driver:
+    s3:
+      maxPartSizeForUnknownLength: 10000000
+  maxWaitMs: 1000
+  client:
+    response:
+      timeout: 30000
+  server:
+    computeSha256: true
+  accessor:
+    site: Pékin
+    remote:
+      read: false
+      fixOnAbsent: false

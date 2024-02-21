@@ -19,13 +19,15 @@ package io.clonecloudstore.replicator.client;
 import java.util.Map;
 
 import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
+import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.client.utils.ClientResponseExceptionMapper;
 import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
@@ -58,7 +60,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
     try {
       return (ReplicatorResponse<AccessorBucket>) exceptionMapper.handleUniObject(this, uni);
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -71,7 +73,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
   }
 
   private static String getTargetFromResponse(final Response response) {
-    var target = response.getHeaderString(ReplicatorConstants.Api.X_TARGET_ID);
+    var target = response.getHeaderString(AccessorConstants.Api.X_TARGET_ID);
     if (ParametersChecker.isEmpty(target)) {
       return null;
     }
@@ -91,7 +93,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -118,7 +120,7 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
       }
       throw e;
     } catch (final CcsClientGenericException | CcsServerGenericException | ClientWebApplicationException e) {
-      throw CcsServerGenericExceptionMapper.getBusinessException(e);
+      throw ClientResponseExceptionMapper.getBusinessException(e);
     } catch (final RuntimeException e) {
       throw new CcsWithStatusException(null, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), e.getMessage(), e);
     }
@@ -127,29 +129,28 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
   public InputStreamBusinessOut<AccessorObject> readRemoteObject(final String bucket, final String object,
                                                                  final String clientId, final String targetId,
                                                                  final String opId) throws CcsWithStatusException {
+    return readRemoteObject(bucket, object, clientId, targetId, opId, true);
+  }
+
+  public InputStreamBusinessOut<AccessorObject> readRemoteObject(final String bucket, final String object,
+                                                                 final String clientId, final String targetId,
+                                                                 final String opId, final boolean decompress)
+      throws CcsWithStatusException {
     this.setOpId(opId);
     final var request =
         new ReplicatorOrder(opId, ServiceProperties.getAccessorSite(), targetId, clientId, bucket, object, 0, null,
             ReplicatorConstants.Action.UNKNOWN);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, request);
-    final var uni = getService().remoteReadObject(false, bucket, object, clientId, getOpId(), targetId);
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), request);
+    final var uni =
+        getService().remoteReadObject(AccessorProperties.isInternalCompression(), bucket, object, clientId, getOpId(),
+            targetId);
+    return getInputStreamBusinessOutFromUni(decompress, uni);
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
-    try {
-      final var businessOut = response.readEntity(AccessorObject.class);
-      if (businessOut != null) {
-        return businessOut;
-      }
-    } catch (final RuntimeException ignore) {
-      // Nothing
-    }
-    final var accessorObject = new AccessorObject();
-    AccessorHeaderDtoConverter.objectFromMap(accessorObject, response.getStringHeaders());
-    return accessorObject;
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
+    // No Push
+    return null;
   }
 
   @Override

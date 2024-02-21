@@ -19,31 +19,31 @@ package io.clonecloudstore.replicator.server.remote.client;
 import java.util.List;
 import java.util.Map;
 
-import io.clonecloudstore.accessor.client.model.AccessorHeaderDtoConverter;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.ClientAbstract;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi;
-import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApiService;
+import io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorClientApiService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.ws.rs.core.Response;
 
 public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, AccessorObject, RemoteReplicatorApi> {
-  private final RemoteReplicatorApiService apiService;
+  private final RemoteReplicatorClientApiService apiService;
 
   /**
    * Constructor used by the Factory
    */
   protected RemoteReplicatorApiClient(final RemoteReplicatorApiClientFactory factory) {
     super(factory, factory.getUri());
-    apiService = CDI.current().select(RemoteReplicatorApiService.class).get();
+    apiService = CDI.current().select(RemoteReplicatorClientApiService.class).get();
   }
 
   /**
@@ -96,10 +96,10 @@ public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, A
     final var request =
         new ReplicatorOrder(opId, ServiceProperties.getAccessorSite(), null, clientId, bucket, object, len, null,
             ReplicatorConstants.Action.UNKNOWN);
-    // TODO choose compression model
-    prepareInputStreamToReceive(false, request);
-    final var uni = getService().remoteReadObject(false, bucket, object, clientId, getOpId());
-    return getInputStreamBusinessOutFromUni(false, true, uni);
+    prepareInputStreamToReceive(AccessorProperties.isInternalCompression(), request);
+    final var uni =
+        getService().remoteReadObject(AccessorProperties.isInternalCompression(), bucket, object, clientId, getOpId());
+    return getInputStreamBusinessOutFromUni(true, uni);
   }
 
   public Uni<Response> createOrder(final ReplicatorOrder replicatorOrder) {
@@ -111,18 +111,9 @@ public class RemoteReplicatorApiClient extends ClientAbstract<ReplicatorOrder, A
   }
 
   @Override
-  protected AccessorObject getApiBusinessOutFromResponse(final Response response) {
-    try {
-      final var businessOut = response.readEntity(AccessorObject.class);
-      if (businessOut != null) {
-        return businessOut;
-      }
-    } catch (final RuntimeException ignore) {
-      // Nothing
-    }
-    final var accessorObject = new AccessorObject();
-    AccessorHeaderDtoConverter.objectFromMap(accessorObject, response.getStringHeaders());
-    return accessorObject;
+  protected AccessorObject getApiBusinessOutFromResponseForCreate(final Response response) {
+    // No Push
+    return null;
   }
 
   @Override

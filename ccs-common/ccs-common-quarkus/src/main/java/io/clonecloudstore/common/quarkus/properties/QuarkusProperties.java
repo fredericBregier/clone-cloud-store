@@ -60,6 +60,7 @@ public class QuarkusProperties extends StandardProperties {
       QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_MAX_CHUNK_SIZE, DEFAULT_DRIVER_MAX_CHUNK_SIZE);
   private static Module module = Module.UNKNOWN;
   private static boolean computeSha256 = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_SERVER_COMPUTE_SHA_256, false);
+  private static boolean hasDatabase = true;
 
   static {
     // Get the MACHINE_ID if specified and set it too in System Properties
@@ -118,8 +119,16 @@ public class QuarkusProperties extends StandardProperties {
     if (module.ordinal() < QuarkusProperties.module.ordinal()) {
       QuarkusProperties.module = module;
       refreshModuleMdc();
-      LOGGER.infof("Set Module = %s", module);
+      LOGGER.debugf("Set Module = %s", module);
     }
+  }
+
+  public static boolean hasDatabase() {
+    return hasDatabase;
+  }
+
+  public static void setHasDatabase(final boolean hasDb) {
+    hasDatabase = hasDb;
   }
 
   public static void refreshModuleMdc() {
@@ -127,7 +136,6 @@ public class QuarkusProperties extends StandardProperties {
   }
 
   protected QuarkusProperties() {
-    super();
     // Nothing
   }
 

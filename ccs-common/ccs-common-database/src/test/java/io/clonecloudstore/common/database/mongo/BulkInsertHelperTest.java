@@ -16,7 +16,6 @@
 
 package io.clonecloudstore.common.database.mongo;
 
-import io.clonecloudstore.common.database.utils.RepositoryBaseInterface;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.test.resource.mongodb.NoMongoDbProfile;
 import io.quarkus.test.junit.QuarkusTest;
@@ -32,24 +31,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class BulkInsertHelperTest {
   @Test
   void checkBulkInsert() {
-    final var bulkHelperEx = new BulkInsertHelperEx();
+    final var bulkHelperEx = new BulkInsertHelperEx(null);
     Assertions.assertFalse(bulkHelperEx.addToInsertBulk("item"));
     Assertions.assertFalse(bulkHelperEx.addToInsertBulk("item2"));
     Assertions.assertTrue(bulkHelperEx.addToInsertBulk("item3"));
-    bulkHelperEx.bulkPersist(null);
+    bulkHelperEx.bulkPersist();
     Assertions.assertFalse(bulkHelperEx.addToInsertBulk("item"));
-    bulkHelperEx.bulkPersist(null);
+    bulkHelperEx.bulkPersist();
   }
 
   @Test
   void checkBulkUpsert() {
-    final var bulkHelperEx = new BulkUpsertHelperEx();
-    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), new Document(), ""));
-    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), new Document(), ""));
-    Assertions.assertTrue(bulkHelperEx.addToUpsertBulk(new Document(), new Document(), ""));
-    bulkHelperEx.bulkUpsert(null);
-    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), new Document(), ""));
-    bulkHelperEx.bulkUpsert(null);
+    final var bulkHelperEx = new BulkUpsertHelperEx(null);
+    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), ""));
+    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), ""));
+    Assertions.assertTrue(bulkHelperEx.addToUpsertBulk(new Document(), ""));
+    bulkHelperEx.bulkUpsert();
+    Assertions.assertFalse(bulkHelperEx.addToUpsertBulk(new Document(), ""));
+    bulkHelperEx.bulkUpsert();
   }
 
   @Test
@@ -61,13 +60,22 @@ class BulkInsertHelperTest {
 
   private static class BulkInsertHelperEx extends MongoBulkInsertHelper<String, String> {
 
+    /**
+     * Constructor
+     *
+     * @param repositoryBase
+     */
+    public BulkInsertHelperEx(final ExtendedPanacheMongoRepositoryBase<String, String> repositoryBase) {
+      super(repositoryBase);
+    }
+
     @Override
     protected int getMaxBatch() {
       return 3;
     }
 
     @Override
-    public MongoBulkInsertHelper bulkPersist(final RepositoryBaseInterface repositoryBase) {
+    public MongoBulkInsertHelper bulkPersist() {
       listInsert.clear();
       return null;
     }
@@ -75,13 +83,22 @@ class BulkInsertHelperTest {
 
   private static class BulkUpsertHelperEx extends MongoBulkInsertHelper<String, String> {
 
+    /**
+     * Constructor
+     *
+     * @param repositoryBase
+     */
+    public BulkUpsertHelperEx(final ExtendedPanacheMongoRepositoryBase<String, String> repositoryBase) {
+      super(repositoryBase);
+    }
+
     @Override
     protected int getMaxBatch() {
       return 3;
     }
 
     @Override
-    public MongoBulkInsertHelper<String, String> bulkUpsert(final RepositoryBaseInterface<String> repositoryBase) {
+    public MongoBulkInsertHelper<String, String> bulkUpsert() {
       listFindQuery.clear();
       listUpdate.clear();
       return null;

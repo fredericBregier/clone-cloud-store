@@ -16,22 +16,30 @@
 
 package io.clonecloudstore.replicator.server.remote.resource;
 
+import io.clonecloudstore.common.quarkus.metrics.BulkMetrics;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 @ApplicationScoped
+@Unremovable
 public class RemoteReplicatorOrderEmitter {
   private final Emitter<ReplicatorOrder> replicatorOrderEmitter;
+  private final BulkMetrics bulkMetrics;
 
   public RemoteReplicatorOrderEmitter(
-      @Channel(ReplicatorConstants.Topic.REPLICATOR_ACTION_OUT) Emitter<ReplicatorOrder> replicatorOrderEmitter) {
+      @Channel(ReplicatorConstants.Topic.REPLICATOR_ACTION_OUT) Emitter<ReplicatorOrder> replicatorOrderEmitter,
+      final BulkMetrics bulkMetrics) {
     this.replicatorOrderEmitter = replicatorOrderEmitter;
+    this.bulkMetrics = bulkMetrics;
   }
 
   public void generate(final ReplicatorOrder replicatorOrder) {
     replicatorOrderEmitter.send(replicatorOrder);
+    bulkMetrics.incrementCounter(1, RemoteReplicatorOrderEmitter.class, BulkMetrics.KEY_ORDER,
+        BulkMetrics.TAG_REPLICATE);
   }
 }

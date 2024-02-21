@@ -5,4 +5,5 @@ mp:
         connector: smallrye-kafka
         topic: ${CCS_REQUEST_REPLICATION:request-replication}
         retries: 10
+        merge: true
 

@@ -23,6 +23,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.ws.rs.core.Response;
+import org.jboss.resteasy.reactive.client.api.WebClientApplicationException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +48,7 @@ class ExceptionTest {
 
     //Test generic server error exception mapper
     //Consume Uni<Response> and use response to check status and error message
-    CcsServerGenericExceptionMapper exceptionMapper = new CcsServerGenericExceptionMapper();
+    CcsServerExceptionMapper exceptionMapper = new CcsServerExceptionMapper();
     Uni<Response> responseExceptionMapper = exceptionMapper.handleServerException(serverInternalEx);
     Response response =
         responseExceptionMapper.subscribe().withSubscriber(UniAssertSubscriber.create()).assertCompleted().getItem();
@@ -61,6 +62,11 @@ class ExceptionTest {
     assertEquals(Module.UNKNOWN + " - Already Exist Exception", alreadyExistException.getMessage());
     assertEquals(409, alreadyExistException.getResponse().getStatus());
     assertEquals(Module.UNKNOWN, alreadyExistException.getModule());
+
+    CcsNotAllowedException notAllowedException = new CcsNotAllowedException("Not Allowed Exception");
+    assertEquals(Module.UNKNOWN + " - Not Allowed Exception", notAllowedException.getMessage());
+    assertEquals(403, notAllowedException.getResponse().getStatus());
+    assertEquals(Module.UNKNOWN, notAllowedException.getModule());
 
     CcsDeletedException deletedException = new CcsDeletedException("Deleted Exception");
     assertEquals(Module.UNKNOWN + " - Deleted Exception", deletedException.getMessage());
@@ -90,6 +96,13 @@ class ExceptionTest {
     assertEquals(404, notExistExceptionWithCause.getResponse().getStatus());
     assertEquals(Module.UNKNOWN, notExistExceptionWithCause.getModule());
 
+    CcsNotAllowedException notAllowedExceptionWithCause =
+        new CcsNotAllowedException("Not Allowed Exception with cause", notAllowedException);
+    assertEquals(Module.UNKNOWN + " - Not Allowed Exception with cause", notAllowedExceptionWithCause.getMessage());
+    assertEquals(Module.UNKNOWN + " - Not Allowed Exception", notAllowedExceptionWithCause.getCause().getMessage());
+    assertEquals(403, notAllowedExceptionWithCause.getResponse().getStatus());
+    assertEquals(Module.UNKNOWN, notExistExceptionWithCause.getModule());
+
     CcsOperationException operationException = new CcsOperationException("Operation Exception");
     assertEquals(Module.UNKNOWN + " - Operation Exception", operationException.getMessage());
     assertEquals(500, operationException.getResponse().getStatus());
@@ -108,6 +121,23 @@ class ExceptionTest {
     assertEquals(500, operationExceptionWithCause2.getResponse().getStatus());
     assertEquals(Module.UNKNOWN + " - Operation Exception", operationExceptionWithCause2.getCause().getMessage());
     assertEquals(Module.UNKNOWN, operationExceptionWithCause2.getModule());
+
+    //Test generic client error exception mapper
+    //Consume Uni<Response> and use response to check status and error message
+    CcsServerExceptionMapper exceptionMapper = new CcsServerExceptionMapper();
+    Uni<Response> responseExceptionMapper = exceptionMapper.handleClientException(notAllowedExceptionWithCause);
+    Response response =
+        responseExceptionMapper.subscribe().withSubscriber(UniAssertSubscriber.create()).assertCompleted().getItem();
+    assertEquals(403, response.getStatus());
+
+    //Test global WebClientApplicationException exception mapper
+    //Consume Uni<Response> and use response to check status and error message
+    WebClientApplicationException webClientApplicationException = new WebClientApplicationException(401);
+    Uni<Response> responseExceptionMapperWeb =
+        exceptionMapper.handleWebClientApplicationException(webClientApplicationException);
+    Response responseWeb =
+        responseExceptionMapperWeb.subscribe().withSubscriber(UniAssertSubscriber.create()).assertCompleted().getItem();
+    assertEquals(401, responseWeb.getStatus());
   }
 
   @Test
@@ -116,15 +146,15 @@ class ExceptionTest {
     final var listStatus = List.of(Response.Status.NOT_FOUND, Response.Status.CONFLICT, Response.Status.GONE,
         Response.Status.NOT_ACCEPTABLE, Response.Status.REQUEST_ENTITY_TOO_LARGE);
     for (final var status : listStatus) {
-      var e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode());
+      var e = CcsServerExceptionMapper.getCcsException(status.getStatusCode());
       assertEquals(status.getStatusCode(), ((CcsClientGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + status.getReasonPhrase(), e.getMessage());
       assertNull(e.getCause());
-      e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode(), "message", null);
+      e = CcsServerExceptionMapper.getCcsException(status.getStatusCode(), "message", null);
       assertEquals(status.getStatusCode(), ((CcsClientGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + "message", e.getMessage());
       assertNull(e.getCause());
-      e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode(), "message", exception);
+      e = CcsServerExceptionMapper.getCcsException(status.getStatusCode(), "message", exception);
       assertEquals(status.getStatusCode(), ((CcsClientGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + "message", e.getMessage());
       assertEquals(exception, e.getCause());
@@ -138,15 +168,15 @@ class ExceptionTest {
     }
     final var listStatusServer = List.of(Response.Status.INTERNAL_SERVER_ERROR, Response.Status.NOT_IMPLEMENTED);
     for (final var status : listStatusServer) {
-      var e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode());
+      var e = CcsServerExceptionMapper.getCcsException(status.getStatusCode());
       assertEquals(status.getStatusCode(), ((CcsServerGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + status.getReasonPhrase(), e.getMessage());
       assertNull(e.getCause());
-      e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode(), "message", null);
+      e = CcsServerExceptionMapper.getCcsException(status.getStatusCode(), "message", null);
       assertEquals(status.getStatusCode(), ((CcsServerGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + "message", e.getMessage());
       assertNull(e.getCause());
-      e = CcsServerGenericExceptionMapper.getCcsException(status.getStatusCode(), "message", exception);
+      e = CcsServerExceptionMapper.getCcsException(status.getStatusCode(), "message", exception);
       assertEquals(status.getStatusCode(), ((CcsServerGenericException) e).getStatus());
       assertEquals(Module.UNKNOWN + " - " + "message", e.getMessage());
       assertEquals(exception, e.getCause());

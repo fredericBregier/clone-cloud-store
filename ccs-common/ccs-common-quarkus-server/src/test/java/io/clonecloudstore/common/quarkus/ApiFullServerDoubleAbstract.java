@@ -25,7 +25,6 @@ import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.PROXY_COMP_TEST;
@@ -40,11 +39,6 @@ abstract class ApiFullServerDoubleAbstract {
 
   @Inject
   ApiQuarkusClientFactory factory;
-
-  @BeforeAll
-  static void beforeAll() {
-    QuarkusProperties.setServerComputeSha256(false);
-  }
 
   @BeforeEach
   void beforeEach() {

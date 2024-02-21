@@ -12,6 +12,8 @@ quarkus:
       idle-timeout: 1S
   devservices:
     enabled: false
+  scheduler:
+    enabled: false
   s3:
     devservices:
       enabled: false
@@ -26,6 +28,12 @@ quarkus:
     read-timeout: 1000
   hibernate-orm:
     enabled: false
+  azure:
+    storage:
+      blob:
+        devservices:
+          enabled: false
+        connection-string: http
 
 ccs:
   driverMaxChunkSize: 134217728

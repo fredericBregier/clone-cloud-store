@@ -24,12 +24,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.common.quarkus.properties.JsonUtil;
+import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import jakarta.persistence.Transient;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 @RegisterForReflection
 public record ReplicatorOrder(String opId, String fromSite, String toSite, String clientId, String bucketName,
@@ -54,9 +55,7 @@ public record ReplicatorOrder(String opId, String fromSite, String toSite, Strin
     try {
       return JsonUtil.getInstance().writeValueAsString(this);
     } catch (final JsonProcessingException e) {
-      return "{" + "\"opId\":\"" + opId + "\", \"toSite\":\"" + toSite + "\", \"clientId\":\"" + clientId +
-          "\", \"action\":\"" + action + "\", \"fromSite\":\"" + fromSite + "\", \"bucketName\":\"" + bucketName +
-          "\", \"hash\":\"" + hash + "\", \"size\":" + size + ", \"objectName\":\"" + objectName + "\"}";
+      throw new CcsInvalidArgumentRuntimeException(e.getMessage());
     }
   }
 
@@ -84,7 +83,7 @@ public record ReplicatorOrder(String opId, String fromSite, String toSite, Strin
       map.put(AccessorConstants.Api.X_CLIENT_ID, clientId());
     }
     if (ParametersChecker.isNotEmpty(toSite())) {
-      map.put(ReplicatorConstants.Api.X_TARGET_ID, toSite());
+      map.put(AccessorConstants.Api.X_TARGET_ID, toSite());
     }
     if (ParametersChecker.isNotEmpty(opId())) {
       map.put(X_OP_ID, opId());

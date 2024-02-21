@@ -83,9 +83,6 @@ class KafkaS3MongoTest {
     new EmptyClass();
     final var bucket = "namebucket";
     var url = MinIoResource.getUrlString();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
     try (final var s3Client = S3Client.builder().endpointOverride(new URI(url)).credentialsProvider(
             StaticCredentialsProvider.create(
                 AwsBasicCredentials.create(MinIoResource.getAccessKey(), MinIoResource.getSecretKey())))

@@ -19,7 +19,7 @@ package io.clonecloudstore.common.quarkus.client;
 import java.io.Closeable;
 
 /**
- * The Abstract implementation for the Client Factory, using Netty or Vertx.<br/>
+ * The Abstract implementation for the Client Factory.<br/>
  * <br/>
  * Note that the implementation can use ApplicationScoped annotation.
  * Use property quarkus.rest-client."org.acme.rest.client.ExtensionsService".url to setup the right URL for Quarkus

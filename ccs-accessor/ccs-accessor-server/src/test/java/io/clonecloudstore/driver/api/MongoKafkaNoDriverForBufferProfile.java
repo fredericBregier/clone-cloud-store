@@ -1,0 +1,37 @@
+/*
+ * Copyright (c) 2024. Clone Cloud Store (CCS), Contributors and Frederic Bregier
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software distributed
+ *  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
+ *  OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package io.clonecloudstore.driver.api;
+
+import java.util.Collections;
+import java.util.List;
+
+import io.clonecloudstore.test.resource.CommonProfile;
+import io.clonecloudstore.test.resource.kafka.KafkaResource;
+import io.clonecloudstore.test.resource.mongodb.MongoDbResource;
+
+public class MongoKafkaNoDriverForBufferProfile extends CommonProfile {
+  @Override
+  public String getConfigProfile() {
+    return "test-mongo-kafka-no-driver";
+  }
+
+  @Override
+  public List<TestResourceEntry> testResources() {
+    return List.of(new TestResourceEntry(MongoDbResource.class, Collections.emptyMap(), true),
+        new TestResourceEntry(KafkaResource.class, Collections.emptyMap(), true));
+  }
+}

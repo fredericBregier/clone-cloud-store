@@ -65,7 +65,7 @@ class DriverAzureNotConfiguredTest {
     final String sha = null;
     final long length = 0;
 
-    final var storageBucket = new StorageBucket(bucket, null);
+    final var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null);
 
     try (final var driverApi = DriverApiRegistry.getDriverApiFactory().getInstance()) {
@@ -137,5 +137,4 @@ class DriverAzureNotConfiguredTest {
     }
     factory.close();
   }
-
 }

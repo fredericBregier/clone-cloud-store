@@ -16,6 +16,11 @@
 
 package io.clonecloudstore.test.resource;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
+
 /**
  * All constants for Resources
  */
@@ -45,8 +50,36 @@ public class ResourcesConstants {
   public static final String CCS_DB_TYPE = "ccs.db.type";
   public static final String MONGO = "mongo";
   public static final String POSTGRE = "postgre";
+  public static final String TMP_DATA = "/tmp/data";
 
   private ResourcesConstants() {
     // Empty
+  }
+
+  public static void createIfNeededTmpDataDirectory(final String path) {
+    File data = new File(path);
+    if (!data.isDirectory()) {
+      data.mkdirs(); // NOSONAR
+    }
+  }
+
+  public static void cleanTmpDataDirectory(final String path) {
+    File data = new File(path);
+    if (data.isDirectory()) {
+      File[] allContents = data.listFiles();
+      if (allContents != null) {
+        for (final var other : allContents) {
+          if (other.isDirectory()) {
+            try {
+              FileUtils.deleteDirectory(other);
+            } catch (final IOException ignore) {
+              // Ignore
+            }
+          } else {
+            other.delete(); // NOSONAR
+          }
+        }
+      }
+    }
   }
 }

@@ -30,6 +30,7 @@ public class AccessorServer {
 
   AccessorServer() {
     QuarkusProperties.setCcsModule(Module.ACCESSOR);
+    QuarkusProperties.setHasDatabase(false);
     LOGGER.infof("Configuration: {%s}", AccessorProperties.confugrationToString());
   }
 }

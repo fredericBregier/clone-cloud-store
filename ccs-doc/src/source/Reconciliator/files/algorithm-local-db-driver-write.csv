@@ -1,0 +1,9 @@
+From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
+Object DB, , x, , x, , , , x
+Object Driver, , , x, , , , ,
+Object Fix, , , X, , , , , X
+Sites Fix, , Update, , Update, , , , Update
+
+Object DB, , , x, , , , ,
+Object Driver, , , x, , , , ,
+Sites Fix, , , Ready, , , , ,

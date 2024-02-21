@@ -31,6 +31,7 @@ public class DriverS3Properties {
   private static final Logger LOGGER = Logger.getLogger(DriverS3Properties.class);
   public static final int MAX_ITEMS = 1000;
   public static final String SHA_256 = "sha256";
+  public static final String CLIENT_ID = "clientid";
   public static final int DEFAULT_MIN_PART_SIZE = 5 * 1024 * 1024;
   public static final long DEFAULT_SIZE_NOT_PART = 256 * 1024 * 1024L;
   public static final long DEFAULT_MAX_SIZE_NOT_PART = 5 * 1024 * 1024 * 1024L;

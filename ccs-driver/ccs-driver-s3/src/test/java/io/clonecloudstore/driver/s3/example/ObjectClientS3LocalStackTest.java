@@ -58,8 +58,8 @@ class ObjectClientS3LocalStackTest extends ObjectClientS3Base {
         LocalStackResource.localstack.getAccessKey(), LocalStackResource.localstack.getSecretKey(),
         LocalStackResource.localstack.getRegion());
     old = QuarkusProperties.serverComputeSha256();
-    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen))) {
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen),
+        DigestAlgo.SHA256)) {
       FakeInputStream.consumeAll(digestInputStream);
       sha256 = digestInputStream.getDigestBase32();
     } catch (IOException | NoSuchAlgorithmException e) {

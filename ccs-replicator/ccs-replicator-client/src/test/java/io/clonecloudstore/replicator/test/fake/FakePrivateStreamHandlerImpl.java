@@ -19,12 +19,12 @@ package io.clonecloudstore.replicator.test.fake;
 import java.io.InputStream;
 
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.test.accessor.common.FakeNativeStreamHandlerAbstract;
+import io.clonecloudstore.test.accessor.common.FakeStreamHandlerAbstract;
 import io.vertx.core.MultiMap;
 import jakarta.enterprise.context.RequestScoped;
 
 @RequestScoped
-public class FakePrivateStreamHandlerImpl extends FakeNativeStreamHandlerAbstract {
+public class FakePrivateStreamHandlerImpl extends FakeStreamHandlerAbstract {
   @Override
   protected boolean isPublic() {
     return false;

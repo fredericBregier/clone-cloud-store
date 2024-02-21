@@ -30,14 +30,16 @@ import io.clonecloudstore.common.standard.system.SystemTools;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
-import io.clonecloudstore.test.accessor.server.resource.FakeBucketPublicServiceAbstract;
-import io.clonecloudstore.test.accessor.server.resource.FakeObjectPublicServiceAbstract;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
+import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.logging.Log;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -61,15 +63,20 @@ public class AccessorObjectPublicResourceTest {
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
 
+  @BeforeAll
+  static void beforeAll() {
+    FakeDriverFactory.cleanUp();
+  }
+
   @BeforeEach
   void beforeEach() {
-    FakeBucketPublicServiceAbstract.errorCode = 0;
-    FakeObjectPublicServiceAbstract.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
   }
 
   @Test
   void invalidApi() {
-    FakeObjectPublicServiceAbstract.errorCode = 404;
+    FakeCommonObjectResourceHelper.errorCode = 404;
     try (final var client = factory.newClient()) {
       assertEquals(StorageType.NONE, client.checkObjectOrDirectory("bucket", "objectname", clientId));
     } catch (final CcsWithStatusException e) {
@@ -137,37 +144,35 @@ public class AccessorObjectPublicResourceTest {
 
   @Test
   void createBucketAndObject() throws CcsWithStatusException {
-    final var finalBucketName = FakeBucketPublicServiceAbstract.getBucketTechnicalName(clientId, BUCKET_NAME, true);
-    createBucketAndObject(BUCKET_NAME, finalBucketName, OBJECT);
-    createBucketAndObject(BUCKET_NAME, finalBucketName, '/' + OBJECT);
+    createBucketAndObject(BUCKET_NAME, OBJECT);
+    createBucketAndObject(BUCKET_NAME, '/' + OBJECT);
   }
 
-  void createBucketAndObject(final String bucketName, final String finalBucketName, final String objectName)
-      throws CcsWithStatusException {
+  void createBucketAndObject(final String bucketName, final String objectName) throws CcsWithStatusException {
     try (final var client = factoryBucket.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      assertEquals(finalBucketName, bucket.getId());
+      assertEquals(bucketName, bucket.getId());
     }
     AccessorObject original = null;
     try (final var client = factory.newClient()) {
       final var accessorObject = new AccessorObject().setBucket(bucketName).setName(objectName).setSize(100);
 
-      FakeObjectPublicServiceAbstract.errorCode = 404;
+      FakeCommonObjectResourceHelper.errorCode = 404;
       var res = client.checkObjectOrDirectory(bucketName, objectName, clientId);
       assertEquals(StorageType.NONE, res);
 
-      FakeObjectPublicServiceAbstract.errorCode = 204;
+      FakeCommonObjectResourceHelper.errorCode = 204;
       res = client.checkObjectOrDirectory(bucketName, objectName, clientId);
       assertEquals(StorageType.OBJECT, res);
-      FakeObjectPublicServiceAbstract.errorCode = 0;
+      FakeCommonObjectResourceHelper.errorCode = 0;
 
       original = client.createObject(accessorObject, clientId, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(objectName), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(objectName), original.getName());
       assertEquals(100, original.getSize());
-      Assertions.assertEquals(FakeBucketPublicServiceAbstract.site, original.getSite());
+      Assertions.assertEquals(FakeCommonBucketResourceHelper.site, original.getSite());
       assertNotNull(original.getHash());
     }
     try (final var client = factory.newClient()) {
@@ -217,7 +222,6 @@ public class AccessorObjectPublicResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
     // Try delete Bucket not empty
@@ -273,22 +277,21 @@ public class AccessorObjectPublicResourceTest {
 
   @Test
   void createBucketAndObjectRemote() throws CcsWithStatusException {
-    final var bucketName = "change-remote";
-    final var finalBucketName = FakeBucketPublicServiceAbstract.getBucketTechnicalName(clientId, bucketName, true);
+    final var bucketName = "changeremote";
     try (final var client = factoryBucket.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      assertEquals(finalBucketName, bucket.getId());
+      assertEquals(bucketName, bucket.getId());
     }
     AccessorObject original = null;
     try (final var client = factory.newClient()) {
       final var accessorObject = new AccessorObject().setBucket(bucketName).setName(OBJECT).setSize(100);
       original = client.createObject(accessorObject, clientId, new FakeInputStream(100));
       LOG.infof("Object: %s", original);
-      assertEquals(finalBucketName, original.getBucket());
-      assertEquals(ParametersChecker.getSanitizedName(OBJECT), original.getName());
+      assertEquals(bucketName, original.getBucket());
+      assertEquals(ParametersChecker.getSanitizedObjectName(OBJECT), original.getName());
       assertEquals(100, original.getSize());
-      Assertions.assertEquals(FakeBucketPublicServiceAbstract.site, original.getSite());
+      Assertions.assertEquals(FakeCommonBucketResourceHelper.site, original.getSite());
       assertNotNull(original.getHash());
     }
     try (final var client = factory.newClient()) {
@@ -335,13 +338,12 @@ public class AccessorObjectPublicResourceTest {
         cpt.incrementAndGet();
         LOG.infof("List %d: %s", cpt.get(), accessorObject);
       }
-      ;
       assertEquals(1, cpt.get());
     }
 
     // Now delete locally the Object
     try (final var driver = driverApiFactory.getInstance()) {
-      driver.objectDeleteInBucket(finalBucketName, OBJECT);
+      driver.objectDeleteInBucket(bucketName, OBJECT);
     } catch (final DriverException e) {
       fail(e);
     }
@@ -373,24 +375,23 @@ public class AccessorObjectPublicResourceTest {
   @Test
   void hugeListCheck() throws CcsWithStatusException {
     final var bucketName = "huge";
-    final var finalBucketName = FakeBucketPublicServiceAbstract.getBucketTechnicalName(clientId, bucketName, true);
     final var objectName = "plenty";
     try (final var client = factoryBucket.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
       LOG.infof("Bucket: %s", bucket);
-      assertEquals(finalBucketName, bucket.getId());
+      assertEquals(bucketName, bucket.getId());
     }
     try (final var client = factory.newClient()) {
-      FakeObjectPublicServiceAbstract.nbList = 100000;
+      FakeCommonObjectResourceHelper.nbList = 100000;
       final var start = System.nanoTime();
       final var filter = new AccessorFilter().setNamePrefix(objectName);
       final var iterator = client.listObjects(bucketName, clientId, filter);
-      assertEquals(FakeObjectPublicServiceAbstract.nbList, SystemTools.consumeAll(iterator));
+      assertEquals(FakeCommonObjectResourceHelper.nbList, SystemTools.consumeAll(iterator));
       final var stop = System.nanoTime();
       LOG.infof("MicroBenchmark on List: %f ms so %f objects/s", ((stop - start) / 1000000.0),
-          FakeObjectPublicServiceAbstract.nbList * 1000.0 / ((stop - start) / 1000000.0));
+          FakeCommonObjectResourceHelper.nbList * 1000.0 / ((stop - start) / 1000000.0));
     } finally {
-      FakeObjectPublicServiceAbstract.nbList = 0;
+      FakeCommonObjectResourceHelper.nbList = 0;
     }
     try (final var client = factoryBucket.newClient()) {
       assertTrue(client.deleteBucket(bucketName, clientId));

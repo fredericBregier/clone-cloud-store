@@ -23,8 +23,6 @@ import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
 import io.quarkus.resteasy.reactive.server.Closer;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -32,9 +30,11 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_ERROR;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_MODULE;
-import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP_ID;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CLOSE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.CONNECTION;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_MODULE;
+import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID;
 
 /**
  * Abstraction to enable InputStream Get (Pull) and Post (Push) implementations.
@@ -45,7 +45,7 @@ import static io.clonecloudstore.common.quarkus.client.SimpleClientAbstract.X_OP
  * @param <O>  the output information that will be output from business point
  *             of view (if any)
  */
-public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerAbstract<I, O>> {
+public abstract class StreamServiceAbstract<I, O, H extends StreamHandlerAbstract<I, O>> {
   private static final Logger LOGGER = Logger.getLogger(StreamServiceAbstract.class);
 
   @Inject
@@ -58,20 +58,29 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   /**
    * Method to use within the POST query definition with a @Blocking annotation.
    * This method should be called by the REST API to handle the received InputStream.
+   */
+  protected Uni<Response> createObject(final HttpServerRequest request, final Closer closer, final I businessIn,
+                                       final long len, final String optionalHash, final InputStream inputStream) {
+    return createObject(request, closer, businessIn, len, optionalHash, false, inputStream);
+  }
+
+  /**
+   * Method to use within the POST query definition with a @Blocking annotation.
+   * This method should be called by the REST API to handle the received InputStream.
    *
-   * @param keepInputStreamCompressed If True, and if the InputStream is compressed, will kept as is; else will
+   * @param keepInputStreamCompressed If True, and if the InputStream is compressed, will be kept as is; else will
    *                                  decompress the InputStream if it is compressed
    */
   protected Uni<Response> createObject(final HttpServerRequest request, final Closer closer, final I businessIn,
                                        final long len, final String optionalHash,
                                        final boolean keepInputStreamCompressed, final InputStream inputStream) {
     LOGGER.debugf("POST start");
-    nativeStream.setup(request, closer, true, businessIn, len, optionalHash, keepInputStreamCompressed);
+    nativeStream.setup(request, closer, true, businessIn, len, optionalHash, keepInputStreamCompressed, true);
     return Uni.createFrom().emitter(em -> {
       try {
         final var result = nativeStream.upload(inputStream);
         em.complete(result);
-      } catch (NativeServerResponseException e) {
+      } catch (ServerStreamHandlerResponseException e) {
         em.complete(e.getResponse());
       } catch (final Exception e) {
         em.complete(createErrorResponse(e));
@@ -82,18 +91,15 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   /**
    * Method to use within the GET query definition with a @Blocking annotation.
    * Usually len is 0 but might be a hint on expected InputStream size.
-   *
-   * @param alreadyCompressed If True, and if the InputStream is to be compressed, will be kept as is; else will
-   *                          compress the InputStream if it has to be
    */
   protected Uni<Response> readObject(final HttpServerRequest request, final Closer closer, final I businessIn,
-                                     final boolean alreadyCompressed) {
+                                     final boolean external) {
     LOGGER.debugf("GET start");
-    nativeStream.setup(request, closer, false, businessIn, 0, null, alreadyCompressed);
+    nativeStream.setup(request, closer, false, businessIn, 0, null, false, external);
     return Uni.createFrom().emitter(em -> {
       try {
         em.complete(nativeStream.pull());
-      } catch (NativeServerResponseException e) {
+      } catch (ServerStreamHandlerResponseException e) {
         em.complete(e.getResponse());
       } catch (final Exception e) {
         em.complete(createErrorResponse(e));
@@ -102,7 +108,7 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
   }
 
   protected Response createErrorResponse(final Exception e) {
-    if (e instanceof NativeServerResponseException ne) {
+    if (e instanceof ServerStreamHandlerResponseException ne) {
       return ne.getResponse();
     }
     final var responseBuild = switch (e) {
@@ -112,7 +118,6 @@ public abstract class StreamServiceAbstract<I, O, H extends NativeStreamHandlerA
       default -> Response.serverError();
     };
     return responseBuild.header(X_ERROR, e.getMessage()).header(X_MODULE, QuarkusProperties.getCcsModule().name())
-        .header(X_OP_ID, SimpleClientAbstract.getMdcOpId())
-        .header(HttpHeaderNames.CONNECTION.toString(), HttpHeaderValues.CLOSE.toString()).build();
+        .header(X_OP_ID, SimpleClientAbstract.getMdcOpId()).header(CONNECTION, CLOSE).build();
   }
 }

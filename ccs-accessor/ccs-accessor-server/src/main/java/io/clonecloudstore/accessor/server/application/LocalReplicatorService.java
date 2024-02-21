@@ -20,19 +20,22 @@ import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.common.quarkus.client.InputStreamBusinessOut;
 import io.clonecloudstore.common.quarkus.exception.CcsOperationException;
-import io.clonecloudstore.common.quarkus.exception.CcsServerGenericExceptionMapper;
+import io.clonecloudstore.common.quarkus.exception.CcsServerExceptionMapper;
+import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.replicator.client.LocalReplicatorApiClientFactory;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
 import io.clonecloudstore.replicator.topic.LocalBrokerService;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
  * Interface of Replicator Client and Broker
  */
 @ApplicationScoped
+@Unremovable
 public class LocalReplicatorService {
   private final LocalBrokerService localBrokerService;
   private final LocalReplicatorApiClientFactory localReplicatorApiClientFactory;
@@ -99,13 +102,13 @@ public class LocalReplicatorService {
   /**
    * Through API Client, asks if this Bucket exists in remote
    */
-  public boolean remoteCheckBucket(final String bucketName, final String clientId, final String opId)
-      throws CcsOperationException {
+  public ReplicatorResponse<StorageType> remoteCheckBucket(final String bucketName, final String clientId,
+                                                           final String opId) throws CcsOperationException {
     try (final var client = localReplicatorApiClientFactory.newClient()) {
       client.setOpId(opId);
-      return StorageType.BUCKET.equals(client.checkBucket(bucketName, false, clientId, opId).response());
+      return client.checkBucket(bucketName, false, clientId, opId);
     } catch (final CcsWithStatusException e) {
-      throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), "Relicator Bucket Check error", e);
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), "Relicator Bucket Check error", e);
     }
   }
 
@@ -118,7 +121,7 @@ public class LocalReplicatorService {
       client.setOpId(opId);
       return client.getBucket(bucketName, clientId, opId);
     } catch (final CcsWithStatusException e) {
-      throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), "Relicator Bucket Check error", e);
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), "Relicator Bucket Check error", e);
     }
   }
 
@@ -132,7 +135,7 @@ public class LocalReplicatorService {
       client.setOpId(opId);
       return client.checkObjectOrDirectory(bucketName, objectName, false, clientId, opId);
     } catch (final CcsWithStatusException e) {
-      throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), "Relicator Object Check error", e);
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), "Relicator Object Check error", e);
     }
   }
 
@@ -144,9 +147,10 @@ public class LocalReplicatorService {
                                                                  final String opId) throws CcsOperationException {
     try (final var client = localReplicatorApiClientFactory.newClient()) {
       client.setOpId(opId);
-      return client.readRemoteObject(bucketName, objectName, clientId, targetId, opId);
+      return client.readRemoteObject(bucketName, objectName, clientId, targetId, opId,
+          !AccessorProperties.isInternalCompression());
     } catch (final CcsWithStatusException e) {
-      throw CcsServerGenericExceptionMapper.getCcsException(e.getStatus(), "Relicator Object Read error", e);
+      throw CcsServerExceptionMapper.getCcsException(e.getStatus(), "Relicator Object Read error", e);
     }
   }
 

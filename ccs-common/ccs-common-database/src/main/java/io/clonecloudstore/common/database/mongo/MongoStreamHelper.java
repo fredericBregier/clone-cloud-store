@@ -25,6 +25,7 @@ import io.clonecloudstore.common.database.utils.StreamHelperInterface;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.standard.stream.ClosingIterator;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
+import org.bson.Document;
 
 /**
  * Mongo implementation of the StreamHelper
@@ -49,6 +50,15 @@ public class MongoStreamHelper<F, E extends F> implements StreamHelperInterface<
       return StreamIteratorUtils.getStreamFromIterator(findIterator(repositoryBase, query));
     } catch (final RuntimeException e) {
       throw new CcsDbException("findStream in error", e);
+    }
+  }
+
+  public ClosingIterator<E> findIterator(final ExtendedPanacheMongoRepositoryBase<F, E> repositoryBase,
+                                         final Document document) throws CcsDbException {
+    try {
+      return new DbIteratorImpl<>(repositoryBase.mongoCollection().find(document).batchSize(MAX_LIST).cursor());
+    } catch (final RuntimeException e) {
+      throw new CcsDbException("findIterator in error", e);
     }
   }
 

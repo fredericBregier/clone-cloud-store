@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-reconciliator</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -43,6 +43,18 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-common-standard</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-common-database</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-accessor-database</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-common-quarkus</artifactId>
     </dependency>
     <dependency>
@@ -51,11 +63,7 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-topology-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-reconciliator-model</artifactId>
+      <artifactId>ccs-administration-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
@@ -63,11 +71,30 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-reconciliator-database</artifactId>
+      <artifactId>ccs-replicator-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-driver-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-mongodb-panache</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-hibernate-orm-panache</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore.test</groupId>
       <artifactId>ccs-test-support</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore.test</groupId>
+      <artifactId>ccs-test-stream</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -81,18 +108,19 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jacoco</artifactId>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>kafka</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- JDBC driver dependencies -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
-      <scope>test</scope>
+      <artifactId>quarkus-jdbc-postgresql</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>kafka</artifactId>
+      <artifactId>mongodb</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -23,8 +23,6 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.ServerRequestFilter;
-import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 
 /**
  * Uncomment annotations if you want to trace API calls from server side
@@ -32,7 +30,7 @@ import org.jboss.resteasy.reactive.server.ServerResponseFilter;
 public class ApiFilter {
   private static final Logger LOG = Logger.getLogger(ApiFilter.class);
 
-  @ServerRequestFilter(preMatching = true)
+  //@ServerRequestFilter(preMatching = true)
   public void preMatchingFilter(final ContainerRequestContext requestContext) {
     final var builder = new StringBuilder("PREREQUEST: ");
     builder.append(requestContext.getMethod()).append(' ');
@@ -56,7 +54,7 @@ public class ApiFilter {
     LOG.info(builder.toString());
   }
 
-  @ServerRequestFilter
+  //@ServerRequestFilter
   public Optional<RestResponse<Void>> getRequestFilter(final ContainerRequestContext requestContext) {
     final var builder = new StringBuilder("REQUEST: ");
     builder.append(requestContext.getMethod()).append(' ');
@@ -81,7 +79,7 @@ public class ApiFilter {
     return Optional.empty();
   }
 
-  @ServerResponseFilter
+  //@ServerResponseFilter
   public void responseFilter(final ContainerResponseContext responseContext,
                              final ContainerRequestContext requestContext) {
     final var builder = new StringBuilder("RESPONSE: ");

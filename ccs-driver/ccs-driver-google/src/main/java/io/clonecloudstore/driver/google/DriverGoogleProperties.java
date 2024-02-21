@@ -27,6 +27,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @Unremovable
 public class DriverGoogleProperties {
   public static final String SHA_256 = "sha256";
+  public static final String CLIENT_ID = "clientid";
   public static final String EXPIRY = "expiry";
   public static final int MAX_ITEMS = 1000;
   public static final int DEFAULT_MIN_PART_SIZE = 5 * 1024 * 1024;
@@ -43,8 +44,8 @@ public class DriverGoogleProperties {
    */
   public static final String CCS_DRIVER_GOOGLE_MAX_PART_SIZE = "ccs.driver.google.maxPartSize";
   /**
-   * Buffer size (minimum 5 MB, maximum 512 MB, not related with Max Part Size of ~2 GB): will be used to buffer
-   * InputStream if length is unknown, so take care of the Memory consumption associated (128 MB, default)
+   * Buffer size (minimum 5 MB, maximum 512 MB, not related with Max Part Size of ~2 GB): will be used to decide
+   * which method to use (no memory impact)
    */
   public static final String CCS_DRIVER_GOOGLE_MAX_BUF_SIZE = "ccs.driver.google.maxBufSize";
   private static boolean googleDisableGzip =

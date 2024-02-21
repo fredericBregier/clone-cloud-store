@@ -51,6 +51,7 @@ class AccessorObjectResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getObjectInfo("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -59,6 +60,7 @@ class AccessorObjectResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getObject("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -67,6 +69,7 @@ class AccessorObjectResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.listObjects("bucket", "clientid", null);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -75,6 +78,7 @@ class AccessorObjectResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.listObjects("bucket", "clientid", new AccessorFilter().setNamePrefix("prefix"));
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -84,6 +88,7 @@ class AccessorObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var accessorObject = new AccessorObject().setBucket("bucket").setName("objectName").setSize(100);
       client.createObject(accessorObject, "clientid", new FakeInputStream(100));
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404 && e.getStatus() != 400) {
         Log.warn(e, e);
@@ -93,6 +98,7 @@ class AccessorObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var accessorObject = new AccessorObject().setBucket("bucket").setName("objectName");
       client.createObject(accessorObject, "clientid", new FakeInputStream(100));
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404 && e.getStatus() != 400) {
         Log.warn(e, e);
@@ -101,6 +107,7 @@ class AccessorObjectResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.deleteObject("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -110,6 +117,7 @@ class AccessorObjectResourceTest {
     try (final var client = factory.newClient()) {
       final var filter = new AccessorFilter().setNamePrefix("object");
       client.listObjects("bucket", "clientid", filter);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         Log.warn(e, e);
@@ -119,6 +127,7 @@ class AccessorObjectResourceTest {
     FakeObjectService.errorCode = 406;
     try (final var client = factory.newClient()) {
       client.deleteObject("bucket", "objectName", "clientid");
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 406) {
         Log.warn(e, e);
@@ -187,6 +196,54 @@ class AccessorObjectResourceTest {
       final var filter = new AccessorFilter().setNamePrefix("object");
       final var result = client.listObjects("bucket", "clientid", filter);
       assertEquals(1, SystemTools.consumeAll(result));
+    } catch (final CcsWithStatusException e) {
+      Log.warn(e, e);
+      fail(e);
+    }
+  }
+
+  @Test
+  void validApiBigFile() {
+    FakeObjectService.errorCode = 0;
+    FakeObjectService.length = 256 * 1024 * 1024;
+    try (final var client = factory.newClient()) {
+      var start = System.nanoTime();
+      final var result = client.getObject("bucket", "objectName", "clientid");
+      assertEquals(FakeObjectService.length, FakeInputStream.consumeAll(result.inputStream()));
+      var stop = System.nanoTime();
+      Log.infof("Speed DOWN no ZSTD In %f",
+          FakeObjectService.length / ((stop - start) / 1000000000.0) / (1024 * 1024.0));
+    } catch (final CcsWithStatusException | IOException e) {
+      Log.warn(e, e);
+      fail(e);
+    }
+    try (final var client = factory.newClient()) {
+      var start = System.nanoTime();
+      final var result = client.getObject("bucket", "objectName", "clientid", true);
+      assertEquals(FakeObjectService.length, FakeInputStream.consumeAll(result.inputStream()));
+      var stop = System.nanoTime();
+      Log.infof("Speed DOWN ZSTD In %f", FakeObjectService.length / ((stop - start) / 1000000000.0) / (1024 * 1024.0));
+    } catch (final CcsWithStatusException | IOException e) {
+      Log.warn(e, e);
+      fail(e);
+    }
+    try (final var client = factory.newClient()) {
+      final var accessorObject =
+          new AccessorObject().setBucket("bucket").setName("objectName").setSize(FakeObjectService.length);
+      var start = System.nanoTime();
+      client.createObject(accessorObject, "clientid", new FakeInputStream(FakeObjectService.length));
+      var stop = System.nanoTime();
+      Log.infof("Speed UPL No ZSTD %f", FakeObjectService.length / ((stop - start) / 1000000000.0) / (1024 * 1024.0));
+    } catch (final CcsWithStatusException e) {
+      Log.warn(e, e);
+      fail(e);
+    }
+    try (final var client = factory.newClient()) {
+      var start = System.nanoTime();
+      final var accessorObject = new AccessorObject().setBucket("bucket").setName("objectName");
+      client.createObject(accessorObject, "clientid", new FakeInputStream(FakeObjectService.length), true);
+      var stop = System.nanoTime();
+      Log.infof("Speed UPL ZSTD %f", FakeObjectService.length / ((stop - start) / 1000000000.0) / (1024 * 1024.0));
     } catch (final CcsWithStatusException e) {
       Log.warn(e, e);
       fail(e);

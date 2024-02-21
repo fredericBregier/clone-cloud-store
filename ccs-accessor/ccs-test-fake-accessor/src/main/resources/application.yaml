@@ -6,6 +6,8 @@ quarkus:
     prefer-native-transport: true
   hibernate-orm:
     enabled: false
+  scheduler:
+    enabled: false
 
 ccs:
   server:

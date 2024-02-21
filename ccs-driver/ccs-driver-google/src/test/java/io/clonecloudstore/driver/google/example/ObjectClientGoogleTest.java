@@ -53,8 +53,8 @@ class ObjectClientGoogleTest extends ObjectClientGoogleBase {
     }
     old = QuarkusProperties.serverComputeSha256();
     QuarkusProperties.setServerComputeSha256(false);
-    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen))) {
-      digestInputStream.computeDigest(DigestAlgo.SHA256);
+    try (final var digestInputStream = new MultipleActionsInputStream(getPseudoInputStreamForSha(bigLen),
+        DigestAlgo.SHA256)) {
       FakeInputStream.consumeAll(digestInputStream);
       sha256 = digestInputStream.getDigestBase32();
     } catch (IOException | NoSuchAlgorithmException e) {

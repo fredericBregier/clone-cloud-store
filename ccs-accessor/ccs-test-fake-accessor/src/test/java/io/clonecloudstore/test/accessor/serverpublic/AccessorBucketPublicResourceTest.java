@@ -21,14 +21,17 @@ import java.util.UUID;
 import io.clonecloudstore.accessor.client.AccessorBucketApiClient;
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.driver.api.DriverApiFactory;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.driver.api.exception.DriverException;
-import io.clonecloudstore.test.accessor.server.resource.FakeBucketPublicServiceAbstract;
-import io.clonecloudstore.test.accessor.server.resource.FakeObjectPublicServiceAbstract;
+import io.clonecloudstore.test.accessor.common.FakeCommonBucketResourceHelper;
+import io.clonecloudstore.test.accessor.common.FakeCommonObjectResourceHelper;
+import io.clonecloudstore.test.driver.fake.FakeDriverFactory;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,15 +51,20 @@ class AccessorBucketPublicResourceTest {
 
   private static final String clientId = UUID.randomUUID().toString();
 
+  @BeforeAll
+  static void beforeAll() {
+    FakeDriverFactory.cleanUp();
+  }
+
   @BeforeEach
   void beforeEach() {
-    FakeBucketPublicServiceAbstract.errorCode = 0;
-    FakeObjectPublicServiceAbstract.errorCode = 0;
+    FakeCommonBucketResourceHelper.errorCode = 0;
+    FakeCommonObjectResourceHelper.errorCode = 0;
   }
 
   @Test
   void invalidApi() {
-    FakeBucketPublicServiceAbstract.errorCode = 404;
+    FakeCommonBucketResourceHelper.errorCode = 404;
     try (final var client = factory.newClient()) {
       assertEquals(StorageType.NONE, client.checkBucket("bucket", clientId));
     } catch (final CcsWithStatusException e) {
@@ -102,7 +110,7 @@ class AccessorBucketPublicResourceTest {
     final var bucketName = "testcreatebucket1";
     try (final var client = factory.newClient()) {
       final var bucket = client.createBucket(bucketName, clientId);
-      assertEquals(bucketName, bucket.getName());
+      assertEquals(bucketName, bucket.getId());
       //Test already exist Exception
       assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName, clientId));
     } catch (CcsWithStatusException e) {
@@ -114,9 +122,10 @@ class AccessorBucketPublicResourceTest {
   void getBucket() {
     final var bucketName = "testgetbucket1";
     try (final var client = factory.newClient()) {
-      client.createBucket(bucketName, clientId);
+      var bucket0 = client.createBucket(bucketName, clientId);
+      assertEquals(bucketName, bucket0.getId());
       final var bucket = client.getBucket(bucketName, clientId);
-      assertEquals(bucketName, bucket.getName());
+      assertEquals(bucketName, bucket.getId());
 
       // Check bucket not exist
       final var bucketUnknownName = "unknown";
@@ -138,6 +147,8 @@ class AccessorBucketPublicResourceTest {
       client.createBucket("testgetbuckets3", clientId);
       final var buckets = client.getBuckets(clientId);
       assertEquals(numberBucketBeforeInsert + 3, buckets.size());
+      final var buckets2 = client.getBuckets(GuidLike.getGuid());
+      assertEquals(0, buckets2.size());
     } catch (CcsWithStatusException e) {
       fail(e);
     }
@@ -164,20 +175,20 @@ class AccessorBucketPublicResourceTest {
 
   @Test
   void checkBucket() {
-    final var bucketName = "testcheckbucket1";
+    final var bucketName = "testcheckbucket18";
     try (final var client = factory.newClient()) {
       // check non-existing bucket
       var res = client.checkBucket(bucketName, clientId);
       assertEquals(StorageType.NONE, res);
 
-      FakeBucketPublicServiceAbstract.errorCode = 404;
+      FakeCommonBucketResourceHelper.errorCode = 404;
       res = client.checkBucket(bucketName, clientId);
       assertEquals(StorageType.NONE, res);
 
-      FakeBucketPublicServiceAbstract.errorCode = 204;
+      FakeCommonBucketResourceHelper.errorCode = 204;
       res = client.checkBucket(bucketName, clientId);
       assertEquals(StorageType.BUCKET, res);
-      FakeBucketPublicServiceAbstract.errorCode = 0;
+      FakeCommonBucketResourceHelper.errorCode = 0;
 
       // simple check existing bucket
       client.createBucket(bucketName, clientId);
@@ -186,7 +197,7 @@ class AccessorBucketPublicResourceTest {
 
       // manually delete bucket for full check
       try (final var driverApi = driverApiFactory.getInstance()) {
-        driverApi.bucketDelete(FakeBucketPublicServiceAbstract.getBucketTechnicalName(clientId, bucketName, true));
+        driverApi.bucketDelete(bucketName);
       } catch (DriverException e) {
         fail(e);
       }
@@ -199,6 +210,71 @@ class AccessorBucketPublicResourceTest {
       res = client.checkBucket(bucketName, clientId);
       assertEquals(StorageType.NONE, res);
     } catch (CcsWithStatusException e) {
+      fail(e);
+    }
+  }
+
+  @Test
+  void checkBucketWithDifferentClientId() {
+    final var bucketName = "testcheckbucket10";
+    final var otherClient = GuidLike.getGuid();
+    try (final var client = factory.newClient()) {
+      // check non-existing bucket
+      var res = client.checkBucket(bucketName, clientId);
+      assertEquals(StorageType.NONE, res);
+      res = client.checkBucket(bucketName, otherClient);
+      assertEquals(StorageType.NONE, res);
+
+      // simple check existing bucket
+      client.createBucket(bucketName, clientId);
+      res = client.checkBucket(bucketName, clientId);
+      assertEquals(StorageType.BUCKET, res);
+      res = client.checkBucket(bucketName, otherClient);
+      assertEquals(StorageType.BUCKET, res);
+
+      var bucket = client.getBucket(bucketName, clientId);
+      assertEquals(bucketName, bucket.getId());
+      assertEquals(clientId, bucket.getClientId());
+      bucket = client.getBucket(bucketName, otherClient);
+      assertEquals(bucketName, bucket.getId());
+      assertEquals(clientId, bucket.getClientId());
+
+      // Check only clientId can delete
+      assertEquals(406,
+          assertThrows(CcsWithStatusException.class, () -> client.deleteBucket(bucketName, otherClient)).getStatus());
+      assertTrue(client.deleteBucket(bucketName, clientId));
+
+      // simple check non-existing bucket
+      res = client.checkBucket(bucketName, clientId);
+      assertEquals(StorageType.NONE, res);
+      res = client.checkBucket(bucketName, otherClient);
+      assertEquals(StorageType.NONE, res);
+
+      // Check otherClient can recreate
+      client.createBucket(bucketName, otherClient);
+      res = client.checkBucket(bucketName, clientId);
+      assertEquals(StorageType.BUCKET, res);
+      res = client.checkBucket(bucketName, otherClient);
+      assertEquals(StorageType.BUCKET, res);
+
+      bucket = client.getBucket(bucketName, clientId);
+      assertEquals(bucketName, bucket.getId());
+      assertEquals(otherClient, bucket.getClientId());
+      bucket = client.getBucket(bucketName, otherClient);
+      assertEquals(bucketName, bucket.getId());
+      assertEquals(otherClient, bucket.getClientId());
+
+      // Check only clientId can delete
+      assertEquals(406,
+          assertThrows(CcsWithStatusException.class, () -> client.deleteBucket(bucketName, clientId)).getStatus());
+      assertTrue(client.deleteBucket(bucketName, otherClient));
+
+      // simple check non-existing bucket
+      res = client.checkBucket(bucketName, clientId);
+      assertEquals(StorageType.NONE, res);
+      res = client.checkBucket(bucketName, otherClient);
+      assertEquals(StorageType.NONE, res);
+    } catch (final CcsWithStatusException e) {
       fail(e);
     }
   }

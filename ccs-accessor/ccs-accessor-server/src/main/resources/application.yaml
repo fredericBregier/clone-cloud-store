@@ -25,7 +25,9 @@ mp:
         connector: smallrye-kafka
         topic: ${CCS_REQUEST_REPLICATION:request-replication}
         retries: 10
+        merge: true
       replicator-action-out:
         connector: smallrye-kafka
         topic: ${CCS_REQUEST_ACTION:request-action}
         retries: 10
+        merge: true

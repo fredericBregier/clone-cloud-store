@@ -20,8 +20,11 @@ import java.io.Closeable;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
+import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.exception.DriverAlreadyExistException;
 import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.api.exception.DriverNotAcceptableException;
@@ -50,13 +53,30 @@ public interface DriverApi extends Closeable {
   Iterator<StorageBucket> bucketsIterator() throws DriverException;
 
   /**
+   * Get one Bucket and returns it
+   *
+   * @return the StorageBucket as instantiated within the Object Storage (real values)
+   */
+  StorageBucket bucketGet(String bucket) throws DriverNotFoundException, DriverException; // NOSONAR Exception details
+
+  /**
    * Create one Bucket and returns it
    *
    * @param bucket contains various information that could be implemented within Object Storage, but, except the name
-   *               of the bucket, nothing is mandatory
+   *               of the bucket and the client Id, nothing is mandatory
    * @return the StorageBucket as instantiated within the Object Storage (real values)
    */
   StorageBucket bucketCreate(StorageBucket bucket)
+      throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException; // NOSONAR Exception details
+
+  /**
+   * Import one Bucket and returns it
+   *
+   * @param bucket contains various information that could be implemented within Object Storage, but, except the name
+   *               of the bucket and the client Id, nothing is mandatory
+   * @return the StorageBucket as instantiated within the Object Storage (real values)
+   */
+  StorageBucket bucketImport(StorageBucket bucket)
       throws DriverNotAcceptableException, DriverAlreadyExistException, DriverException; // NOSONAR Exception details
 
   /**
@@ -226,6 +246,48 @@ public interface DriverApi extends Closeable {
   default InputStream objectGetInputStreamInBucket(StorageObject object)
       throws DriverNotFoundException, DriverException { // NOSONAR Exception details
     return objectGetInputStreamInBucket(object.bucket(), object.name());
+  }
+
+  default void validCopy(StorageObject objectSource, StorageObject objectTarget) throws DriverException {
+    if (ParametersChecker.isEmpty(objectSource, objectTarget) ||
+        ParametersChecker.isEmpty(objectSource.bucket(), objectSource.name(), objectTarget.bucket(),
+            objectTarget.name())) {
+      throw new DriverException("Source and Target cannot be null");
+    }
+    if (Objects.equals(objectSource.bucket(), objectTarget.bucket()) &&
+        Objects.equals(objectSource.name(), objectTarget.name())) {
+      throw new DriverException("Source and Target cannot be the same object");
+    }
+  }
+
+  /**
+   * Copy one object to another one, possibly in a different bucket.
+   * Hash and Size come from given source, while Metadata and expired date come from target
+   *
+   * @param objectSource source object
+   * @param objectTarget target object
+   */
+  StorageObject objectCopy(StorageObject objectSource, StorageObject objectTarget)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException;
+
+  /**
+   * Copy one object to another one, possibly in a different bucket.
+   * Hash and Size come from real source, while Metadata and expired date come from target
+   */
+  default StorageObject objectCopy(String bucketSource, String objectSource, String bucketTarget, String objectTarget,
+                                   Map<String, String> targetMetadata, Instant expireDate)
+      throws DriverNotFoundException, DriverAlreadyExistException, DriverException { // NOSONAR Exception details
+    if (ParametersChecker.isEmpty(bucketSource, objectSource, bucketTarget, objectTarget)) {
+      throw new DriverException("Source and Target cannot be null");
+    }
+    if (Objects.equals(objectSource, objectTarget) && Objects.equals(bucketSource, bucketTarget)) {
+      throw new DriverException("Source and Target cannot be the same object");
+    }
+    final var storageObjectSource = objectGetMetadataInBucket(bucketSource, objectSource);
+    StorageObject storageObjectTarget =
+        new StorageObject(bucketTarget, objectTarget, storageObjectSource.hash(), storageObjectSource.size(),
+            Instant.now(), expireDate, targetMetadata);
+    return objectCopy(storageObjectSource, storageObjectTarget);
   }
 
   /**

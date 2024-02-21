@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-accessor</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.8.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -60,32 +60,27 @@
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-accessor-client-netty</artifactId>
+      <artifactId>ccs-accessor-server-commons</artifactId>
+      <exclusions>
+        <exclusion>
+          <artifactId>ccs-accessor-client-internal</artifactId>
+          <groupId>io.clonecloudstore</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-accessor-client-apache</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>
-      <artifactId>ccs-driver-s3</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jacoco</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-junit5</artifactId>
+      <artifactId>ccs-driver-azure</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore.test</groupId>
       <artifactId>ccs-test-support</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>minio</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

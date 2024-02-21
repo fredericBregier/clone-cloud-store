@@ -258,3 +258,47 @@ It provides also 2 extra Types supported by PostgreSQL:
   @Type(type = MAP_TYPE_CLASS)
   private final Map<String, String> map1 = new HashMap<>();
 
+Database Schema
+*******************
+
+MongoDB
+++++++++
+
+.. warning::
+  Still in progress : schema to come
+
+For Accessor* services:
+- Collection *buckets*
+- Collection *objects*
+
+For Administration service:
+- Collection *ownerships*
+- Collection *topologies*
+
+For Reconciliation service:
+- Collection *requests*
+- Collection *nativelistings*
+- Collection *sitesactions*
+- Collection *siteslistings*
+
+
+PostgreSQL
++++++++++++
+
+.. warning::
+  Still in progress : implementation to come
+
+
+For Accessor* services:
+- Table *buckets*
+- Table *objects*
+
+For Administration service:
+- Table *ownerships*
+- Table *topologies*
+
+For Reconciliation service:
+- Table *requests*
+- Table *nativelistings* ?
+- Table *sitesactions*
+- Table *siteslistings*

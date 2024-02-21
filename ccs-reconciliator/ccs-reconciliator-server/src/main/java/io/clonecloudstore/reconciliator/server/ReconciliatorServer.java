@@ -16,7 +16,7 @@
 
 package io.clonecloudstore.reconciliator.server;
 
-import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
+import io.clonecloudstore.common.quarkus.modules.ReconciliatorProperties;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.common.standard.properties.Module;
 import io.quarkus.runtime.Startup;
@@ -30,6 +30,6 @@ public class ReconciliatorServer {
 
   ReconciliatorServer() {
     QuarkusProperties.setCcsModule(Module.RECONCILIATOR);
-    LOGGER.infof("Configuration: {%s}", AccessorProperties.confugrationToString());
+    LOGGER.infof("Configuration: {%s}", ReconciliatorProperties.confugrationToString());
   }
 }

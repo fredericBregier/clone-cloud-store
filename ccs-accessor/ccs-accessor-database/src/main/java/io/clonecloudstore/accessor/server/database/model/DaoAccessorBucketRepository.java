@@ -34,59 +34,21 @@ import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
  */
 public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<DaoAccessorBucket> {
   String TABLE_NAME = "buckets";
+  String CLIENT_ID = "clientId";
   String SITE = "site";
-  String NAME = "name";
   String CREATION = "creation";
   String EXPIRES = "expires";
   String BUCKET_STATUS = "status";
   String BUCKET_RSTATUS = "rstatus";
 
   /**
-   * Generate client-id prefix, used in bucket technical name.
-   *
-   * @param clientId Client ID used to identify client
-   * @return value of client-id prefix.
-   */
-  static String getPrefix(final String clientId) {
-    return clientId + "-";
-  }
-
-  /**
-   * Generate technical name from client-id and bucket functional name.
-   *
-   * @param clientId   Client ID used to identify client
-   * @param bucketName Functional Bucket Name
-   * @return value of bucket technical name
-   */
-  static String getBucketTechnicalName(final String clientId, final String bucketName) {
-    return getPrefix(clientId) + bucketName;
-  }
-
-  /**
-   * Reverse technical bucket name from client-id to bucket functional name.
-   *
-   * @param clientId            Client ID used to identify client
-   * @param technicalBucketName Technical Bucket Name
-   * @return value of bucket Functional name
-   */
-  static String getBucketName(final String clientId, final String technicalBucketName) {
-    return technicalBucketName.replace(getPrefix(clientId), "");
-  }
-
-  static String getRealBucketName(final String clientId, final String bucketName, final boolean isPublic) {
-    if (isPublic) {
-      return getBucketTechnicalName(clientId, bucketName);
-    }
-    return bucketName;
-  }
-
-  /**
    * List all buckets from clientId
    */
   default List<AccessorBucket> listBuckets(final String clientId) throws CcsDbException {
     try {
-      final var query = new DbQuery(RestQuery.QUERY.START_WITH, getPkName(), getPrefix(clientId));
-      return findStream(query).map(DaoAccessorBucket::getDto).toList();
+      final var query = new DbQuery();
+      return findStream(query).filter(daoAccessorBucket -> daoAccessorBucket.getClientId().equals(clientId))
+          .map(DaoAccessorBucket::getDto).toList();
     } catch (final RuntimeException e) {
       throw new CcsDbException(e);
     }
@@ -99,7 +61,7 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
                                             final Instant creation) throws CcsDbException {
     try {
       final var query = new DbQuery(RestQuery.QUERY.EQ, getPkName(), bucket.getId());
-      final var dbUpdate = new DbUpdate().set(BUCKET_STATUS, status);
+      final var dbUpdate = new DbUpdate().set(BUCKET_STATUS, status).set(CLIENT_ID, bucket.getClientId());
       if (creation != null) {
         dbUpdate.set(CREATION, creation);
         bucket.setCreation(creation);
@@ -118,9 +80,9 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
   /**
    * Return the associated bucket
    */
-  default AccessorBucket findBucketById(final String bucketTechnicalName) throws CcsDbException {
+  default AccessorBucket findBucketById(final String bucketName) throws CcsDbException {
     try {
-      final var dao = this.findOne(new DbQuery(RestQuery.QUERY.EQ, getPkName(), bucketTechnicalName));
+      final var dao = this.findOne(new DbQuery(RestQuery.QUERY.EQ, getPkName(), bucketName));
       if (dao != null) {
         return dao.getDto();
       }
@@ -138,7 +100,7 @@ public interface DaoAccessorBucketRepository extends RepositoryBaseInterface<Dao
       final var creation = Instant.now();
       final DaoAccessorBucket datBucket = this.createEmptyItem();
       datBucket.setId(bucket.getId());
-      datBucket.setName(bucket.getName());
+      datBucket.setClientId(bucket.getClientId());
       datBucket.setStatus(AccessorStatus.UPLOAD);
       datBucket.setCreation(creation);
       datBucket.setSite(ServiceProperties.getAccessorSite());

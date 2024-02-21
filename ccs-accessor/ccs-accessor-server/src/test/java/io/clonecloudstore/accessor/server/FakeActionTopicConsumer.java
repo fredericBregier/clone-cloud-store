@@ -23,6 +23,8 @@ import io.clonecloudstore.common.quarkus.client.SimpleClientAbstract;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
+import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
@@ -35,7 +37,20 @@ public class FakeActionTopicConsumer {
   static final AtomicLong objectCreate = new AtomicLong(0);
   static final AtomicLong objectDelete = new AtomicLong(0);
 
+  public static long getBucketCreateFromTopic(final long desired) throws InterruptedException {
+    for (int i = 0; i < 200; i++) {
+      final var value = getBucketCreate();
+      if (value >= desired) {
+        Log.infof("Found %d", value);
+        return value;
+      }
+      Thread.sleep(10);
+    }
+    return getBucketCreate();
+  }
+
   @Incoming(ReplicatorConstants.Topic.REPLICATOR_ACTION_IN)
+  @Blocking(ordered = true)
   public void consume(final List<ReplicatorOrder> orders) {
     QuarkusProperties.refreshModuleMdc();
     for (final var order : orders) {

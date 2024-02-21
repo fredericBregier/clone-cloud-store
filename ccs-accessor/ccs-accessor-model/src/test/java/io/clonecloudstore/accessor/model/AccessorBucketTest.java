@@ -37,9 +37,8 @@ public class AccessorBucketTest {
   @Test
   void converter() {
     final var accessorBucket = new AccessorBucket();
-    accessorBucket.setName("bucket").setStatus(AccessorStatus.READY).setCreation(Instant.now())
-        .setExpires(Instant.now().plusSeconds(60)).setSite("site");
-    accessorBucket.setId("id-" + accessorBucket.getName());
+    accessorBucket.setStatus(AccessorStatus.READY).setCreation(Instant.now()).setExpires(Instant.now().plusSeconds(60))
+        .setSite("site").setId("bucket").setClientId("client");
     final var accessorBucket1 = accessorBucket.cloneInstance();
     assertEquals(accessorBucket, accessorBucket1);
     assertEquals(accessorBucket, accessorBucket);
@@ -67,26 +66,33 @@ public class AccessorBucketTest {
     final var accessorBucket = new AccessorBucket();
     accessorBucket.setSite("correctSite");
     try {
-      accessorBucket.setName(WRONG_CHAR);
+      accessorBucket.setId(WRONG_CHAR);
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
     try {
-      accessorBucket.setName(WRONG_CDATA);
+      accessorBucket.setId(WRONG_CDATA);
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
     try {
-      accessorBucket.setName("BadUpperCase");
+      accessorBucket.setId("BadUpperCase");
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
     try {
-      accessorBucket.setName("toolong".repeat(10));
+      accessorBucket.setId("toolong".repeat(10));
       Assertions.fail("Should failed");
     } catch (final CcsInvalidArgumentRuntimeException ignored) {
     }
-    accessorBucket.setName("correct-bucket-0");
+    try {
+      // Too short
+      accessorBucket.setId("0");
+      Assertions.fail("Should failed");
+    } catch (final CcsInvalidArgumentRuntimeException ignored) {
+    }
+    accessorBucket.setId("a-minus-allowed");
+    accessorBucket.setId("correctbucket");
   }
 
   @Test
@@ -99,10 +105,10 @@ public class AccessorBucketTest {
     assertTrue(accessorBucket.equals(accessorBucket));
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket.setId("idbucket");
+    accessorBucket.setId("bucket");
     assertFalse(accessorBucket.equals(accessorBucket2));
     assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket2.setId("idbucket");
+    accessorBucket2.setId(accessorBucket.getId());
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
     accessorBucket.setSite("id");
@@ -111,10 +117,16 @@ public class AccessorBucketTest {
     accessorBucket2.setSite("id");
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket.setName("idbucket");
+    accessorBucket.setClientId("id");
     assertFalse(accessorBucket.equals(accessorBucket2));
     assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-    accessorBucket2.setName("idbucket");
+    accessorBucket2.setClientId("id");
+    assertTrue(accessorBucket.equals(accessorBucket2));
+    assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
+    accessorBucket.setId("idbucket");
+    assertFalse(accessorBucket.equals(accessorBucket2));
+    assertNotEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
+    accessorBucket2.setId("idbucket");
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
     accessorBucket.setStatus(AccessorStatus.READY);

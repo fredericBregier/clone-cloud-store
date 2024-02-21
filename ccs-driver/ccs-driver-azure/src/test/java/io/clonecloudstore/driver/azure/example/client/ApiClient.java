@@ -196,14 +196,13 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     }
   }
 
-  // Example of service for Post InputStream using Netty implementation
+  // Example of service for Post InputStream
   public StorageObject postInputStream(final String bucket, final String name, final InputStream content,
                                        final String hash, final long len)
       throws DriverNotFoundException, DriverAlreadyExistException, DriverNotAcceptableException, DriverException {
     // Business code should come here
     var businessIn = new StorageObject(bucket, name, hash, len, null);
     try {
-      // TODO choose compression model
       final var inputStream = prepareInputStreamToSend(content, false, false, businessIn);
       final var uni = getService().createObject(bucket, name, len, hash, content);
       return getResultFromPostInputStreamUni(uni, inputStream);
@@ -224,16 +223,15 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
     }
   }
 
-  // Example of service for Get InputStream using Netty implementation
+  // Example of service for Get InputStream
   public InputStreamBusinessOut<StorageObject> getInputStream(final String bucket, final String name)
       throws DriverNotFoundException, DriverException {
     // Business code should come here
     var businessIn = new StorageObject(bucket, name, null, 0, null);
     try {
-      // TODO choose compression model
       prepareInputStreamToReceive(false, businessIn);
       final var uni = getService().readObject(bucket, name);
-      return getInputStreamBusinessOutFromUni(false, false, uni);
+      return getInputStreamBusinessOutFromUni(true, uni);
     } catch (CcsWithStatusException e) {
       if (e.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
         throw new DriverNotFoundException(e);
@@ -258,7 +256,7 @@ public class ApiClient extends ClientAbstract<StorageObject, StorageObject, ApiS
   }
 
   @Override
-  protected StorageObject getApiBusinessOutFromResponse(final Response response) {
+  protected StorageObject getApiBusinessOutFromResponseForCreate(final Response response) {
     try {
       final var storageObject = response.readEntity(StorageObject.class);
       if (storageObject != null) {

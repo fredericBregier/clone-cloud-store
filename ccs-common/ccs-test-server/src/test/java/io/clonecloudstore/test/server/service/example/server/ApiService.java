@@ -50,7 +50,7 @@ import static io.clonecloudstore.test.server.service.example.client.ApiConstants
 
 @Path(ApiConstants.API_ROOT)
 @NoCache
-public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerNativeStreamHandler> {
+public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusinessOut, ServerStreamHandler> {
   public static final long LEN = 50 * 1024 * 1024;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
 
@@ -86,7 +86,7 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
     final var businessIn = new ApiBusinessIn();
     businessIn.name = name;
     businessIn.len = len;
-    return createObject(request, closer, businessIn, businessIn.len, null, false, inputStream);
+    return createObject(request, closer, businessIn, businessIn.len, null, inputStream);
   }
 
   // REST API for sending InputStream back to client

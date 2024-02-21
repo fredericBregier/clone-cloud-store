@@ -25,6 +25,7 @@ import io.clonecloudstore.common.standard.inputstream.MultipleActionsInputStream
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
@@ -68,18 +69,21 @@ class ApiClientTest {
       fail("Should raised an exception!");
     } catch (final CcsWithStatusException e) {
       LOG.info("Error received: " + e.getMessage());
+      assertEquals(Response.Status.NOT_FOUND.getStatusCode(), e.getStatus());
     }
     try (final var client = factory.newClient()) {
       final var businessOut = client.getObjectMetadata(CONFLICT_NAME);
       fail("Should raised an exception!");
     } catch (final CcsWithStatusException e) {
       LOG.info("Error received: " + e.getMessage());
+      assertEquals(Response.Status.CONFLICT.getStatusCode(), e.getStatus());
     }
     try (final var client = factory.newClient()) {
       final var businessOut = client.getObjectMetadata(NOT_ACCEPTABLE_NAME);
       fail("Should raised an exception!");
     } catch (final CcsWithStatusException e) {
       LOG.info("Error received: " + e.getMessage());
+      assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), e.getStatus());
     }
   }
 

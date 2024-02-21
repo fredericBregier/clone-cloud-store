@@ -39,8 +39,10 @@ import org.bson.codecs.EncoderContext;
  */
 public abstract class ExtendedPanacheMongoRepositoryBase<F, E extends F>
     implements PanacheMongoRepositoryBase<E, String>, RepositoryBaseInterface<F> {
-  protected final MongoBulkInsertHelper<F, E> helper = new MongoBulkInsertHelper<>();
+  public static final String ISSUE_WITH_SERIALIZATION = "Issue with Serialization";
+  protected final MongoBulkInsertHelper<F, E> helper = new MongoBulkInsertHelper<>(this);
   protected final MongoStreamHelper<F, E> streamHelper = new MongoStreamHelper<>();
+  private Codec<E> encoder = null;
 
   @Override
   public boolean isSqlRepository() {
@@ -55,10 +57,12 @@ public abstract class ExtendedPanacheMongoRepositoryBase<F, E extends F>
     return this;
   }
 
-  private Document getDocumentFromObject(final F update) {
+  Document getDocumentFromObject(final F update) {
     BsonDocument unwrapped = new BsonDocument();
     BsonWriter jsonWriter = new BsonDocumentWriter(unwrapped);
-    final var encoder = (Codec<E>) this.mongoCollection().getCodecRegistry().get(update.getClass());
+    if (encoder == null) {
+      encoder = (Codec<E>) this.mongoCollection().getCodecRegistry().get(update.getClass());
+    }
     encoder.encode(jsonWriter, (E) update, EncoderContext.builder().build());
     final var json = unwrapped.toJson();
     return Document.parse(json);
@@ -67,37 +71,31 @@ public abstract class ExtendedPanacheMongoRepositoryBase<F, E extends F>
   public ExtendedPanacheMongoRepositoryBase<F, E> addToUpsertBulk(final Document find, final F update)
       throws CcsDbException {
     try {
-      final var document = getDocumentFromObject(update);
-      if (helper.addToUpsertBulk(find, document, (E) update)) {
+      if (helper.addToUpsertBulk(find, (E) update)) {
         flushAll();
       }
     } catch (final RuntimeException e) {
-      throw new CcsDbException("Issue with Serialization", e);
+      throw new CcsDbException(ISSUE_WITH_SERIALIZATION, e);
     }
     return this;
   }
 
-  public ExtendedPanacheMongoRepositoryBase<F, E> addToUpdateBulk(final Document find, final F update)
+  public ExtendedPanacheMongoRepositoryBase<F, E> addToUpdateBulk(final Document find, final Document update)
       throws CcsDbException {
     try {
-      final var document = getDocumentFromObject(update);
-      if (helper.addToUpsertBulk(find, document, null)) {
+      if (helper.addToUpdateBulk(find, update)) {
         flushAll();
       }
     } catch (final RuntimeException e) {
-      throw new CcsDbException("Issue with Serialization", e);
+      throw new CcsDbException(ISSUE_WITH_SERIALIZATION, e);
     }
     return this;
-  }
-
-  public record ImmutablePair<E>(Document find, E update) {
-    // Empty
   }
 
   @Override
   public void flushAll() throws CcsDbException {
-    helper.bulkPersist((RepositoryBaseInterface<E>) this);
-    helper.bulkUpsert((RepositoryBaseInterface<E>) this);
+    helper.bulkPersist();
+    helper.bulkUpsert();
   }
 
   @Override
@@ -143,6 +141,14 @@ public abstract class ExtendedPanacheMongoRepositoryBase<F, E extends F>
   public ClosingIterator<F> findIterator(final DbQuery query) throws CcsDbException {
     try {
       return (ClosingIterator<F>) streamHelper.findIterator((RepositoryBaseInterface<E>) this, query);
+    } catch (final RuntimeException e) {
+      throw new CcsDbException("findIterator in error", e);
+    }
+  }
+
+  public ClosingIterator<F> findIterator(final Document query) throws CcsDbException {
+    try {
+      return (ClosingIterator<F>) streamHelper.findIterator(this, query);
     } catch (final RuntimeException e) {
       throw new CcsDbException("findIterator in error", e);
     }

@@ -18,11 +18,13 @@ package io.clonecloudstore.accessor.server.application;
 
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
+import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 @ApplicationScoped
+@Unremovable
 public class LocalReplicatorOrderEmitter {
   private final Emitter<ReplicatorOrder> replicatorOrderEmitter;
 

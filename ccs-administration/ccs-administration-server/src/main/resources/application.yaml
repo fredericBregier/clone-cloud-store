@@ -1,0 +1,11 @@
+quarkus:
+  hibernate-orm:
+    jdbc:
+      statement-batch-size: 50
+      statement-fetch-size: 1000
+    fetch.batch-size: 1000
+    cache:
+      "cache":
+        memory:
+          object-count: 0
+    second-level-caching-enabled: false

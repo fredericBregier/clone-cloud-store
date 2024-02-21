@@ -103,7 +103,7 @@ class DriverS3NoS3ConfiguredTest {
     final String sha = null;
     final long length = 0;
 
-    final var storageBucket = new StorageBucket(bucket, null);
+    final var storageBucket = new StorageBucket(bucket, "client", null);
     final var storageObject = new StorageObject(bucket, object1, sha, length, null);
 
     try (final var driverApi = DriverApiRegistry.getDriverApiFactory().getInstance()) {
@@ -131,55 +131,51 @@ class DriverS3NoS3ConfiguredTest {
 
       bucketAlready = false;
       assertThrows(DriverNotAcceptableException.class,
-          () -> driverS3Helper.createS3Bucket(new S3ClientFake(), storageBucket));
+          () -> driverS3Helper.createBucket(new S3ClientFake(), storageBucket));
       bucketAlready = true;
       assertThrows(DriverAlreadyExistException.class,
-          () -> driverS3Helper.createS3Bucket(new S3ClientFake(), storageBucket));
-      assertThrows(DriverNotFoundException.class, () -> driverS3Helper.getS3Buckets(new S3ClientFake()));
+          () -> driverS3Helper.createBucket(new S3ClientFake(), storageBucket));
+      assertThrows(DriverNotFoundException.class, () -> driverS3Helper.getBuckets(new S3ClientFake()));
 
       headBucket = 200;
       bucketAlready = false;
-      assertThrows(DriverNotAcceptableException.class,
-          () -> driverS3Helper.deleteS3Bucket(new S3ClientFake(), "bucket"));
+      assertThrows(DriverNotAcceptableException.class, () -> driverS3Helper.deleteBucket(new S3ClientFake(), "bucket"));
       bucketAlready = true;
-      assertThrows(DriverNotFoundException.class, () -> driverS3Helper.deleteS3Bucket(new S3ClientFake(), "bucket"));
+      assertThrows(DriverNotFoundException.class, () -> driverS3Helper.deleteBucket(new S3ClientFake(), "bucket"));
 
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.getS3ObjectsStreamFilteredInBucket(new S3ClientFake(), "bucket", null, null, null));
+          () -> driverS3Helper.getObjectsStreamFilteredInBucket(new S3ClientFake(), "bucket", null, null, null));
 
       bucketAlready = false;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.getS3ObjectInBucket(new S3ClientFake(), "bucket", "name"));
+          () -> driverS3Helper.getObjectInBucket(new S3ClientFake(), "bucket", "name"));
       bucketAlready = true;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.getS3ObjectInBucket(new S3ClientFake(), "bucket", "name"));
+          () -> driverS3Helper.getObjectInBucket(new S3ClientFake(), "bucket", "name"));
 
       bucketAlready = false;
       headObject = 200;
       assertThrows(DriverNotAcceptableException.class,
-          () -> driverS3Helper.deleteS3ObjectInBucket(new S3ClientFake(), "bucket", "name"));
+          () -> driverS3Helper.deleteObjectInBucket(new S3ClientFake(), "bucket", "name"));
       bucketAlready = true;
       headBucket = 400;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.deleteS3ObjectInBucket(new S3ClientFake(), "bucket", "name"));
+          () -> driverS3Helper.deleteObjectInBucket(new S3ClientFake(), "bucket", "name"));
       headBucket = 200;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.deleteS3ObjectInBucket(new S3ClientFake(), "bucket", "name"));
+          () -> driverS3Helper.deleteObjectInBucket(new S3ClientFake(), "bucket", "name"));
 
       bucketAlready = false;
       StorageObject storageObject1 = new StorageObject("bucket", "name", "aaa", 10, null);
       assertThrows(DriverNotAcceptableException.class,
-          () -> driverS3Helper.createS3ObjectInBucketNoCheck(new S3ClientFake(), storageObject1,
-              new FakeInputStream(10)));
+          () -> driverS3Helper.createObjectInBucket(new S3ClientFake(), storageObject1, new FakeInputStream(10)));
       bucketAlready = true;
       headBucket = 400;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.createS3ObjectInBucketNoCheck(new S3ClientFake(), storageObject1,
-              new FakeInputStream(10)));
+          () -> driverS3Helper.createObjectInBucket(new S3ClientFake(), storageObject1, new FakeInputStream(10)));
       headBucket = 200;
       assertThrows(DriverNotFoundException.class,
-          () -> driverS3Helper.createS3ObjectInBucketNoCheck(new S3ClientFake(), storageObject1,
-              new FakeInputStream(10)));
+          () -> driverS3Helper.createObjectInBucket(new S3ClientFake(), storageObject1, new FakeInputStream(10)));
 
       bucketAlready = false;
       var responseBuilder = HeadObjectResponse.builder();

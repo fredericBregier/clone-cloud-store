@@ -46,7 +46,8 @@ import io.clonecloudstore.common.standard.system.SystemTools;
 import static io.clonecloudstore.common.standard.properties.StandardProperties.DEFAULT_PIPED_BUFFER_SIZE;
 
 /**
- * Utility class to help to create an InputStream of serialized objects from a Stream of Objects and reverse
+ * Utility class to help to create an InputStream of serialized objects from a Stream of Objects and reverse.
+ * Note that DTO class must have an empty constructor or being a record.
  */
 public class StreamIteratorUtils {
   /**
@@ -79,7 +80,7 @@ public class StreamIteratorUtils {
     final var writer = new PipedOutputStream(); // NOSONAR for try-resources
     final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
         stream.sequential().forEach(item -> {
           final var exc = reader.exception;
@@ -170,7 +171,7 @@ public class StreamIteratorUtils {
     final var writer = new PipedOutputStream(); // NOSONAR for try-resources
     final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
-    StandardProperties.STANDARD_EXECUTOR_SERVICE.execute(() -> {
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
         while (iterator.hasNext()) {
           final var item = iterator.next();

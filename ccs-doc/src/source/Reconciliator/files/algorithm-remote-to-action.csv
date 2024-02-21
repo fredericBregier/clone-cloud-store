@@ -1,12 +1,20 @@
-From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
-Actions type 1, -, -, X, -, -, -, -, -
-Object DB, x, x, -, x, x, x, x, x
-Object Fix, -, -, X (S if Driver not exists + M else M if 1/7), -, -, -, -, -
+Object DB, UPLOAD, READY, ERR_UPL, DELETING, DELETED, ERR_DEL, ABSENT
+Actions, **DELETE**
+Object DB Fix, DELETED, DELETED, DELETED, DELETED, *invalid*, DELETED, *ignore*
+Driver Fix, DELETE if exists
 
-Actions type 2, -, -, X, -, -, -, -, -
-Object DB, -, -, x, -, -, -, -, -
-No Object Fix, -, -, -, -, -, -, -, -
+Actions, **UPDATE**
+Object DB Fix, READY If Driver, READY If Driver, READY If Driver, *invalid*, *invalid*, *invalid*, READY with upload
+Driver Fix, Upload if needed, *invalid*, Upload if needed, , , , Upload
 
-Actions type 3, -, -, -, -, -, X, -, -
-Object DB, x, x, x, x, x, x, x, x
-Object Fix, -, -, -, -, -, X (no error on Driver), -, -
+Actions, **UPLOAD**
+Object DB Fix, READY, *invalid*, READY, READY, READY, READY, READY
+Driver Fix, Upload, *invalid*, Upload, Upload, Upload, Upload, Upload
+
+Actions, **UPGRADE**
+Object DB Fix, READY, *invalid*, READY, READY, READY, READY, READY
+Driver Fix, Upload if needed
+
+Actions, **ERR_UPL**
+Object DB Fix, ERR_UPL, *invalid*, ERR_UPL, *invalid*, *invalid*, *invalid*, *invalid*
+Driver Fix, Nothing

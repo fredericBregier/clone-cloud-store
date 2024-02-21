@@ -57,6 +57,7 @@ class AccessorBucketInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getBucket("bucket", clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -65,6 +66,7 @@ class AccessorBucketInternalResourceTest {
     }
     try (final var client = factory.newClient()) {
       client.getBuckets(clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -73,6 +75,7 @@ class AccessorBucketInternalResourceTest {
     }
     try (final var client = factory.newClient(factory.getUri())) {
       client.getBuckets(clientId);
+      fail("Should failed");
     } catch (final CcsWithStatusException e) {
       if (e.getStatus() != 404) {
         LOG.warn(e, e);
@@ -99,26 +102,20 @@ class AccessorBucketInternalResourceTest {
     try (final var client = factory.newClient()) {
       client.getBucket("bucket", clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
     try (final var client = factory.newClient()) {
       client.getBuckets(clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
     try (final var client = factory.newClient(factory.getUri())) {
       client.getBuckets(clientId);
     } catch (final CcsWithStatusException e) {
-      if (e.getStatus() != 404) {
-        LOG.warn(e, e);
-        fail(e);
-      }
+      LOG.warn(e, e);
+      fail(e);
     }
   }
 }

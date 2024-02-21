@@ -17,6 +17,7 @@
 package io.clonecloudstore.test.resource.google;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -59,7 +60,7 @@ public class GoogleResource implements QuarkusTestResourceLifecycleManager {
     HttpResponse<Void> response = HttpClient.newBuilder().build().send(req, HttpResponse.BodyHandlers.discarding());
 
     if (response.statusCode() != 200) {
-      throw new RuntimeException(
+      throw new IOException(
           "error updating fake-gcs-server with external url, response status code " + response.statusCode() +
               " != 200");
     }
@@ -72,8 +73,10 @@ public class GoogleResource implements QuarkusTestResourceLifecycleManager {
     }
     try {
       updateExternalUrlWithContainerUrl(getConnectionString());
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final InterruptedException e) { // NOSONAR intentional
+      throw new UncheckedIOException(new IOException(e));
     }
     conf.put(ResourcesConstants.QUARKUS_GOOGLE_HOST, getConnectionString());
     for (final var entry : conf.entrySet()) {
