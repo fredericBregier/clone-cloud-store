@@ -22,12 +22,12 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-accessor</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>ccs-accessor-simple-gateway</artifactId>
-  <description>SImple Gateway with no database and no clone</description>
+  <description>Cloud Clone Store Simple Gateway with no database and no clone</description>
 
   <dependencies>
     <dependency>

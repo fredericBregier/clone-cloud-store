@@ -20,11 +20,12 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.clonecloudstore</groupId>
+  <description>Cloud Cloud Store Driver S3-Amazon like support</description>
   <artifactId>ccs-driver-s3</artifactId>
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-driver</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 

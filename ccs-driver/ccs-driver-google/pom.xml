@@ -22,12 +22,12 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-driver</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <description>Cloud Cloud Store Driver Google support</description>
 
   <artifactId>ccs-driver-google</artifactId>
-
 
   <dependencies>
     <dependency>

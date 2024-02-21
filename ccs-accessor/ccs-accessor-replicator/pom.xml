@@ -22,8 +22,9 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-accessor</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
   </parent>
+  <description>Cloud Clone Store Accessor Replicator</description>
 
   <artifactId>ccs-accessor-replicator</artifactId>
 

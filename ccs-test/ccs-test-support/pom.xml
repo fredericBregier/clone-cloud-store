@@ -21,10 +21,11 @@
   <parent>
     <artifactId>ccs-test</artifactId>
     <groupId>io.clonecloudstore.test</groupId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
+  <description>Cloud Cloud Store Test Container support</description>
 
   <artifactId>ccs-test-support</artifactId>
 

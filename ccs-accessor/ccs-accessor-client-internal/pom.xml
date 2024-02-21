@@ -22,9 +22,10 @@
   <parent>
     <groupId>io.clonecloudstore</groupId>
     <artifactId>ccs-accessor</artifactId>
-    <version>0.8.0-SNAPSHOT</version>
+    <version>0.9.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <description>Cloud Clone Store Accessor Private Client</description>
 
   <artifactId>ccs-accessor-client-internal</artifactId>
 
