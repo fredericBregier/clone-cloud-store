@@ -1,0 +1,4 @@
+io.quarkus.vertx.http.runtime
+org.jboss.resteasy.reactive
+org.jboss.resteasy.reactive.client.handlers
+org.jboss.resteasy.reactive.server.vertx

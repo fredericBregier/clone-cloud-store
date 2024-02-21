@@ -28,7 +28,6 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'Clone Cloud Store [CCS]'
@@ -36,7 +35,7 @@ copyright = '2022, Frederic Bregier'
 author = 'Frederic Bregier'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7'
+release = '0.8'
 
 # -- General configuration ---------------------------------------------------
 

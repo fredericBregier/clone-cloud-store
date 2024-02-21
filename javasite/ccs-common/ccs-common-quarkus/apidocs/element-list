@@ -1,8 +1,7 @@
 io.clonecloudstore.common.quarkus.client
+io.clonecloudstore.common.quarkus.client.utils
 io.clonecloudstore.common.quarkus.exception
 io.clonecloudstore.common.quarkus.metrics
 io.clonecloudstore.common.quarkus.modules
-io.clonecloudstore.common.quarkus.priorityqueue
 io.clonecloudstore.common.quarkus.properties
-io.clonecloudstore.common.quarkus.statemachine
 io.clonecloudstore.common.quarkus.stream

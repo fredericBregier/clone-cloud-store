@@ -1,8 +1,8 @@
-From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
-Purge, once, expired
-Object DB, -, -, -, -, -, x, -, -
-Object Fix, -, -, -, -, -, Delete (check), -, -
+From, Ready, Deleted
+, , Once expired
+Object DB, , x
+Object Fix, , Purge (check Driver)
 
-Purge, once, expired, if, archive, enabled
-Object DB, -, -, x, -, -, -, -, -
-Object Fix, -, -, Archive (Move to another Bucket), -, -, -, -, -
+, Once expired
+Object DB, x,
+Object Fix, Archive (Move to another Bucket if enabled and exists) or Delete,

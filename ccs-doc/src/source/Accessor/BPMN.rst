@@ -1,6 +1,134 @@
 BPMN for Accessor
 ####################################
 
+Short description of Dtos
+******************************
+
+.. code-block:: java
+  :caption: Bucket Dto
+
+  public class AccessorBucket {
+    /**
+     * Bucket name
+     */
+    private String id;
+    /**
+     * Site for this Bucket
+     */
+    private String site;
+    /**
+     * Creation or Deletion datetime
+     */
+    private Instant creation;
+    /**
+     * Optional expiry datetime
+     */
+    private Instant expires;
+    /**
+     * Status of this Bucket
+     */
+    private AccessorStatus status = AccessorStatus.UNKNOWN;
+
+
+.. code-block:: java
+  :caption: Object Dto
+
+  public class AccessorObject {
+    /**
+     * Internal Id
+     */
+    private String id;
+    /**
+     * Site for this Object
+     */
+    private String site;
+    /**
+     * Bucket name
+     */
+    private String bucket;
+    /**
+     * Object name
+     */
+    private String name;
+    /**
+     * Optional: SHA 256 hash
+     */
+    private String hash;
+    /**
+     * Status of this Object
+     */
+    private AccessorStatus status = AccessorStatus.UNKNOWN;
+    /**
+     * Creation or Modification datetime
+     */
+    private Instant creation;
+    /**
+     * Optional expiry datetime
+     */
+    private Instant expires;
+    /**
+     * Length of the content of this Object
+     */
+    private long size;
+    /**
+     * Metadata if any for this Object
+     */
+    private final Map<String, String> metadata = new HashMap<>();
+
+*Note: Metadata keys must be lower case, starting with a letter [a-z], following by any letter [a-z], number [0-9] and "_".*
+This is a limitation coming from Cloud storages. Values can be string containing anything but **limited in size globally (< 2KB)**.
+
+.. code-block:: java
+  :caption: Filter Dto
+
+  public class AccessorFilter {
+    /**
+     * Optional Prefix for the name, including path
+     */
+    private String namePrefix;
+    /**
+     * Optional list of status to filter on
+     */
+    private AccessorStatus[] statuses;
+    /**
+     * Optional datetime for creation before this date
+     */
+    private Instant creationBefore;
+    /**
+     * Optional datetime for creation after this date
+     */
+    private Instant creationAfter;
+    /**
+     * Optional datetime for expiry before this date
+     */
+    private Instant expiresBefore;
+    /**
+     * Optional datetime for expiry after this date
+     */
+    private Instant expiresAfter;
+    /**
+     * Optional length filter less than this length
+     */
+    private long sizeLessThan;
+    /**
+     * Optional length filter greater than this length
+     */
+    private long sizeGreaterThan;
+    /**
+     * Optional metadata filter based on equality
+     */
+    private final Map<String, String> metadataFilter = new HashMap<>();
+
+
+Status logic
+*************
+
+.. figure:: ../images/clone-cloud-store-diagram-Status.drawio.png
+  :alt: Status for Objects and Buckets
+
+  Status for Objects and Buckets
+
+
 Bucket
 **********
 
@@ -68,6 +196,21 @@ Object
   :alt: List Objects in Bucket
 
   List Objects in Bucket
+
+Object with special Buffered option
+************************************
+
+.. figure:: ../images/clone-cloud-store-diagram-Accessor-Create-Object-Buffered.drawio.png
+  :alt: Create Object with Buffered Option
+
+  Create Object with Buffered Option
+
+
+.. figure:: ../images/clone-cloud-store-diagram-Accessor-Read-Buffered.drawio.png
+  :alt: Get Local/Remote Object's Content with Buffered option
+
+  Get Local/Remote Object's Content with Buffered option
+
 
 Bucket Internal
 *****************

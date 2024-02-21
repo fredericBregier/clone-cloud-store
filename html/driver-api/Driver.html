@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>7.1. Driver API &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <title>6.1. Driver API &#8212; Clone Cloud Store [CCS] 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
-    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/documentation_options.js?v=f82dc3d9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="8. Dev Detail" href="../Dev/index.html" />
-    <link rel="prev" title="7. Object Storage Driver" href="index.html" />
+    <link rel="next" title="6.2. Specific Driver configurations" href="Configuration.html" />
+    <link rel="prev" title="6. Object Storage Driver" href="index.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -45,24 +45,25 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../common/index.html">2. Commons</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">7. Object Storage Driver</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">7.1. Driver API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#global-logic-of-api">7.1.1. Global logic of API</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#implementations">7.1.2. 3 implementations</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#driver-api-details">7.1.3. Driver API details</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#bucket-operations">7.1.3.1. Bucket operations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#object-operations">7.1.3.2. Object operations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">2. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">3. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">4. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">5. Administration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">6. Object Storage Driver</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">6.1. Driver API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#global-logic-of-api">6.1.1. Global logic of API</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementations">6.1.2. 3 implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#driver-api-details">6.1.3. Driver API details</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#bucket-operations">6.1.3.1. Bucket operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#object-operations">6.1.3.2. Object operations</a></li>
 </ul>
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">6.2. Specific Driver configurations</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../common/index.html">7. Commons</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
 </ul>
 
@@ -70,9 +71,9 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html"><span class="section-number">7. </span>Object Storage Driver</a><ul>
-      <li>Previous: <a href="index.html" title="previous chapter"><span class="section-number">7. </span>Object Storage Driver</a></li>
-      <li>Next: <a href="../Dev/index.html" title="next chapter"><span class="section-number">8. </span>Dev Detail</a></li>
+  <li><a href="index.html"><span class="section-number">6. </span>Object Storage Driver</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter"><span class="section-number">6. </span>Object Storage Driver</a></li>
+      <li>Next: <a href="Configuration.html" title="next chapter"><span class="section-number">6.2. </span>Specific Driver configurations</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -96,12 +97,12 @@
           <div class="body" role="main">
             
   <section id="driver-api">
-<h1><span class="section-number">7.1. </span>Driver API<a class="headerlink" href="#driver-api" title="Link to this heading">¶</a></h1>
+<h1><span class="section-number">6.1. </span>Driver API<a class="headerlink" href="#driver-api" title="Link to this heading">¶</a></h1>
 <p>The Driver API is the core of integration of multiple Object Storage solutions.
 Each integration must implement this interface in order to be able to add this as
 a plugin within Cloud Cloud Store.</p>
 <section id="global-logic-of-api">
-<h2><span class="section-number">7.1.1. </span>Global logic of API<a class="headerlink" href="#global-logic-of-api" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">6.1.1. </span>Global logic of API<a class="headerlink" href="#global-logic-of-api" title="Link to this heading">¶</a></h2>
 <figure class="align-default" id="id1">
 <div class="graphviz"><img src="../_images/graphviz-9aa74faf1abc2f64c60f52577e7f3e55934dc549.png" alt="digraph dependencies {
   subgraph {
@@ -127,7 +128,7 @@ a plugin within Cloud Cloud Store.</p>
 </figure>
 </section>
 <section id="implementations">
-<h2><span class="section-number">7.1.2. </span>3 implementations<a class="headerlink" href="#implementations" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">6.1.2. </span>3 implementations<a class="headerlink" href="#implementations" title="Link to this heading">¶</a></h2>
 <p>There are 3 implementations:</p>
 <ul class="simple">
 <li><p>S3 like support (whatever Amazon, Minio or any S3 compatible implementations)</p></li>
@@ -137,7 +138,7 @@ a plugin within Cloud Cloud Store.</p>
 <p>All of these implementations respect the API of the Driver.</p>
 </section>
 <section id="driver-api-details">
-<h2><span class="section-number">7.1.3. </span>Driver API details<a class="headerlink" href="#driver-api-details" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">6.1.3. </span>Driver API details<a class="headerlink" href="#driver-api-details" title="Link to this heading">¶</a></h2>
 <p>The DriverApiFactory might be created by explicitly create the right implementation (for instance
 <code class="docutils literal notranslate"><span class="pre">Arc.container().select(DriverApiFactory.class).get();</span></code>).</p>
 <p>The DriverApi is then created through this Factory with <code class="docutils literal notranslate"><span class="pre">factory.getInstance()</span></code>.</p>
@@ -148,7 +149,7 @@ get using <code class="docutils literal notranslate"><span class="pre">DriverApi
 <p>For instance: <code class="docutils literal notranslate"><span class="pre">bucketDelete(String</span> <span class="pre">bucket)</span></code> can be written as <code class="docutils literal notranslate"><span class="pre">bucketDelete(StorageBucket</span> <span class="pre">bucket)</span></code>, or
 <code class="docutils literal notranslate"><span class="pre">objectGetInputStreamInBucket(String</span> <span class="pre">bucket,</span> <span class="pre">String</span> <span class="pre">object)</span></code> as <code class="docutils literal notranslate"><span class="pre">objectGetInputStreamInBucket(StorageObject</span> <span class="pre">object)</span></code></p>
 <section id="bucket-operations">
-<h3><span class="section-number">7.1.3.1. </span>Bucket operations<a class="headerlink" href="#bucket-operations" title="Link to this heading">¶</a></h3>
+<h3><span class="section-number">6.1.3.1. </span>Bucket operations<a class="headerlink" href="#bucket-operations" title="Link to this heading">¶</a></h3>
 <div class="literal-block-wrapper docutils container" id="id2">
 <div class="code-block-caption"><span class="caption-text">Java API for <strong>Buckets</strong></span><a class="headerlink" href="#id2" title="Link to this code">¶</a></div>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
@@ -189,7 +190,7 @@ get using <code class="docutils literal notranslate"><span class="pre">DriverApi
 </div>
 </section>
 <section id="object-operations">
-<h3><span class="section-number">7.1.3.2. </span>Object operations<a class="headerlink" href="#object-operations" title="Link to this heading">¶</a></h3>
+<h3><span class="section-number">6.1.3.2. </span>Object operations<a class="headerlink" href="#object-operations" title="Link to this heading">¶</a></h3>
 <div class="literal-block-wrapper docutils container" id="id4">
 <div class="code-block-caption"><span class="caption-text">Java API for <strong>Objects</strong></span><a class="headerlink" href="#id4" title="Link to this code">¶</a></div>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>

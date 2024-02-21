@@ -15,12 +15,12 @@ Welcome to Cloud Cloud Store's (CCS) documentation!
    :caption: Contents:
 
    Architecture/index
-   common/index
    Accessor/index
    Replicator/index
    Reconciliator/index
    Administration/index
    driver-api/index
+   common/index
    Dev/index
 
 

@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>2.2. Common Standard &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <title>7.2. Common Standard &#8212; Clone Cloud Store [CCS] 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
-    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/documentation_options.js?v=f82dc3d9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="2.3. Common Quarkus" href="Common_Quarkus.html" />
-    <link rel="prev" title="2.1. Modules" href="Modules.html" />
+    <link rel="next" title="7.3. Common Quarkus" href="Common_Quarkus.html" />
+    <link rel="prev" title="7.1. Modules" href="Modules.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -45,32 +45,32 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">2. Commons</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Modules.html">2.1. Modules</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">2.2. Common Standard</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#guidlike-and-relative-guid">2.2.1. GuidLike and relative Guid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#basexx">2.2.2. BaseXx</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#various-x-inputstream">2.2.3. Various X InputStream</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#zstdcompressinputstream-and-zstddecompressinputstream">2.2.3.1. ZstdCompressInputStream and ZstdDecompressInputStream</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">2. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">3. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">4. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">5. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">6. Object Storage Driver</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">7. Commons</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Modules.html">7.1. Modules</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">7.2. Common Standard</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#guidlike-and-relative-guid">7.2.1. GuidLike and relative Guid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#basexx">7.2.2. BaseXx</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#various-x-inputstream">7.2.3. Various X InputStream</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zstdcompressinputstream-and-zstddecompressinputstream">7.2.3.1. ZstdCompressInputStream and ZstdDecompressInputStream</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#parameterschecker">2.2.4. ParametersChecker</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#various-random">2.2.5. Various Random</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#singleton">2.2.6. Singleton</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#syserrlogger">2.2.7. SysErrLogger</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#system-properties-and-quarkus-configuration">2.2.8. System Properties and Quarkus Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameterschecker">7.2.4. ParametersChecker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#various-random">7.2.5. Various Random</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#singleton">7.2.6. Singleton</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#syserrlogger">7.2.7. SysErrLogger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system-properties-and-quarkus-configuration">7.2.8. System Properties and Quarkus Configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="Common_Quarkus.html">2.3. Common Quarkus</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Common_DB.html">2.4. Common DB</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Configuration.html">2.5. Common Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_Quarkus.html">7.3. Common Quarkus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Common_DB.html">7.4. Common DB</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">7.5. Common Configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
 </ul>
 
@@ -78,9 +78,9 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html"><span class="section-number">2. </span>Commons</a><ul>
-      <li>Previous: <a href="Modules.html" title="previous chapter"><span class="section-number">2.1. </span>Modules</a></li>
-      <li>Next: <a href="Common_Quarkus.html" title="next chapter"><span class="section-number">2.3. </span>Common Quarkus</a></li>
+  <li><a href="index.html"><span class="section-number">7. </span>Commons</a><ul>
+      <li>Previous: <a href="Modules.html" title="previous chapter"><span class="section-number">7.1. </span>Modules</a></li>
+      <li>Next: <a href="Common_Quarkus.html" title="next chapter"><span class="section-number">7.3. </span>Common Quarkus</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -104,11 +104,11 @@
           <div class="body" role="main">
             
   <section id="common-standard">
-<h1><span class="section-number">2.2. </span>Common Standard<a class="headerlink" href="#common-standard" title="Link to this heading">¶</a></h1>
+<h1><span class="section-number">7.2. </span>Common Standard<a class="headerlink" href="#common-standard" title="Link to this heading">¶</a></h1>
 <p>Common Standard is meant for “non Quarkus” usage (does not implied Quarkus libraries), while Common Utils is meant for
 “Quarkus” context, relying on Common Standard too.</p>
 <section id="guidlike-and-relative-guid">
-<h2><span class="section-number">2.2.1. </span>GuidLike and relative Guid<a class="headerlink" href="#guidlike-and-relative-guid" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.1. </span>GuidLike and relative Guid<a class="headerlink" href="#guidlike-and-relative-guid" title="Link to this heading">¶</a></h2>
 <p>Prefer to use GUID instead of UUID since UUID are not able to be allocated without collision between
 several independent instances.</p>
 <p>One proposed implementation is the <strong>GuidLike</strong>. It uses by default the MAC Address and the PID of the
@@ -138,7 +138,7 @@ neither several regions).</p>
 </div>
 </section>
 <section id="basexx">
-<h2><span class="section-number">2.2.2. </span>BaseXx<a class="headerlink" href="#basexx" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.2. </span>BaseXx<a class="headerlink" href="#basexx" title="Link to this heading">¶</a></h2>
 <p>This is simple encapsulation of other libraries to simplify usage:</p>
 <div class="literal-block-wrapper docutils container" id="id3">
 <div class="code-block-caption"><span class="caption-text">Example code for <strong>BaseXx</strong></span><a class="headerlink" href="#id3" title="Link to this code">¶</a></div>
@@ -153,7 +153,7 @@ neither several regions).</p>
 </div>
 </section>
 <section id="various-x-inputstream">
-<h2><span class="section-number">2.2.3. </span>Various X InputStream<a class="headerlink" href="#various-x-inputstream" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.3. </span>Various X InputStream<a class="headerlink" href="#various-x-inputstream" title="Link to this heading">¶</a></h2>
 <ul class="simple">
 <li><p><strong>ChunkInputStream</strong> : From one InputStream, cut into sub-InputStream with a fix length
 (useful for multipart support for Object Storage for InputStream greater than 5 GB)</p></li>
@@ -196,7 +196,7 @@ slowest consumer speed. If one consumer is closing its own InputStream, it will 
 </div>
 </div>
 <section id="zstdcompressinputstream-and-zstddecompressinputstream">
-<h3><span class="section-number">2.2.3.1. </span>ZstdCompressInputStream and ZstdDecompressInputStream<a class="headerlink" href="#zstdcompressinputstream-and-zstddecompressinputstream" title="Link to this heading">¶</a></h3>
+<h3><span class="section-number">7.2.3.1. </span>ZstdCompressInputStream and ZstdDecompressInputStream<a class="headerlink" href="#zstdcompressinputstream-and-zstddecompressinputstream" title="Link to this heading">¶</a></h3>
 <p>ZSTD (Zstandard) is a modern and efficient compression (both in time, memory and compression).</p>
 <p>Those InputStreams allows to compress or decompress on the flY.</p>
 <p>General usages should be that those compression / decompression</p>
@@ -221,7 +221,7 @@ slowest consumer speed. If one consumer is closing its own InputStream, it will 
 </section>
 </section>
 <section id="parameterschecker">
-<h2><span class="section-number">2.2.4. </span>ParametersChecker<a class="headerlink" href="#parameterschecker" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.4. </span>ParametersChecker<a class="headerlink" href="#parameterschecker" title="Link to this heading">¶</a></h2>
 <p>Can be used for String (testing also emptiness) and for general Object.
 For null String only, use the special method.</p>
 <p>It allows also some general sanity check to prevent wrong data in entry (such as
@@ -233,7 +233,7 @@ correctness of such names when using Object Storage.</p>
 the database cannot handle more than millisecond.</p>
 </section>
 <section id="various-random">
-<h2><span class="section-number">2.2.5. </span>Various Random<a class="headerlink" href="#various-random" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.5. </span>Various Random<a class="headerlink" href="#various-random" title="Link to this heading">¶</a></h2>
 <p>It could be useful (and in particular for Guid) to get random values in an efficient
 way or in a secure way (a bit less efficient but still efficient).</p>
 <ul class="simple">
@@ -242,7 +242,7 @@ way or in a secure way (a bit less efficient but still efficient).</p>
 </ul>
 </section>
 <section id="singleton">
-<h2><span class="section-number">2.2.6. </span>Singleton<a class="headerlink" href="#singleton" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.6. </span>Singleton<a class="headerlink" href="#singleton" title="Link to this heading">¶</a></h2>
 <p>Utility class to get standard Singleton (empty and unmodifiable object), such as:</p>
 <ul class="simple">
 <li><p>Empty byte array</p></li>
@@ -254,7 +254,7 @@ way or in a secure way (a bit less efficient but still efficient).</p>
 </ul>
 </section>
 <section id="syserrlogger">
-<h2><span class="section-number">2.2.7. </span>SysErrLogger<a class="headerlink" href="#syserrlogger" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.7. </span>SysErrLogger<a class="headerlink" href="#syserrlogger" title="Link to this heading">¶</a></h2>
 <p>In some rare case, we cannot have a Logger due to the fact the initialization is not done.</p>
 <p>In some other case, for quality code reasons, while we do not need to log anything in a catched
 exception, it is useful to set a log (but we do not want an output).</p>
@@ -276,7 +276,7 @@ exception, it is useful to set a log (but we do not want an output).</p>
 </div>
 </section>
 <section id="system-properties-and-quarkus-configuration">
-<h2><span class="section-number">2.2.8. </span>System Properties and Quarkus Configuration<a class="headerlink" href="#system-properties-and-quarkus-configuration" title="Link to this heading">¶</a></h2>
+<h2><span class="section-number">7.2.8. </span>System Properties and Quarkus Configuration<a class="headerlink" href="#system-properties-and-quarkus-configuration" title="Link to this heading">¶</a></h2>
 <p>We need sometimes to get configuration (Quarkus) or System Properties statically
 and not through injection.</p>
 <div class="literal-block-wrapper docutils container" id="id7">

@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.clonecloudstore.topology.database.model"},{"l":"io.clonecloudstore.topology.database.mongodb"},{"l":"io.clonecloudstore.topology.resource"}];updateSearchResults();

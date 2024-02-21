@@ -5,11 +5,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>1.1. Description &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <title>1.1. Description &#8212; Clone Cloud Store [CCS] 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
-    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/documentation_options.js?v=f82dc3d9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -46,20 +46,36 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">1. Architecture</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">1.1. Description</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#status-logic">1.1.1. Status logic</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#architecture">1.1.2. Architecture</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#disaster-recovery-or-cloud-migration">1.1.3. Disaster Recovery or Cloud Migration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#available-functionalities">1.1.1. Available functionalities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#notes-of-versions">1.1.2. Notes of versions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">1.1.2.1. 0.8.0 2024/02</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">1.1.2.2. 0.7.0 2024/01</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">1.1.2.3. 0.6.0 2023/11</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">1.1.2.4. 0.5.0 2023/10</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">1.1.2.5. 0.4.0 2023/09</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6">1.1.2.6. 0.3.0 2023/07</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">1.1.2.7. 0.2.0 2023/01</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id8">1.1.2.8. 0.1.0 2022/06</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#status-logic">1.1.3. Status logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#architecture">1.1.4. Architecture</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#zoom-when-using-buffered-accessor">1.1.4.1. Zoom when using Buffered Accessor</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#disaster-recovery-or-cloud-migration">1.1.5. Disaster Recovery or Cloud Migration</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="InProgress.html">1.2. Missing or In Progress Functionalities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CommonConfiguration.html">1.3. Common Configuration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../common/index.html">2. Commons</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">2. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">3. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">4. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">5. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">6. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../common/index.html">7. Commons</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
 </ul>
 
@@ -94,7 +110,7 @@
             
   <section id="description">
 <h1><span class="section-number">1.1. </span>Description<a class="headerlink" href="#description" title="Link to this heading">¶</a></h1>
-<p>This project uses Quarkus, the Supersonic Subatomic Java Framework.</p>
+<p>This project uses Quarkus, the Supersonic Subatomic Java Framework and is compiled with Java 21.</p>
 <p>If you want to learn more about Quarkus, please visit its website: <a class="reference external" href="https://quarkus.io/">https://quarkus.io/</a> .</p>
 <p><strong>Clone Cloud Store</strong> (<em>CCS</em>) allows to simplify access to Cloud Storage for major services such as
 Amazon S3 or S3 like implementations, Azure Blob Storage and Google Cloud Storage.</p>
@@ -103,10 +119,11 @@ Amazon S3 or S3 like implementations, Azure Blob Storage and Google Cloud Storag
 or in memory, neither in client application neither in front CCS services.</p>
 <p>To allow this, specific functionalities of Quarkus Rest services (client and server) are used, such as the possibility
 to send or receive such InputStream, chunk by chunk, and with back pressure control.</p>
-<blockquote>
-<div><p><em>It might be possible to use other Http Client, but one has to take care of possible limitations of such Http SDK,
-such as to not send or receive from client side with all InputStream in memory.</em></p>
-</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It might be possible to use other Http Client, but one has to take care of possible limitations of such Http SDK,
+such as to not send or receive from client side with all InputStream in memory. Apache httpclient5 is compatible.</p>
+</div>
 <p>Clone Cloud Store allows also to clone storage between various Cloud sites, even using different
 technologies (for instance, one using Amazon S3, another one using Azure Blob Storage):</p>
 <ul class="simple">
@@ -136,42 +153,163 @@ that new creation/deletion of Buckets or Objects is taken into account during re
 <p>A simplest implementation with 1 JVM (1 or more) is available without database, topic or remote sites support.
 It allows to test the solution with your application or to allow a smooth move to Cloud Clone Store:
 <strong>Accessor Simple Gateway</strong></p>
+<section id="available-functionalities">
+<h2><span class="section-number">1.1.1. </span>Available functionalities<a class="headerlink" href="#available-functionalities" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p>Database: MongoDB</p></li>
+<li><p>Topics: Kafka</p></li>
+<li><p>Common
+- Full support for InputStream within Quarkus (through a patch of Quarkus)
+- Full support of Database choice between MongoDB and PostgreSql (by configuration)
+- Metrics available for Prometheus or equivalent</p></li>
+<li><p>Accessor
+- Fully functional
+- Include remote checking if locally not present (by configuration)
+- Include remote cloning
+- Include Public Client and Internal Client (Quarkus)
+- Include Public Client based on Apache httpclient 5 without need of Quarkus
+- Simple Gateway with no Database nor Remote access or cloning available
+- Include optional Buffered Accessor relying on local space (only for unsteady Storage service)</p></li>
+<li><p>Driver
+- Support of S3, Azure Blob Storage and Google Cloud Storage</p></li>
+<li><p>Replicator
+- Fully functional for replication or preemptive remote action</p></li>
+<li><p>Topology
+- Full support for remote Clone Cloud Store sites</p></li>
+<li><p>Ownership
+- Support for ownership based on Bucket</p></li>
+<li><p>Quarkus patch client: patch until Quarkus validate PR 37308</p></li>
+<li><p>Reconciliator
+- Logic in place but not yet API (so no Disaster Recovery or Cloud Migration yet)
+- Initialization of a CCS site from a remote one or from an existing Driver Storage
+- Missing API and Configurations
+- Will need extra API on Replicator</p></li>
+</ul>
+</section>
+<section id="notes-of-versions">
+<h2><span class="section-number">1.1.2. </span>Notes of versions<a class="headerlink" href="#notes-of-versions" title="Link to this heading">¶</a></h2>
+<section id="id1">
+<h3><span class="section-number">1.1.2.1. </span>0.8.0 2024/02<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Fully tested Reconciliation steps</p></li>
+<li><p>Accessor buffered upload to limit side effect of unsteady Storage service</p></li>
+<li><p>Accessor Ownership and CRUD rights support</p></li>
+<li><p>Administration Topology and Ownership support</p></li>
+<li><p>Add Apache http client for Accessor Public client (no Quarkus dependency)</p></li>
+<li><p>Refactorization on Server side</p></li>
+<li><p>Prepare import from existing Driver Storage without CCS before</p></li>
+<li><p>Compression configurable for internal services</p></li>
+<li><p>Optimize Azure Driver and MongoDb Bulk operations</p></li>
+<li><p>Add Metrics on Topics and Driver</p></li>
+<li><p>Fix Digest implementation and Proactive Replication implementation</p></li>
+<li><p>Fix doc and API</p></li>
+<li><p>Clean up Logs</p></li>
+</ul>
+</section>
+<section id="id2">
+<h3><span class="section-number">1.1.2.2. </span>0.7.0 2024/01<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Support of Simple Gateway Accessor</p></li>
+<li><p>First steps on Reconciliator batch</p></li>
+</ul>
+</section>
+<section id="id3">
+<h3><span class="section-number">1.1.2.3. </span>0.6.0 2023/11<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Patch of Quarkus to support InputStream on client side (upload and download)</p></li>
+</ul>
+</section>
+<section id="id4">
+<h3><span class="section-number">1.1.2.4. </span>0.5.0 2023/10<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Refactorization and simplification</p></li>
+<li><p>Support of Dynamic choice of Database (MongoDB or PostgreSql) in Common</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3><span class="section-number">1.1.2.5. </span>0.4.0 2023/09<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Performance improvements</p></li>
+<li><p>Support of Proactive replication from Accessor</p></li>
+</ul>
+</section>
+<section id="id6">
+<h3><span class="section-number">1.1.2.6. </span>0.3.0 2023/07<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Adding Topology support to Replicator</p></li>
+<li><p>Support of Public Accessor with remote access</p></li>
+</ul>
+</section>
+<section id="id7">
+<h3><span class="section-number">1.1.2.7. </span>0.2.0 2023/01<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Replicator support with asynchronous replication</p></li>
+<li><p>Internal Accessor support</p></li>
+<li><p>Support of Kafka</p></li>
+</ul>
+</section>
+<section id="id8">
+<h3><span class="section-number">1.1.2.8. </span>0.1.0 2022/06<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Public Accessor support</p></li>
+<li><p>Driver for Amazon S3 and S3 like support</p></li>
+<li><p>Support of MongoDB</p></li>
+</ul>
+</section>
+</section>
 <section id="status-logic">
-<h2><span class="section-number">1.1.1. </span>Status logic<a class="headerlink" href="#status-logic" title="Link to this heading">¶</a></h2>
-<figure class="align-default" id="id1">
+<h2><span class="section-number">1.1.3. </span>Status logic<a class="headerlink" href="#status-logic" title="Link to this heading">¶</a></h2>
+<figure class="align-default" id="id9">
 <img alt="Status for Objects and Buckets" src="../_images/clone-cloud-store-diagram-Status.drawio.png" />
 <figcaption>
-<p><span class="caption-text">Status for Objects and Buckets</span><a class="headerlink" href="#id1" title="Link to this image">¶</a></p>
+<p><span class="caption-text">Status for Objects and Buckets</span><a class="headerlink" href="#id9" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </section>
 <section id="architecture">
-<h2><span class="section-number">1.1.2. </span>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
-<figure class="align-default" id="id2">
+<h2><span class="section-number">1.1.4. </span>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
+<figure class="align-default" id="id10">
 <img alt="Architecture on 1 site" src="../_images/clone-cloud-store-diagram-Architecture-1-site.drawio.png" />
 <figcaption>
-<p><span class="caption-text">Architecture on 1 site</span><a class="headerlink" href="#id2" title="Link to this image">¶</a></p>
+<p><span class="caption-text">Architecture on 1 site</span><a class="headerlink" href="#id10" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
-<figure class="align-default" id="id3">
+<figure class="align-default" id="id11">
 <img alt="Architecture on multiple sites" src="../_images/clone-cloud-store-diagram-Architecture-multi-sites.drawio.png" />
 <figcaption>
-<p><span class="caption-text">Architecture on multiple sites</span><a class="headerlink" href="#id3" title="Link to this image">¶</a></p>
+<p><span class="caption-text">Architecture on multiple sites</span><a class="headerlink" href="#id11" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
+<section id="zoom-when-using-buffered-accessor">
+<h3><span class="section-number">1.1.4.1. </span>Zoom when using Buffered Accessor<a class="headerlink" href="#zoom-when-using-buffered-accessor" title="Link to this heading">¶</a></h3>
+<figure class="align-default" id="id12">
+<img alt="Architecture on 1 site with Buffered option" src="../_images/clone-cloud-store-diagram-Architecture-1-site-buffered.drawio.png" />
+<figcaption>
+<p><span class="caption-text">Architecture on 1 site with Buffered option</span><a class="headerlink" href="#id12" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Note that Buffered option shall not be used in general, except if the final Storage service is
+unsteady, therefore giving issues while uploading new Objects. This option allows to buffered locally
+on local disks (or through NAS/NFS) the object to store, and then to try to save this locally backuped
+object to the Storage service. If done, the local copy is purged. If not, it is therefore registered for
+retries in recurrent jobs later on.</p>
+<p>This option shall be used with caution due to the risk of filling local storage and therefore leading
+to “not enough space on device” error if the Storage service is down for too long.</p>
+<p>This option is also available for the Simple Gateway Accessor.</p>
+</section>
 </section>
 <section id="disaster-recovery-or-cloud-migration">
-<h2><span class="section-number">1.1.3. </span>Disaster Recovery or Cloud Migration<a class="headerlink" href="#disaster-recovery-or-cloud-migration" title="Link to this heading">¶</a></h2>
-<figure class="align-default" id="id4">
+<h2><span class="section-number">1.1.5. </span>Disaster Recovery or Cloud Migration<a class="headerlink" href="#disaster-recovery-or-cloud-migration" title="Link to this heading">¶</a></h2>
+<figure class="align-default" id="id13">
 <img alt="Disaster Recovery" src="../_images/clone-cloud-store-diagram-Disater-Recovery.drawio.png" />
 <figcaption>
-<p><span class="caption-text">Disaster Recovery</span><a class="headerlink" href="#id4" title="Link to this image">¶</a></p>
+<p><span class="caption-text">Disaster Recovery</span><a class="headerlink" href="#id13" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
-<figure class="align-default" id="id5">
+<figure class="align-default" id="id14">
 <img alt="Cloud Migration" src="../_images/clone-cloud-store-diagram-Cloud-Migration.drawio.png" />
 <figcaption>
-<p><span class="caption-text">Cloud Migration</span><a class="headerlink" href="#id5" title="Link to this image">¶</a></p>
+<p><span class="caption-text">Cloud Migration</span><a class="headerlink" href="#id14" title="Link to this image">¶</a></p>
 </figcaption>
 </figure>
 </section>

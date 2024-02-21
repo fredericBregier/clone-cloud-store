@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>6.3. Open API &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <title>5.3. Open API &#8212; Clone Cloud Store [CCS] 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
-    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/documentation_options.js?v=f82dc3d9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="7. Object Storage Driver" href="../driver-api/index.html" />
-    <link rel="prev" title="6.2. Configuration" href="Configuration.html" />
+    <link rel="next" title="6. Object Storage Driver" href="../driver-api/index.html" />
+    <link rel="prev" title="5.2. Configuration" href="Configuration.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -45,20 +45,21 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../common/index.html">2. Commons</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">4. Replicator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">6. Administration</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="BPMN.html">6.1. BPMN for Administration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Configuration.html">6.2. Configuration</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">6.3. Open API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#administration-api-topologies">6.3.1. Administration API / Topologies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">2. Accessor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Replicator/index.html">3. Replicator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">4. Reconciliator</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">5. Administration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BPMN.html">5.1. BPMN for Administration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">5.2. Configuration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">5.3. Open API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#administration-api-ownership">5.3.1. Administration API / Ownership</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#administration-api-topology">5.3.2. Administration API / Topology</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">6. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../common/index.html">7. Commons</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
 </ul>
 
@@ -66,9 +67,9 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html"><span class="section-number">6. </span>Administration</a><ul>
-      <li>Previous: <a href="Configuration.html" title="previous chapter"><span class="section-number">6.2. </span>Configuration</a></li>
-      <li>Next: <a href="../driver-api/index.html" title="next chapter"><span class="section-number">7. </span>Object Storage Driver</a></li>
+  <li><a href="index.html"><span class="section-number">5. </span>Administration</a><ul>
+      <li>Previous: <a href="Configuration.html" title="previous chapter"><span class="section-number">5.2. </span>Configuration</a></li>
+      <li>Next: <a href="../driver-api/index.html" title="next chapter"><span class="section-number">6. </span>Object Storage Driver</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -92,14 +93,274 @@
           <div class="body" role="main">
             
   <section id="open-api">
-<h1><span class="section-number">6.3. </span>Open API<a class="headerlink" href="#open-api" title="Link to this heading">¶</a></h1>
-<section id="administration-api-topologies">
-<h2><span class="section-number">6.3.1. </span>Administration API / Topologies<a class="headerlink" href="#administration-api-topologies" title="Link to this heading">¶</a></h2>
+<h1><span class="section-number">5.3. </span>Open API<a class="headerlink" href="#open-api" title="Link to this heading">¶</a></h1>
+<section id="administration-api-ownership">
+<h2><span class="section-number">5.3.1. </span>Administration API / Ownership<a class="headerlink" href="#administration-api-ownership" title="Link to this heading">¶</a></h2>
+<dl class="http delete">
+<dt class="sig sig-object http" id="delete--administration-ownerships-bucket">
+<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{bucket}</span></span><a class="headerlink" href="#delete--administration-ownerships-bucket" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Delete an Ownership for all client for this bucket</strong></p>
+<p>Delete an Ownership for all client for this bucket</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Status Codes<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.5">204 No Content</a></span> – Successfully deleted Ownership</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Ownership not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Ownership not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="http get">
-<dt class="sig sig-object http" id="get--replicator-topologies">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/replicator/topologies</span></span><a class="headerlink" href="#get--replicator-topologies" title="Link to this definition">¶</a></dt>
-<dd><p><strong>Get list of replicators</strong></p>
-<p>Get list of replicators in the  topology</p>
+<dt class="sig sig-object http" id="get--administration-ownerships-client">
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{client}</span></span><a class="headerlink" href="#get--administration-ownerships-client" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Get list of ownerships</strong></p>
+<p>Get list of ownerships in the  administration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>client</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Query Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ownership</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Example request:</strong></p>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/administration/ownerships/{client}</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Status Codes<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved list of ownerships</p>
+<p><strong>Example response:</strong></p>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
+
+<span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;client&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;bucket&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;ownership&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;e&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="http get">
+<dt class="sig sig-object http" id="get--administration-ownerships-client-bucket">
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{client}/{bucket}</span></span><a class="headerlink" href="#get--administration-ownerships-client-bucket" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Get an Ownership</strong></p>
+<p>Get an Ownership</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<em>string</em>) – </p></li>
+<li><p><strong>client</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Example request:</strong></p>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/administration/ownerships/{client}/{bucket}</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Status Codes<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved Ownership</p>
+<p><strong>Example response:</strong></p>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
+<span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
+
+<span class="err">e</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Ownership not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Ownership not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="http delete">
+<dt class="sig sig-object http" id="delete--administration-ownerships-client-bucket">
+<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{client}/{bucket}</span></span><a class="headerlink" href="#delete--administration-ownerships-client-bucket" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Delete an Ownership</strong></p>
+<p>Delete an Ownership</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<em>string</em>) – </p></li>
+<li><p><strong>client</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Status Codes<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.5">204 No Content</a></span> – Successfully deleted Ownership</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Ownership not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Ownership not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="http put">
+<dt class="sig sig-object http" id="put--administration-ownerships-client-bucket-ownership">
+<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{client}/{bucket}/{ownership}</span></span><a class="headerlink" href="#put--administration-ownerships-client-bucket-ownership" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Update an Ownership</strong></p>
+<p>Update an Ownership</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<em>string</em>) – </p></li>
+<li><p><strong>client</strong> (<em>string</em>) – </p></li>
+<li><p><strong>ownership</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Status Codes<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.3">202 Accepted</a></span> – Successfully update Ownership</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Ownership not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Ownership not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="http post">
+<dt class="sig sig-object http" id="post--administration-ownerships-client-bucket-ownership">
+<span class="sig-name descname"><span class="pre">POST</span> </span><span class="sig-name descname"><span class="pre">/administration/ownerships/{client}/{bucket}/{ownership}</span></span><a class="headerlink" href="#post--administration-ownerships-client-bucket-ownership" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Add an Ownership</strong></p>
+<p>Add an Ownership</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<em>string</em>) – </p></li>
+<li><p><strong>client</strong> (<em>string</em>) – </p></li>
+<li><p><strong>ownership</strong> (<em>string</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Status Codes<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.2">201 Created</a></span> – Successfully added ownership</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Ownership not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="administration-api-topology">
+<h2><span class="section-number">5.3.2. </span>Administration API / Topology<a class="headerlink" href="#administration-api-topology" title="Link to this heading">¶</a></h2>
+<dl class="http get">
+<dt class="sig sig-object http" id="get--administration-topologies">
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/administration/topologies</span></span><a class="headerlink" href="#get--administration-topologies" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Get list of remote sites from topology</strong></p>
+<p>Get list of remote sites from topology</p>
 <dl class="field-list simple">
 <dt class="field-odd">Query Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -108,14 +369,14 @@
 </dd>
 </dl>
 <p><strong>Example request:</strong></p>
-<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/replicator/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/administration/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
 <span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved list of topology</p>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved list from topology</p>
 <p><strong>Example response:</strong></p>
 <div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
 <span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
@@ -134,16 +395,25 @@
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
 </ul>
 </dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="http put">
-<dt class="sig sig-object http" id="put--replicator-topologies">
-<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/replicator/topologies</span></span><a class="headerlink" href="#put--replicator-topologies" title="Link to this definition">¶</a></dt>
-<dd><p><strong>Update a replicator in the topology</strong></p>
-<p>Update a replicator in the topology</p>
+<dt class="sig sig-object http" id="put--administration-topologies">
+<span class="sig-name descname"><span class="pre">PUT</span> </span><span class="sig-name descname"><span class="pre">/administration/topologies</span></span><a class="headerlink" href="#put--administration-topologies" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Update a remote site into topology</strong></p>
+<p>Update a remote site into topology</p>
 <p><strong>Example request:</strong></p>
-<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">PUT</span> <span class="nn">/replicator/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">PUT</span> <span class="nn">/administration/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
 <span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
 <span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
 
@@ -158,22 +428,37 @@
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.3">202 Accepted</a></span> – Successfully added topology</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Topology not valid</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Topology not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.3">202 Accepted</a></span> – Successfully updated remote site status</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Remote site not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Remote site not found</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="http post">
-<dt class="sig sig-object http" id="post--replicator-topologies">
-<span class="sig-name descname"><span class="pre">POST</span> </span><span class="sig-name descname"><span class="pre">/replicator/topologies</span></span><a class="headerlink" href="#post--replicator-topologies" title="Link to this definition">¶</a></dt>
-<dd><p><strong>Add a replicator to topology</strong></p>
-<p>Add a replicator to topology</p>
+<dt class="sig sig-object http" id="post--administration-topologies">
+<span class="sig-name descname"><span class="pre">POST</span> </span><span class="sig-name descname"><span class="pre">/administration/topologies</span></span><a class="headerlink" href="#post--administration-topologies" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Add a remote site to topology</strong></p>
+<p>Add a remote site to topology</p>
 <p><strong>Example request:</strong></p>
-<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">POST</span> <span class="nn">/replicator/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">POST</span> <span class="nn">/administration/topologies</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
 <span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
 <span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
 
@@ -188,19 +473,31 @@
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.2">201 Created</a></span> – Successfully added topology</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Topology not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.2">201 Created</a></span> – Successfully added remote site</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Remote site not valid</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="http get">
-<dt class="sig sig-object http" id="get--replicator-topologies-site">
-<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/replicator/topologies/{site}</span></span><a class="headerlink" href="#get--replicator-topologies-site" title="Link to this definition">¶</a></dt>
-<dd><p><strong>Get a replicator from topology</strong></p>
-<p>Get a replicator full details from topology based on its site</p>
+<dt class="sig sig-object http" id="get--administration-topologies-site">
+<span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/administration/topologies/{site}</span></span><a class="headerlink" href="#get--administration-topologies-site" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Get a remote site from topology</strong></p>
+<p>Get a remote site from topology based on its site</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -209,14 +506,14 @@
 </dd>
 </dl>
 <p><strong>Example request:</strong></p>
-<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/replicator/topologies/{site}</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
+<div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="nf">GET</span> <span class="nn">/administration/topologies/{site}</span> <span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span>
 <span class="na">Host</span><span class="o">:</span> <span class="l">example.com</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Status Codes<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved topology</p>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – <p>Successfully retrieved Remote site</p>
 <p><strong>Example response:</strong></p>
 <div class="highlight-http notranslate"><div class="highlight"><pre><span></span><span class="kr">HTTP</span><span class="o">/</span><span class="m">1.1</span> <span class="m">200</span> <span class="ne">OK</span>
 <span class="na">Content-Type</span><span class="o">:</span> <span class="l">application/json</span>
@@ -230,19 +527,34 @@
 </pre></div>
 </div>
 </p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Topology id not valid</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Topology not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Remote site id not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Remote site not found</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="http delete">
-<dt class="sig sig-object http" id="delete--replicator-topologies-site">
-<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/replicator/topologies/{site}</span></span><a class="headerlink" href="#delete--replicator-topologies-site" title="Link to this definition">¶</a></dt>
-<dd><p><strong>Delete a replicator from topology</strong></p>
-<p>Delete a replicator from topology</p>
+<dt class="sig sig-object http" id="delete--administration-topologies-site">
+<span class="sig-name descname"><span class="pre">DELETE</span> </span><span class="sig-name descname"><span class="pre">/administration/topologies/{site}</span></span><a class="headerlink" href="#delete--administration-topologies-site" title="Link to this definition">¶</a></dt>
+<dd><p><strong>Delete a remote site from topology</strong></p>
+<p>Delete a remote site from topology</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -251,10 +563,25 @@
 </dd>
 <dt class="field-even">Status Codes<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.5">204 No Content</a></span> – Successfully deleted topology</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Topology id not valid</p></li>
-<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Topology not found</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.5">204 No Content</a></span> – Successfully deleted Remote site</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1">400 Bad Request</a></span> – Remote site not valid</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Remote site not found</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal server error</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>

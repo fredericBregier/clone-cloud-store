@@ -144,10 +144,8 @@ The following parameters are for Traffic Shaping (bandwidth control) for Http se
    :header-rows: 1
 
    * - Property/Yaml property
-     - Default Value
      - Comment
    * - ``quarkus.http.traffic-shaping`` related
-     -
      - To enable traffic-shaping if needed (in particular with Replicator)
 
 
@@ -224,3 +222,74 @@ Here are the specific global Clouod Clone Store parameters.
      - mongo or postgre
      - Empty, so Mongo by default
      - Property to define which implementations to use between MongoDB or PostgreSQL
+   * - ``ccs.internal.compression``
+     - Boolean
+     - false
+     - Property to define if internal services use ZSTD compression for streams
+
+.. note::
+  Note that ZSTD compression is efficient both in cpu and memory while still having a nice compression,
+  but if most of the streams are incompressible (such as compressed image, video or ZIP files), it might be better
+  to not activate this option. Files in Storage Driver will not be stored compressed whatever (except if
+  Cloud Storage compressed them, but this is out of CCS).
+
+Metrics
+=========
+
+.. list-table:: Metrics for Cloud Clone Store
+   :header-rows: 1
+
+   * - Metric name
+     - Tags
+     - Definition
+   * - ``ccs.drivers3`` or ``ccs.drivergoogle`` or ``ccs.driverazure``
+     - ``bucket`` or ``object`` with value ``create``, ``delete``, ``count``, ``stream``, ``exists``, ``read_md``, ``read``, ``copy``,  ``error_(write or read or delete)``
+     - Count each category of Driver actions
+   * - ``ccs.requestactionconsumer``
+     - ``bucket`` or ``object`` with value ``create``, ``delete`` or ``error``
+     - Count each category of received Replication Action
+   * - ``ccs.localreplicatorrequesttopicconsumer``
+     - ``order`` with value ``replicate``
+     - Count each category of received Replication Request
+   * - ``ccs.buffered_import``
+     - ``object`` with value ``create``, ``purge``, ``copy``, ``error_write``, ``register``, ``unregister``
+     - Count each category of buffered accessor service using local storage first
+   * - ``ccs.purge_service``
+     - ``object`` with value ``purge``, ``delete``, ``archive``
+     - Count each category of reconciliation process
+   * - ``ccs.local_reconciliator``
+     - ``object`` with value ``from.db``, ``from.driver``, ``update_from_driver``, ``to.sites_listing``, ``to.remote_site``
+     - Count each category of reconciliation process
+   * - ``ccs.central_reconciliator``
+     - ``site`` with value ``from.remote_site``
+     - Count each category of reconciliation process per site
+   * - ``ccs.central_reconciliator``
+     - ``object`` with value ``from.remote_sites_listing`` or ``to.actions```
+     - Count each category of reconciliation process per site
+   * - ``ccs.initialization-service``
+     - ``object`` with value ``create``
+     - Count each category of importing existing Storage Objects process
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/cloudclonestore/*``
+     - Count each category of Public Accessor API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/ccs/internal/*``
+     - Count each category of Private Accessor API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/replicator/local/buckets/*``
+     - Count each category of Local Replicator API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/replicator/remote/buckets/*``
+     - Count each category of Remote Replicator API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/replicator/remote/orders/*``
+     - Count each category of Remote Order Replicator API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/replicator/remote/reconciliation/*``
+     - Count each category of Remote Reconciliation Replicator API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/reconciliator/*``
+     - Count each category of Reconciliator API call (native metrics)
+   * - ``http_server_request_seconds_*``
+     - ``uri`` value ``/administration/topologies/*``
+     - Count each category of Administration (topology) API call (native metrics)

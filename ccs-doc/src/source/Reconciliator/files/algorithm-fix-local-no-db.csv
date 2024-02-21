@@ -1,4 +1,4 @@
 From, Unknown, Upload, Ready, Err Upl, Deleting, Deleted, Err Del, To Update
-Sites, -, -, x, -, -, -, -, -
-Object Fix, -, -, X (to be updated), -, -, -, -, -
-Sites, -, -, -, -, -, -, -, X
+Source Sites, , , x, , , , ,
+Object Fix, , , X (new one), , , , , +X
+Updated Sites, , , Update, , , , ,

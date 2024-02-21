@@ -1,1 +1,0 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"io.clonecloudstore.reconciliator.database.model"},{"l":"io.clonecloudstore.reconciliator.database.mongodb"}];updateSearchResults();

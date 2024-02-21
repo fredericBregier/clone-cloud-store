@@ -1,0 +1,20 @@
+From, DELETED, DELETE, READY, UPDATE, UPLOAD
+Primary, **X**, **X**, , ,
+Other, °, °, °, °, °
+Actions, DEL, , DEL, DEL, DEL
+
+Primary, , , **X**, ,
+Other, °, °, 1, °, °
+Actions, UPL from (1)X, UPL from (1)X, , UPD from (1)X, UPL from (1)X
+
+Primary, , , , **X**,
+Other, °, °, 1, 2, °
+Actions, UPL from (1) *xor* from (2X), UPL from (1) *xor* from (2X), , UPD from (1) *xor* UPG(2), UPL from (1) *xor* from (2X)
+
+Primary, , , , , **X**
+Other, °, °, 1, 2, °
+Actions, UPL from (1) *xor* from (2), UPL from (1) *xor* from (2), , UPD from (1) *xor* UPG(2), UPL from (1) *xor* from (2)
+
+Primary, , , , , **X**
+Other, °, °, , , 3
+Actions, *invalid*, *invalid*, *invalid*, *invalid*, ERROR

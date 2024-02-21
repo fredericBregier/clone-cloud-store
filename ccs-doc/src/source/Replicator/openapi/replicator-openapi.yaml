@@ -1,17 +1,17 @@
 openapi: 3.0.3
 info:
   title: ccs-replicator-server API
-  version: 0.6.0-SNAPSHOT
+  version: 0.8.0-SNAPSHOT
 tags:
-  - name: Replicator/local
-  - name: Replicator/remote
+  - name: Replicator API /local
+  - name: Replicator API /remote
 paths:
   /replicator/local/buckets/{bucketName}:
     get:
       tags:
-        - Replicator/local
+        - Replicator API /local
       summary: Get bucket metadata
-      description: Get bucket metadata
+      description: Get bucket metadata through topology
       parameters:
         - name: bucketName
           in: path
@@ -39,23 +39,114 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessorBucket'
         "400":
           description: Bad Request
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Bucket not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "410":
           description: Bucket deleted
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
     head:
       tags:
-        - Replicator/local
+        - Replicator API /local
       summary: Check if bucket exists on a remote replicator
       description: Loops through the topology and search for a remote replicator owning
         the bucket
@@ -109,16 +200,74 @@ paths:
               style: simple
               schema:
                 type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Bucket not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/local/buckets/{bucketName}/{objectName}:
     get:
       tags:
-        - Replicator/local
+        - Replicator API /local
       summary: Read Object from a remote replicator
       description: Loops through topology and search for a remote replicator able
         to service the request. Open up a stream with remote replicator which reads
@@ -163,18 +312,130 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            x-clonecloudstore-id:
+              description: Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-site:
+              description: Site
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-bucket:
+              description: Bucket Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-name:
+              description: Object Name
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-creation:
+              description: Creation Date
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-size:
+              description: Object Size
+              style: simple
+              schema:
+                type: integer
+            x-clonecloudstore-hash:
+              description: Object Hash SHA-256
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-metadata:
+              description: Object Metadata
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-status:
+              description: Object Status
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-expires:
+              description: Expiration Date
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
-            application/octet-stream: { }
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Object not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/local/buckets/{bucketName}/{pathDirectoryOrObject}:
     head:
       tags:
-        - Replicator/local
+        - Replicator API /local
       summary: Check if object exists on a remote replicator
       description: Loops through the topology and search for a remote replicator owning
         the object
@@ -234,18 +495,76 @@ paths:
               style: simple
               schema:
                 type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Object not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/remote/buckets/{bucketName}:
     get:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Get bucket metadata
-      description: Get bucket metadata
+      description: Get bucket metadata through topology
       parameters:
         - name: bucketName
           in: path
@@ -267,23 +586,114 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessorBucket'
         "400":
           description: Bad Request
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Bucket not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "410":
           description: Bucket deleted
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
     head:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Check if bucket exists on a remote replicator
       description: Loops through the topology and search for a remote replicator owning
         the bucket
@@ -319,16 +729,74 @@ paths:
               style: simple
               schema:
                 type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Bucket not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/remote/buckets/{bucketName}/{objectName}:
     get:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Read Object from a remote replicator
       description: Loops through topology and search for a remote replicator able
         to service the request. Open up a stream with remote replicator which reads
@@ -418,18 +886,97 @@ paths:
               style: simple
               schema:
                 type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
           content:
-            application/octet-stream: { }
+            application/octet-stream:
+              schema:
+                format: binary
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "403":
+          description: Forbidden
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Object not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/remote/buckets/{bucketName}/{pathDirectoryOrObject}:
     head:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Check if object exists on a remote replicator
       description: Loops through the topology and search for a remote replicator owning
         the object
@@ -471,16 +1018,92 @@ paths:
               style: simple
               schema:
                 type: string
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
+        "403":
+          description: Forbidden
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "404":
           description: Object not found
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/remote/orders:
     post:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Create order
       description: Create replication order remotely
       requestBody:
@@ -491,18 +1114,93 @@ paths:
       responses:
         "201":
           description: Order created
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "400":
           description: Bad request
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "409":
           description: Bucket already exist
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
   /replicator/remote/orders/multiple:
     post:
       tags:
-        - Replicator/remote
+        - Replicator API /remote
       summary: Create orders
       description: Create replication orders remotely
       requestBody:
@@ -515,14 +1213,89 @@ paths:
       responses:
         "201":
           description: Order created
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
         "400":
           description: Bad request
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "401":
           description: Unauthorized
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "409":
           description: Bucket already exist
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
         "500":
           description: Internal Error
+          headers:
+            x-clonecloudstore-op-id:
+              description: Operation ID
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-module:
+              description: Module Id
+              style: simple
+              schema:
+                type: string
+            x-clonecloudstore-error:
+              description: Error Message
+              style: simple
+              schema:
+                type: string
 components:
   schemas:
     AccessorBucket:
@@ -530,9 +1303,9 @@ components:
       properties:
         id:
           type: string
-        site:
+        clientId:
           type: string
-        name:
+        site:
           type: string
         creation:
           $ref: '#/components/schemas/Instant'
@@ -540,32 +1313,6 @@ components:
           $ref: '#/components/schemas/Instant'
         status:
           $ref: '#/components/schemas/AccessorStatus'
-    AccessorObject:
-      type: object
-      properties:
-        id:
-          type: string
-        site:
-          type: string
-        bucket:
-          type: string
-        name:
-          type: string
-        hash:
-          type: string
-        status:
-          $ref: '#/components/schemas/AccessorStatus'
-        creation:
-          $ref: '#/components/schemas/Instant'
-        expires:
-          $ref: '#/components/schemas/Instant'
-        size:
-          format: int64
-          type: integer
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
     AccessorStatus:
       enum:
         - UNKNOWN
@@ -609,22 +1356,3 @@ components:
           type: string
         action:
           $ref: '#/components/schemas/Action'
-    Topology:
-      type: object
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        uri:
-          type: string
-        status:
-          $ref: '#/components/schemas/TopologyStatus'
-    TopologyStatus:
-      enum:
-        - UP
-        - DOWN
-        - DELETED
-        - UNKNOWN
-      type: string
-

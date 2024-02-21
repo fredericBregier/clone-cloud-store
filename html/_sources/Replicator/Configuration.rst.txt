@@ -1,7 +1,6 @@
 Configuration
 *************
 
-** TODO **
 
 Various Replicator services
 ================================
@@ -31,6 +30,7 @@ application.yaml configuration
 
 .. list-table:: Replicator Cloud Clone Store Client Configuration
    :header-rows: 1
+   :widths: 3 3 2
 
    * - Property/Yaml property or Environment variable
      - Possible Values
@@ -45,6 +45,7 @@ application.yaml configuration
 
 .. list-table:: Replicator Cloud Clone Store Service Configuration
    :header-rows: 1
+   :widths: 3 3 2
 
    * - Property/Yaml property or Environment variable
      - Possible Values
@@ -58,8 +59,8 @@ application.yaml configuration
    * - Redefining ``mp.messaging.outgoing.replicator-action-out`` or env ``CCS_REQUEST_ACTION``
      - Name of the outgoing topic for Action Requests
      - ``request-action``
-   * - Redefining ``mp.messaging.outgoing.replicator-request-out`` or env ``CCS_REQUEST_REPLICATION``
-     - Name of the incoming and outgoing topic for Replication Requests
+   * - Redefining ``mp.messaging.incoming.replicator-request-out`` / ``mp.messaging.outgoing.replicator-request-out`` or env ``CCS_REQUEST_REPLICATION``
+     - Name of the incoming and outgoing topic for Replication Requests (if more than 1 instance, add broadcast=true to the incoming configuration)
      - ``request-replication``
    * - ``quarkus.rest-client."io.clonecloudstore.accessor.client.internal.api.AccessorBucketInternalApi".url``
      - Http(s) url of the service
@@ -70,7 +71,7 @@ application.yaml configuration
    * - ``quarkus.rest-client."io.clonecloudstore.replicator.server.remote.client.api.RemoteReplicatorApi".url``
      - Http(s) url of the remote service
      -
-   * - ``quarkus.rest-client."io.clonecloudstore.topology.client.api.TopologyApi".url``
+   * - ``quarkus.rest-client."io.clonecloudstore.administration.client.api.TopologyApi".url``
      - Http(s) url of the service
      -
 

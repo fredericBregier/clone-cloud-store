@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.clonecloudstore.test.server.service","l":"FakeNativeStreamHandlerAbstract"}];updateSearchResults();
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"io.clonecloudstore.test.server.service","l":"FakeStreamHandlerAbstract"}];updateSearchResults();

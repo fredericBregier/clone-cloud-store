@@ -5,17 +5,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>4.3. Open API &#8212; Clone Cloud Store [CCS] 0.7 documentation</title>
+    <title>3.3. Open API &#8212; Clone Cloud Store [CCS] 0.8 documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b3523f8e" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=472322c9" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=eafc0fe6" />
-    <script src="../_static/documentation_options.js?v=5a5a329e"></script>
+    <script src="../_static/documentation_options.js?v=f82dc3d9"></script>
     <script src="../_static/doctools.js?v=888ff710"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="5. Reconciliator" href="../Reconciliator/index.html" />
-    <link rel="prev" title="4.2. Configuration" href="Configuration.html" />
+    <link rel="next" title="4. Reconciliator" href="../Reconciliator/index.html" />
+    <link rel="prev" title="3.2. Configuration" href="Configuration.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -45,21 +45,21 @@
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Architecture/index.html">1. Architecture</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../common/index.html">2. Commons</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">3. Accessor</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">4. Replicator</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="BPMN.html">4.1. BPMN for Replicator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="Configuration.html">4.2. Configuration</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">4.3. Open API</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#replicator-local">4.3.1. Replicator/local</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#replicator-remote">4.3.2. Replicator/remote</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Accessor/index.html">2. Accessor</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">3. Replicator</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BPMN.html">3.1. BPMN for Replicator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">3.2. Configuration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.3. Open API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#replicator-api-local">3.3.1. Replicator API /local</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#replicator-api-remote">3.3.2. Replicator API /remote</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">5. Reconciliator</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">6. Administration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">7. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Reconciliator/index.html">4. Reconciliator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Administration/index.html">5. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../driver-api/index.html">6. Object Storage Driver</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../common/index.html">7. Commons</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Dev/index.html">8. Dev Detail</a></li>
 </ul>
 
@@ -67,9 +67,9 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-  <li><a href="index.html"><span class="section-number">4. </span>Replicator</a><ul>
-      <li>Previous: <a href="Configuration.html" title="previous chapter"><span class="section-number">4.2. </span>Configuration</a></li>
-      <li>Next: <a href="../Reconciliator/index.html" title="next chapter"><span class="section-number">5. </span>Reconciliator</a></li>
+  <li><a href="index.html"><span class="section-number">3. </span>Replicator</a><ul>
+      <li>Previous: <a href="Configuration.html" title="previous chapter"><span class="section-number">3.2. </span>Configuration</a></li>
+      <li>Next: <a href="../Reconciliator/index.html" title="next chapter"><span class="section-number">4. </span>Reconciliator</a></li>
   </ul></li>
   </ul></li>
 </ul>
@@ -93,14 +93,14 @@
           <div class="body" role="main">
             
   <section id="open-api">
-<h1><span class="section-number">4.3. </span>Open API<a class="headerlink" href="#open-api" title="Link to this heading">¶</a></h1>
-<section id="replicator-local">
-<h2><span class="section-number">4.3.1. </span>Replicator/local<a class="headerlink" href="#replicator-local" title="Link to this heading">¶</a></h2>
+<h1><span class="section-number">3.3. </span>Open API<a class="headerlink" href="#open-api" title="Link to this heading">¶</a></h1>
+<section id="replicator-api-local">
+<h2><span class="section-number">3.3.1. </span>Replicator API /local<a class="headerlink" href="#replicator-api-local" title="Link to this heading">¶</a></h2>
 <dl class="http get">
 <dt class="sig sig-object http" id="get--replicator-local-buckets-bucketName">
 <span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/replicator/local/buckets/{bucketName}</span></span><a class="headerlink" href="#get--replicator-local-buckets-bucketName" title="Link to this definition">¶</a></dt>
 <dd><p><strong>Get bucket metadata</strong></p>
-<p>Get bucket metadata</p>
+<p>Get bucket metadata through topology</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -123,10 +123,10 @@
 
 <span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;clientId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;site&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;creation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-07T19:08:18.583460&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;expires&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-07T19:08:18.583460&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;creation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-02-21T11:27:52.867506&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;expires&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-02-21T11:27:52.867506&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UNKNOWN&quot;</span>
 <span class="p">}</span>
 </pre></div>
@@ -145,6 +145,27 @@
 (Required)</p></li>
 <li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
 <li><p><strong>x-clonecloudstore-target-id</strong> – Target ID</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -186,6 +207,17 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x-clonecloudstore-type</strong> – Type as StorageType</p></li>
 <li><p><strong>x-clonecloudstore-target-id</strong> – Id of Remote Topology</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -225,6 +257,31 @@
 (Required)</p></li>
 <li><p><strong>x-clonecloudstore-target-id</strong> – Target ID</p></li>
 <li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-id</strong> – Id</p></li>
+<li><p><strong>x-clonecloudstore-site</strong> – Site</p></li>
+<li><p><strong>x-clonecloudstore-bucket</strong> – Bucket Name</p></li>
+<li><p><strong>x-clonecloudstore-name</strong> – Object Name</p></li>
+<li><p><strong>x-clonecloudstore-creation</strong> – Creation Date</p></li>
+<li><p><strong>x-clonecloudstore-size</strong> – Object Size</p></li>
+<li><p><strong>x-clonecloudstore-hash</strong> – Object Hash SHA-256</p></li>
+<li><p><strong>x-clonecloudstore-metadata</strong> – Object Metadata</p></li>
+<li><p><strong>x-clonecloudstore-status</strong> – Object Status</p></li>
+<li><p><strong>x-clonecloudstore-expires</strong> – Expiration Date</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -267,19 +324,30 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x-clonecloudstore-type</strong> – Type as StorageType</p></li>
 <li><p><strong>x-clonecloudstore-target-id</strong> – Id of Remote Topology</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
 </dd></dl>
 
 </section>
-<section id="replicator-remote">
-<h2><span class="section-number">4.3.2. </span>Replicator/remote<a class="headerlink" href="#replicator-remote" title="Link to this heading">¶</a></h2>
+<section id="replicator-api-remote">
+<h2><span class="section-number">3.3.2. </span>Replicator API /remote<a class="headerlink" href="#replicator-api-remote" title="Link to this heading">¶</a></h2>
 <dl class="http get">
 <dt class="sig sig-object http" id="get--replicator-remote-buckets-bucketName">
 <span class="sig-name descname"><span class="pre">GET</span> </span><span class="sig-name descname"><span class="pre">/replicator/remote/buckets/{bucketName}</span></span><a class="headerlink" href="#get--replicator-remote-buckets-bucketName" title="Link to this definition">¶</a></dt>
 <dd><p><strong>Get bucket metadata</strong></p>
-<p>Get bucket metadata</p>
+<p>Get bucket metadata through topology</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -302,10 +370,10 @@
 
 <span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;clientId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;site&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;creation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-07T19:08:18.583460&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;expires&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-01-07T19:08:18.583460&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;creation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-02-21T11:27:52.867506&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;expires&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-02-21T11:27:52.867506&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UNKNOWN&quot;</span>
 <span class="p">}</span>
 </pre></div>
@@ -323,6 +391,27 @@
 <li><p><strong>x-clonecloudstore-client-id</strong> – Client ID
 (Required)</p></li>
 <li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Response Headers<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -362,6 +451,17 @@
 <dt class="field-odd">Response Headers<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x-clonecloudstore-type</strong> – Type as StorageType</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -390,6 +490,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.1">200 OK</a></span> – OK</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.2">401 Unauthorized</a></span> – Unauthorized</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.4">403 Forbidden</a></span> – Forbidden</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Object not found</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal Error</p></li>
 </ul>
@@ -414,6 +515,20 @@
 <li><p><strong>x-clonecloudstore-metadata</strong> – Object Metadata</p></li>
 <li><p><strong>x-clonecloudstore-status</strong> – Object Status</p></li>
 <li><p><strong>x-clonecloudstore-expires</strong> – Expiration Date</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -440,6 +555,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.2.5">204 No Content</a></span> – OK</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.2">401 Unauthorized</a></span> – Unauthorized</p></li>
+<li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.4">403 Forbidden</a></span> – Forbidden</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.5">404 Not Found</a></span> – Object not found</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal Error</p></li>
 </ul>
@@ -454,6 +570,20 @@
 <dt class="field-odd">Response Headers<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>x-clonecloudstore-type</strong> – Type as StorageType</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>
@@ -492,6 +622,24 @@
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal Error</p></li>
 </ul>
 </dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+</ul>
+</dd>
 </dl>
 </dd></dl>
 
@@ -528,6 +676,24 @@
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.2">401 Unauthorized</a></span> – Unauthorized</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.10">409 Conflict</a></span> – Bucket already exist</p></li>
 <li><p><span><a class="reference external" href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.1">500 Internal Server Error</a></span> – Internal Error</p></li>
+</ul>
+</dd>
+<dt class="field-even">Response Headers<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
+<li><p><strong>x-clonecloudstore-op-id</strong> – Operation ID</p></li>
+<li><p><strong>x-clonecloudstore-module</strong> – Module Id</p></li>
+<li><p><strong>x-clonecloudstore-error</strong> – Error Message</p></li>
 </ul>
 </dd>
 </dl>

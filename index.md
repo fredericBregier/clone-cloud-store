@@ -1,5 +1,5 @@
 ![Clone Cloud Store Logo](ccs-doc/src/source/static/clone-cloud-store-logo-small.png)
-# Clone Cloud Store Project
+# Clone Cloud Store
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
@@ -60,7 +60,7 @@ It allows to test the solution with your application or to allow a smooth move t
 
 See documentation in [HTML](https://fredericBregier.github.io/clone-cloud-store/html/index.html) or in [PDF](https://fredericBregier.github.io/clone-cloud-store/clonecloudstoreccs.pdf) here.
 
-Information from our own SonarQube (standard configuration) is [here](https://fredericBregier.github.io/clone-cloud-store/2024-01-07-ccs-parent-analysis-report.html).
+Information from our own SonarQube (standard configuration) is [here](https://fredericBregier.github.io/clone-cloud-store/2024-02-21-ccs-parent-analysis-report.html).
 
 Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/clone-cloud-store/javasite/index.html).
 
@@ -74,21 +74,28 @@ Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/c
 - Common
   - Full support for InputStream within Quarkus (through a patch of Quarkus)
   - Full support of Database choice between MongoDB and PostgreSql (by configuration)
+  - Metrics available for Prometheus or equivalent
 - Accessor
   - Fully functional
   - Include remote checking if locally not present (by configuration)
   - Include remote cloning
   - Include Public Client and Internal Client (Quarkus)
+  - Include Public Client based on Apache httpclient 5 without need of Quarkus
   - Simple Gateway with no Database nor Remote access or cloning available
+  - Include optional Buffered Accessor relying on local space (only for unsteady Storage service)
 - Driver
   - Support of S3, Azure Blob Storage and Google Cloud Storage
 - Replicator
   - Fully functional for replication or preemptive remote action
 - Topology
   - Full support for remote Clone Cloud Store sites
+- Ownership
+  - Support for ownership based on Bucket
 - Quarkus patch client: patch until Quarkus validate PR 37308
 - Reconciliator
-  - Logic in place but not yet functional (so no Disaster Recovery or Cloud Migration yet)
+  - Logic in place but not yet API (so no Disaster Recovery or Cloud Migration yet)
+  - Initialization of a CCS site from a remote one or from an existing Driver Storage
+  - Missing API and Configurations
   - Will need extra API on Replicator
 
 
@@ -96,11 +103,6 @@ Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/c
 
 
 - API could change, in particular Accessor public API (for client application) (see Client Authentication)
-
-- Client without Quarkus is still on going
-
-  - The idea is to allow non Quarkus application in Java to have a ready client SDK.
-  - For Quarkus application, the client already exists
 
 - Client authentication
 
@@ -111,7 +113,8 @@ Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/c
 
 - Reconciliation
 
-  - First steps on Reconciliation computations are still in progress
+  - Reconciliation computations done
+  - Missing API and configurations
   - Note that replication is active and remote access if not locally present is possible (through configuration)
 
 - PostgreSQL full support
@@ -127,12 +130,10 @@ Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/c
 
   - Allowing specific access on all or part of CRUD options to a Bucket owned by an application to another one
     (for instance, to allow producer / consumer of files)
-  - Compression of HTTPS link is functional but not yet activated (and will be based on a property)
   - Bandwidth limitation is moved to Quarkus normal configuration (see https://quarkus.io/guides/http-reference#configure-traffic-shaping)
 
     - It shall be useful only for Replicator and in particular in outbound global mode per site
 
-  - Quarkus Metrics are available but not yet for actions within Clone Cloud Store. The work is on going.
   - Health check service to be done
 
 - Distribution according to various options is still in debate
@@ -141,3 +142,53 @@ Java Site (Javadoc, dependency...) is [here](https://fredericBregier.github.io/c
   - However, for PostgreSql or MongoDB, it can be done through configuration so keeping one jar
   - Should it be separate jar (individual per module and per option) or flatten jar (per option)?
   - Helm, Ansible and Dockerfile or other ways to distribute image 
+
+
+
+## Notes of versions
+
+# 0.8.0 2024/02
+- Fully tested Reconciliation steps
+- Accessor buffered upload to limit side effect of unsteady Storage service
+- Accessor Ownership and CRUD rights support
+- Administration Topology and Ownership support
+- Add Apache http client for Accessor Public client (no Quarkus dependency)
+- Refactorization on Server side
+- Prepare import from existing Driver Storage without CCS before
+- Compression configurable for internal services
+- Optimize Azure Driver and MongoDb Bulk operations
+- Add Metrics on Topics and Driver
+- Fix Digest implementation and Proactive Replication implementation
+- Fix doc and API
+- Clean up Logs
+
+# 0.7.0 2024/01
+- Support of MongoDB and Kafka
+- Support of Accessor with remote access and proactive reconciliation
+- Support of Simple Gateway Accessor
+- Support of Replicator
+- Support of Topology
+- Support of Azure Blob Storage, Google Cloud Storage, in addition of Amazon S3 and S3 like
+- First steps on Reconciliator batch
+
+# 0.6.0 2023/11
+- Patch of Quarkus to support InputStream on client side (upload and download)
+
+# 0.5.0 2023/10
+- Refactorization and simplification
+- Support of Dynamic choice of Database (MongoDB or PostgreSql) in Common
+
+# 0.4.0 2023/09
+- Performance improvements
+- Support of proactive replication from Accessor
+
+# 0.3.0 2023/07
+- Adding Topology support to Replicator
+
+# 0.2.0 2023/01
+- Replicator support with asynchronous replication
+- Internal Accessor support
+
+# 0.1.0 2022/06
+- Public Accessor support
+- Driver for Amazon S3 and S3 like support
