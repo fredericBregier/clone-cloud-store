@@ -148,6 +148,11 @@ class RestQueryTest {
     parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
     testItemString(parsed, QUERY.JSON_NEQ);
 
+    dbQuery = new RestQuery(QUERY.REVERSE_IN, "field", "value");
+    json = objectMapper.writeValueAsString(dbQuery);
+    parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
+    testItemString(parsed, QUERY.REVERSE_IN);
+
     final var object = Integer.valueOf(0);
 
     dbQuery = new RestQuery(QUERY.EQ, "field", object);
@@ -170,6 +175,11 @@ class RestQueryTest {
     json = objectMapper.writeValueAsString(dbQuery);
     parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
     testItemObject(parsed, QUERY.NEQ, object);
+
+    dbQuery = new RestQuery(QUERY.REVERSE_IN, "field", object);
+    json = objectMapper.writeValueAsString(dbQuery);
+    parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
+    testItemObject(parsed, QUERY.REVERSE_IN, object);
 
     final List<String> values = new ArrayList<>();
     values.add("val1");
@@ -249,6 +259,7 @@ class RestQueryTest {
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.START_WITH, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.JSON_EQ, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.JSON_NEQ, "field", values));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.REVERSE_IN, "field", values));
 
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.EQ, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new RestQuery(QUERY.NEQ, "field", (Object[]) array));
@@ -260,6 +271,8 @@ class RestQueryTest {
         () -> new RestQuery(QUERY.JSON_EQ, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> new RestQuery(QUERY.JSON_NEQ, "field", (Object[]) array));
+    assertThrows(CcsInvalidArgumentRuntimeException.class,
+        () -> new RestQuery(QUERY.REVERSE_IN, "field", (Object[]) array));
   }
 
   private void testItemString(final RestQuery parsed, final QUERY query) {

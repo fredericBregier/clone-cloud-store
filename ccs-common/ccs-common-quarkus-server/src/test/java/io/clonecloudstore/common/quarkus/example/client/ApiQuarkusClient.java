@@ -30,6 +30,7 @@ import io.clonecloudstore.common.quarkus.exception.CcsClientGenericException;
 import io.clonecloudstore.common.quarkus.exception.CcsServerGenericException;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
+import io.smallrye.mutiny.Uni;
 import jakarta.ws.rs.core.Response;
 
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_CREATION_DATE;
@@ -68,6 +69,16 @@ public class ApiQuarkusClient extends ClientAbstract<ApiBusinessIn, ApiBusinessO
     final var inputStream = prepareInputStreamToSend(content, shallCompress, alreadyCompressed, businessIn);
     final var uni = getService().createObject(name, len, inputStream);
     return getResultFromPostInputStreamUni(uni, inputStream);
+  }
+
+  public InputStream prepareInputStreamToSend2(final InputStream content, final boolean shallCompress,
+                                               final boolean alreadyCompressed, final ApiBusinessIn businessIn) {
+    return super.prepareInputStreamToSend(content, shallCompress, alreadyCompressed, businessIn);
+  }
+
+  public ApiBusinessOut getResultFromPostInputStreamUni2(final Uni<Response> uni, final InputStream sendInputStream)
+      throws CcsWithStatusException {
+    return super.getResultFromPostInputStreamUni(uni, sendInputStream);
   }
 
   public ApiBusinessOut putInputStream(final String name, final InputStream content, final long len,

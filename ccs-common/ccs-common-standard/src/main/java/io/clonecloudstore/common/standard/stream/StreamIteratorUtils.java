@@ -21,8 +21,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -38,18 +36,20 @@ import java.util.stream.StreamSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.primitives.Bytes;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
+import io.clonecloudstore.common.standard.inputstream.PipedInputOutputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.SystemTools;
-
-import static io.clonecloudstore.common.standard.properties.StandardProperties.DEFAULT_PIPED_BUFFER_SIZE;
 
 /**
  * Utility class to help to create an InputStream of serialized objects from a Stream of Objects and reverse.
  * Note that DTO class must have an empty constructor or being a record.
  */
 public class StreamIteratorUtils {
+  private static final byte[] END_OF_LINE = {'\n'};
+
   /**
    * Transform interface
    */
@@ -61,10 +61,8 @@ public class StreamIteratorUtils {
    * @param stream   The Stream to transform to InputStream of Json serialized Objects
    * @param forClass the object Class
    * @return the InputStream usable in REST API
-   * @throws IOException if an issue occurs
    */
-  public static InputStream getInputStreamFromStream(final Stream<?> stream, final Class<?> forClass)
-      throws IOException {
+  public static InputStream getInputStreamFromStream(final Stream<?> stream, final Class<?> forClass) {
     return getInputStreamFromStream(stream, null, forClass);
   }
 
@@ -73,12 +71,10 @@ public class StreamIteratorUtils {
    * @param transform function to convert source Stream object to another one
    * @param forClass  the object Class
    * @return the InputStream usable in REST API
-   * @throws IOException if an issue occurs
    */
   public static InputStream getInputStreamFromStream(final Stream<?> stream, final Transform transform,
-                                                     final Class<?> forClass) throws IOException {
-    final var writer = new PipedOutputStream(); // NOSONAR for try-resources
-    final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
+                                                     final Class<?> forClass) {
+    final var reader = new InternalPipedInputOutputStream();
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
     SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
@@ -87,63 +83,50 @@ public class StreamIteratorUtils {
           if (exc != null) {
             throw new IllegalStateException(exc);
           }
-          internalWriteItemToInputStream(transform, item, writer, objectWriter, reader);
+          internalWriteItemToInputStream(transform, item, objectWriter, reader);
         });
-        writer.flush();
+        reader.flush();
         stream.close();
         Thread.yield();
       } catch (final Throwable e) { // NOSONAR exception caught in reader
         errorFromStreamIterator(e, reader);
       } finally {
-        SystemTools.silentlyCloseNoException(writer);
+        reader.closeOutput();
       }
     });
     Thread.yield();
     return reader;
   }
 
-  private static void errorFromStreamIterator(final Throwable e, final InternalPipedInputStream reader) {
+  private static void errorFromStreamIterator(final Throwable e, final InternalPipedInputOutputStream reader) {
     final var e2 = e instanceof IllegalStateException ise ? ise.getCause() : e;
     reader.setException(e2);
     SystemTools.silentlyCloseNoException(reader);
   }
 
   private static void writeItemTransformedToInputStream(final Transform transform, final Object item,
-                                                        final PipedOutputStream writer, final ObjectWriter objectWriter,
-                                                        final InternalPipedInputStream reader) throws IOException {
-    try {
-      final var transformed = transform.transform(item);
-      if (transformed == null) {
-        return;
-      }
-      writer.write(objectWriter.writeValueAsBytes(transformed));
-      writer.write('\n');
-    } catch (final IOException e) {
-      // Fake write
-      try {
-        writer.write('\n');
-      } catch (final IOException ignore) {
-        // Ignore
-      }
-      reader.setException(e);
-      throw e;
+                                                        final ObjectWriter objectWriter,
+                                                        final InternalPipedInputOutputStream writer)
+      throws IOException {
+    final var transformed = transform.transform(item);
+    if (transformed == null) {
+      return;
     }
+    writeItemToInputStream(transformed, objectWriter, writer);
   }
 
-  private static void writeItemToInputStream(final Object item, final PipedOutputStream writer,
-                                             final ObjectWriter objectWriter, final InternalPipedInputStream reader)
-      throws IOException {
+  private static void writeItemToInputStream(final Object item, final ObjectWriter objectWriter,
+                                             final InternalPipedInputOutputStream writer) throws IOException {
     try {
-      writer.write(objectWriter.writeValueAsBytes(item));
-      writer.write('\n');
+      writer.write(Bytes.concat(objectWriter.writeValueAsBytes(item), END_OF_LINE));
     } catch (final IOException e) {
       // Fake write
       try {
-        writer.write('\n');
+        writer.write(END_OF_LINE);
       } catch (final IOException ignore) {
         // Ignore
       }
-      reader.setException(e);
+      writer.setException(e);
       throw e;
     }
   }
@@ -152,10 +135,8 @@ public class StreamIteratorUtils {
    * @param iterator The Iterator to transform to InputStream of Json serialized Objects
    * @param forClass the object Class
    * @return the InputStream usable in REST API
-   * @throws IOException if an issue occurs
    */
-  public static InputStream getInputStreamFromIterator(final Iterator<?> iterator, final Class<?> forClass)
-      throws IOException {
+  public static InputStream getInputStreamFromIterator(final Iterator<?> iterator, final Class<?> forClass) {
     return getInputStreamFromIterator(iterator, null, forClass);
   }
 
@@ -164,12 +145,10 @@ public class StreamIteratorUtils {
    * @param transform function to convert source Stream object to another one
    * @param forClass  the object Class
    * @return the InputStream usable in REST API
-   * @throws IOException if an issue occurs
    */
   public static InputStream getInputStreamFromIterator(final Iterator<?> iterator, final Transform transform,
-                                                       final Class<?> forClass) throws IOException {
-    final var writer = new PipedOutputStream(); // NOSONAR for try-resources
-    final var reader = new InternalPipedInputStream(writer, DEFAULT_PIPED_BUFFER_SIZE);
+                                                       final Class<?> forClass) {
+    final var reader = new InternalPipedInputOutputStream();
     final var objectWriter = StandardProperties.getObjectMapper().writerFor(forClass);
     SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
       try {
@@ -179,14 +158,14 @@ public class StreamIteratorUtils {
           if (exc != null) {
             throw new IllegalStateException(exc);
           }
-          internalWriteItemToInputStream(transform, item, writer, objectWriter, reader);
+          internalWriteItemToInputStream(transform, item, objectWriter, reader);
         }
-        writer.flush();
+        reader.flush();
         Thread.yield();
       } catch (final Throwable e) { // NOSONAR exception caught in reader
         errorFromStreamIterator(e, reader);
       } finally {
-        finalizeWriteIterator(iterator, writer);
+        finalizeWriteIterator(iterator, reader);
       }
     });
     Thread.yield();
@@ -194,20 +173,20 @@ public class StreamIteratorUtils {
   }
 
   private static void internalWriteItemToInputStream(final Transform transform, final Object item,
-                                                     final PipedOutputStream writer, final ObjectWriter objectWriter,
-                                                     final InternalPipedInputStream reader) {
+                                                     final ObjectWriter objectWriter,
+                                                     final InternalPipedInputOutputStream writer) {
     try {
       if (transform == null) {
-        writeItemToInputStream(item, writer, objectWriter, reader);
+        writeItemToInputStream(item, objectWriter, writer);
       } else {
-        writeItemTransformedToInputStream(transform, item, writer, objectWriter, reader);
+        writeItemTransformedToInputStream(transform, item, objectWriter, writer);
       }
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
   }
 
-  private static void finalizeWriteIterator(final Iterator<?> iterator, final PipedOutputStream writer) {
+  private static void finalizeWriteIterator(final Iterator<?> iterator, final InternalPipedInputOutputStream writer) {
     if (iterator instanceof final Closeable closingIterator) {
       try {
         closingIterator.close();
@@ -215,7 +194,7 @@ public class StreamIteratorUtils {
         // Nothing
       }
     }
-    SystemTools.silentlyCloseNoException(writer);
+    writer.closeOutput();
   }
 
   /**
@@ -337,11 +316,11 @@ public class StreamIteratorUtils {
   /**
    * To capture Exception from Stream
    */
-  private static class InternalPipedInputStream extends PipedInputStream {
+  private static class InternalPipedInputOutputStream extends PipedInputOutputStream {
     private IOException exception = null;
 
-    private InternalPipedInputStream(final PipedOutputStream writer, final int pipeSize) throws IOException {
-      super(writer, pipeSize);
+    private InternalPipedInputOutputStream() {
+      super(null, 10000);
     }
 
     void setException(final Throwable e) {

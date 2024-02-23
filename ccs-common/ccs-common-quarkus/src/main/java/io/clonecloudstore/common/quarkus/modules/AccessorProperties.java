@@ -98,7 +98,7 @@ public class AccessorProperties extends ServiceProperties {
    *
    * @param isInternalCompression new internal compression state
    */
-  static void setInternalCompression(final boolean isInternalCompression) {
+  public static void setInternalCompression(final boolean isInternalCompression) {
     internalCompression = isInternalCompression;
   }
 

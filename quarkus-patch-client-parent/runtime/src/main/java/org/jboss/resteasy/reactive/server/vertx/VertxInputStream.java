@@ -168,24 +168,14 @@ public class VertxInputStream extends InputStream {
       return;
     }
     closed = true;
-    try {
-      while (!finished) {
-        readIntoBuffer();
-        if (pooled != null) {
-          pooled.release();
-          pooled = null;
-        }
-      }
-    } catch (IOException | RuntimeException e) {
-      //our exchange is all broken, just end it
-      throw e;
-    } finally {
-      if (pooled != null) {
-        pooled.release();
-        pooled = null;
-      }
-      finished = true;
+    while (!exchange.inputOverflow.isEmpty()) {
+      exchange.inputOverflow.poll().getByteBuf().release();
     }
+    if (pooled != null) {
+      pooled.release();
+      pooled = null;
+    }
+    finished = true;
   }
 
   public static class VertxBlockingInput implements Handler<Buffer> {

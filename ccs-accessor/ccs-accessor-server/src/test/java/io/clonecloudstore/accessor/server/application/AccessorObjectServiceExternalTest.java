@@ -176,12 +176,10 @@ class AccessorObjectServiceExternalTest {
         FakeCommonObjectResourceHelper.errorCode = 200;
         final var objectGet = serviceObject.checkPullable(bucketName, objectName, true, clientId, opId);
         assertEquals(objectName, objectGet.response().getName());
-        Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
         final var streamResponse = serviceObject.getRemotePullInputStream(bucketName, objectName, clientId, "", opId);
         assertEquals(objectName, streamResponse.dtoOut().getName());
         assertDoesNotThrow(() -> FakeInputStream.consumeAll(streamResponse.inputStream()));
-        Thread.sleep(100);
         // Increment is only when calling AccessorObjectResource (External)
         assertEquals(1, getObjectCreateFromTopic(1));
       } catch (InterruptedException e) {
@@ -199,17 +197,14 @@ class AccessorObjectServiceExternalTest {
         FakeCommonObjectResourceHelper.errorCode = 204;
         assertEquals(StorageType.OBJECT,
             serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId, opId, true));
-        Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
         FakeCommonObjectResourceHelper.errorCode = 200;
         final var objectGet = serviceObject.checkPullable(bucketName, objectName, true, clientId, opId);
         assertEquals(objectName, objectGet.response().getName());
-        Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
         final var streamResponse = serviceObject.getRemotePullInputStream(bucketName, objectName, clientId, "", opId);
         assertEquals(objectName, streamResponse.dtoOut().getName());
         assertDoesNotThrow(() -> FakeInputStream.consumeAll(streamResponse.inputStream()));
-        Thread.sleep(100);
         // Increment is only when calling AccessorObjectResource (External)
         assertEquals(1, getObjectCreateFromTopic(1));
       } catch (InterruptedException e) {
@@ -228,12 +223,10 @@ class AccessorObjectServiceExternalTest {
         FakeCommonObjectResourceHelper.errorCode = 204;
         assertEquals(StorageType.NONE,
             serviceObject.objectOrDirectoryExists(bucketName, objectName, true, clientId, opId, true));
-        Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
         FakeCommonObjectResourceHelper.errorCode = 200;
         assertThrows(CcsNotExistException.class,
             () -> serviceObject.checkPullable(bucketName, objectName, true, clientId, opId));
-        Thread.sleep(100);
         assertEquals(1, getObjectCreateFromTopic(1));
       } catch (InterruptedException e) {
         throw new RuntimeException(e);

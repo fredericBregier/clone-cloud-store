@@ -99,7 +99,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Blocking
   public Uni<Response> createObject(final HttpServerRequest request, @Context final Closer closer,
                                     final InputStream inputStream,
-                                    @DefaultValue("name") @RestHeader(X_NAME) final String name,
+                                    @DefaultValue("default-name") @RestHeader(X_NAME) final String name,
                                     @DefaultValue("0") @RestHeader(X_LEN) final long len) {
     // Business code should come here
     final var businessIn = new ApiBusinessIn();
@@ -116,7 +116,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Blocking
   public Uni<Response> createObjectUsingPut(final HttpServerRequest request, @Context final Closer closer,
                                             final InputStream inputStream,
-                                            @DefaultValue("name") @RestHeader(X_NAME) final String name,
+                                            @DefaultValue("default-name") @RestHeader(X_NAME) final String name,
                                             @DefaultValue("0") @RestHeader(X_LEN) final long len) {
     // Business code should come here
     final var businessIn = new ApiBusinessIn();
@@ -134,7 +134,7 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   @Blocking
   public Uni<Response> createObjectThrough(final HttpServerRequest request, @Context final Closer closer,
                                            final InputStream inputStream,
-                                           @DefaultValue("name") @RestHeader(X_NAME) final String name,
+                                           @DefaultValue("default-name") @RestHeader(X_NAME) final String name,
                                            @DefaultValue("0") @RestHeader(X_LEN) final long len) {
     // Business code should come here
     final var businessIn = new ApiBusinessIn();

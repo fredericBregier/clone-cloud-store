@@ -190,6 +190,8 @@ Accessor buffered configuration
 
 For both *Accessor Simple Gateway Cloud Clone Store Service* and *Accessor Cloud Clone Store Service*,
 an extra configuration could be set to allow buffered streams.
+For Accessor Cloud Clone Store Service, it is activated for both public and internal Accessor API (only in read
+for internal).
 
 .. warning::
   The buffered configuration is intend to protect against non resilient Driver services.

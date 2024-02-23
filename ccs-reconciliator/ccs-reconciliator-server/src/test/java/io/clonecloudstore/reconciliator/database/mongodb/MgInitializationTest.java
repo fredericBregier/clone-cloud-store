@@ -68,8 +68,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(MongoKafkaProfile.class)
 @TestMethodOrder(MethodOrderer.MethodName.class)
-class MgDaoInitializationTest {
-  private static final Logger LOGGER = Logger.getLogger(MgDaoInitializationTest.class);
+class MgInitializationTest {
+  private static final Logger LOGGER = Logger.getLogger(MgInitializationTest.class);
   private static final String BUCKET = "mybucket";
   private static final String CLIENT_ID = "client-id";
   private static final String FROM_SITE = "from-site";

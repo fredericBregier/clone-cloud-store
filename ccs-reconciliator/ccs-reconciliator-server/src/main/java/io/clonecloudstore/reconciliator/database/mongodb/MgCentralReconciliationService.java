@@ -18,6 +18,7 @@ package io.clonecloudstore.reconciliator.database.mongodb;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,10 @@ import io.clonecloudstore.reconciliator.database.model.DaoSitesActionRepository;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListing;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListingRepository;
 import io.clonecloudstore.reconciliator.model.ReconciliationSitesListing;
+import io.clonecloudstore.reconciliator.model.ReconciliationStep;
 import io.clonecloudstore.reconciliator.model.SingleSiteObject;
+import io.clonecloudstore.reconciliator.server.application.ReconciliationConstants;
+import io.clonecloudstore.replicator.client.LocalReplicatorApiClientFactory;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.bson.BsonNull;
@@ -61,6 +65,7 @@ import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRe
 import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRepository.NSTATUS;
 import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRepository.REQUESTID;
 import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRepository.SITE;
+import static io.clonecloudstore.reconciliator.database.model.DaoSitesActionRepository.SITES;
 import static io.clonecloudstore.reconciliator.database.mongodb.MgDaoReconciliationUtils.CCS_FIRST;
 import static io.clonecloudstore.reconciliator.database.mongodb.MgDaoReconciliationUtils.COND;
 import static io.clonecloudstore.reconciliator.database.mongodb.MgDaoReconciliationUtils.DEFAULT_PK;
@@ -117,17 +122,20 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
   private final MgDaoSitesListingRepository sitesListingRepository;
   private final MgDaoSitesActionRepository sitesActionRepository;
   private final MgDaoRequestRepository requestRepository;
+  private final LocalReplicatorApiClientFactory localReplicatorApiClientFactory;
   private final BulkMetrics bulkMetrics;
 
   public MgCentralReconciliationService(final MgDaoSitesListingRepository sitesListingRepository,
                                         final MgDaoSitesActionRepository sitesActionRepository,
-                                        final MgDaoRequestRepository requestRepository, final BulkMetrics bulkMetrics) {
+                                        final MgDaoRequestRepository requestRepository,
+                                        final LocalReplicatorApiClientFactory localReplicatorApiClientFactory,
+                                        final BulkMetrics bulkMetrics) {
     this.sitesListingRepository = sitesListingRepository;
     this.sitesActionRepository = sitesActionRepository;
     this.requestRepository = requestRepository;
+    this.localReplicatorApiClientFactory = localReplicatorApiClientFactory;
     this.bulkMetrics = bulkMetrics;
   }
-
 
   /**
    * Add the remote sites listing to local aggregate one<br>
@@ -177,12 +185,13 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       SystemTools.consumeAll(iterator);
     }
     var checkedRemote = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId())).getCheckedRemote();
-    daoRequest.setCheckedRemote(checkedRemote + countEntries.get());
+    daoRequest.setCheckedRemote(checkedRemote + countEntries.get()).setStep(ReconciliationStep.CENTRALIZE);
     bulkMetrics.incrementCounter(countEntries.get(), CENTRAL_RECONCILIATION, BulkMetrics.KEY_OBJECT,
         BulkMetrics.TAG_FROM_REMOTE_SITES_LISTING);
     LOGGER.infof("Remote save listing %d items", countEntries.get());
     requestRepository.update(DbQuery.idEquals(daoRequest.getId()),
-        new DbUpdate().set(DaoRequestRepository.CHECKED_REMOTE, daoRequest.getCheckedRemote()));
+        new DbUpdate().set(DaoRequestRepository.CHECKED_REMOTE, daoRequest.getCheckedRemote())
+            .set(DaoRequestRepository.STEP, daoRequest.getStep()));
   }
 
   private void applyBulkImportQueue(final DaoRequest daoRequest,
@@ -306,6 +315,8 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
   @Override
   public void computeActions(final DaoRequest daoRequest) throws CcsDbException {
     try {
+      requestRepository.update(DbQuery.idEquals(daoRequest.getId()),
+          new DbUpdate().set(DaoRequestRepository.STEP, ReconciliationStep.COMPUTE));
       final AtomicReference<CcsDbException> ccsDbExceptionAtomicReference = new AtomicReference<>();
       runInThread(ccsDbExceptionAtomicReference,
           () -> computeActionsStepDelete(daoRequest, ccsDbExceptionAtomicReference),
@@ -337,8 +348,8 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       final var buildActions = new Document(MG_ADD_FIELDS,
           addPartialTargetSites(getBuildActionsDelete(), getValidTargetSitesForDelete(), daoRequest));
       final var buildActionsFinalTargetSites = getBuildActionsFinalTargetSites();
-      final var filterActionsNotEmpty = new Document(MG_MATCH,
-          new Document(DaoSitesActionRepository.SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))));
+      final var filterActionsNotEmpty =
+          new Document(MG_MATCH, new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))));
       final var keepActionFieldsOnly = getUnsetLocalTempVars();
       final var mergeIntoActions = getMergeIntoActions();
       sitesListingRepository.mongoCollection().aggregate(
@@ -351,8 +362,8 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
   }
 
   private static Document getBuildActionsFinalTargetSites() {
-    return new Document(MG_ADD_FIELDS, new Document(DaoSitesActionRepository.SITES,
-        new Document(MG_SET_UNION, List.of("$unknownStatusSites", "$tempSites"))));
+    return new Document(MG_ADD_FIELDS,
+        new Document(SITES, new Document(MG_SET_UNION, List.of("$unknownStatusSites", "$tempSites"))));
   }
 
   private static Document getBaseMatchActions(final DaoRequest daoRequest) {
@@ -392,7 +403,7 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
           addPartialTargetSites(getBuildActionsReadyLike(), getValidTargetSitesReadyLike(), daoRequest));
       final var buildActionsFinalTargetSites = getBuildActionsFinalTargetSites();
       final var filterActionsNotEmpty = new Document(MG_MATCH,
-          new Document(DaoSitesActionRepository.SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
+          new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
               DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_NOT, new Document(MG_SIZE, 0))));
       final var keepActionFieldsOnly = getUnsetLocalTempVars();
       final var mergeIntoActions = getMergeIntoActions();
@@ -473,10 +484,9 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
   }
 
   private static Document getFilterActionsNotEmpty() {
-    return new Document(MG_MATCH,
-        new Document(DaoSitesActionRepository.SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
-                DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_NOT, new Document(MG_SIZE, 0)))
-            .append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_NE, 0)));
+    return new Document(MG_MATCH, new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
+            DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_NOT, new Document(MG_SIZE, 0)))
+        .append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_NE, 0)));
   }
 
   public void computeActionsInvalidUpload(final DaoRequest daoRequest,
@@ -490,8 +500,8 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       final var buildActions = new Document(MG_ADD_FIELDS,
           addPartialTargetSites(getBuildActionsInvalidUpload(), getValidTargetSitesForDelete(), daoRequest));
       final var buildActionsFinalTargetSites = getBuildActionsFinalTargetSites();
-      final var filterActionsNotEmpty = new Document(MG_MATCH,
-          new Document(DaoSitesActionRepository.SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))));
+      final var filterActionsNotEmpty =
+          new Document(MG_MATCH, new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))));
       final var keepActionFieldsOnly = getUnsetLocalTempVars();
       final var mergeIntoActions = getMergeIntoActions();
       sitesListingRepository.mongoCollection().aggregate(
@@ -505,8 +515,7 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
 
   private static Document getBuildActionsInvalidUpload() {
     return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new BsonNull()).append(
-            DaoSitesActionRepository.NEED_ACTION, ERROR_ACTION.getStatus())
-        .append(DaoSitesActionRepository.SITES, getValidTargetSitesForDelete());
+        DaoSitesActionRepository.NEED_ACTION, ERROR_ACTION.getStatus()).append(SITES, getValidTargetSitesForDelete());
   }
 
   private static Document addPartialTargetSites(final Document addVarStep, final Document validTarget,
@@ -528,18 +537,18 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
     // Sub Step 3 Count
     try {
       long actions = sitesActionRepository.count(new Document(REQUESTID, daoRequest.getId()));
-      daoRequest.setActions(actions);
+      daoRequest.setActions(actions).setStep(ReconciliationStep.COMPUTE);
       bulkMetrics.incrementCounter(actions, CENTRAL_RECONCILIATION, BulkMetrics.KEY_OBJECT, BulkMetrics.TAG_TO_ACTIONS);
       LOGGER.infof("Final actions %d items", actions);
       requestRepository.update(DbQuery.idEquals(daoRequest.getId()),
-          new DbUpdate().set(DaoRequestRepository.ACTIONS, actions));
+          new DbUpdate().set(DaoRequestRepository.ACTIONS, actions).set(DaoRequestRepository.STEP, daoRequest.getStep()));
     } catch (final RuntimeException e) {
       throw new CcsDbException(e);
     }
   }
 
   @Override
-  public void updateRequestFromRemoteListing(final DaoRequest daoRequest) throws CcsDbException {
+  public boolean updateRequestFromRemoteListing(final DaoRequest daoRequest) throws CcsDbException {
     // Update Checked, Site ? or done previously
     final var original = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     var originalList = original.getContextSitesDone();
@@ -547,17 +556,19 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       requestRepository.mongoCollection().updateOne(new Document(ID, daoRequest.getId()),
           new Document(MG_PUSH, new Document(DaoRequestRepository.CONTEXTSITESDONE, daoRequest.getCurrentSite())));
     }
+    var newValue = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
+    LOGGER.infof("From Remote Listing: %s", newValue);
+    return new HashSet<>(newValue.getContextSitesDone()).containsAll(newValue.getContextSites());
   }
 
   /**
-   * Step9: return iterator of actions to populate topic<br>
+   * Step9: return iterator of actions for one specific site<br>
    * Index Actions: requestId, bucket
    */
   @Override
-  public ClosingIterator<DaoSitesAction> getSitesActon(final DaoRequest daoRequest) throws CcsDbException {
-    return sitesActionRepository.findIterator(
-        new DbQuery(RestQuery.CONJUNCTION.AND, new DbQuery(RestQuery.QUERY.EQ, REQUESTID, daoRequest.getId()),
-            new DbQuery(RestQuery.QUERY.EQ, BUCKET, daoRequest.getBucket())));
+  public ClosingIterator<DaoSitesAction> getSitesActon(final DaoRequest daoRequest, final String target)
+      throws CcsDbException {
+    return sitesActionRepository.findIterator(ReconciliationConstants.subsetForOneSite(daoRequest, target));
   }
 
   /**

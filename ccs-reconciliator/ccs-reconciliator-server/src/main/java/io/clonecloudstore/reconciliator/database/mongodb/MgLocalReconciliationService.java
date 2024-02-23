@@ -51,9 +51,12 @@ import io.clonecloudstore.driver.api.exception.DriverException;
 import io.clonecloudstore.driver.api.model.StorageObject;
 import io.clonecloudstore.reconciliator.database.model.DaoRequest;
 import io.clonecloudstore.reconciliator.database.model.DaoRequestRepository;
+import io.clonecloudstore.reconciliator.database.model.DaoSitesActionRepository;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListing;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListingRepository;
 import io.clonecloudstore.reconciliator.database.model.LocalReconciliationService;
+import io.clonecloudstore.reconciliator.model.ReconciliationSitesAction;
+import io.clonecloudstore.reconciliator.model.ReconciliationStep;
 import io.clonecloudstore.reconciliator.model.SingleSiteObject;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -126,17 +129,20 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
   private final DriverApiFactory storageDriverFactory;
   private final MgDaoNativeListingRepository nativeListingRepository;
   private final MgDaoSitesListingRepository sitesListingRepository;
+  private final MgDaoSitesActionRepository sitesActionRepository;
   private final MgDaoRequestRepository requestRepository;
   private final BulkMetrics bulkMetrics;
 
   public MgLocalReconciliationService(final MgDaoAccessorObjectRepository objectRepository,
                                       final MgDaoNativeListingRepository nativeListingRepository,
                                       final MgDaoSitesListingRepository sitesListingRepository,
+                                      final MgDaoSitesActionRepository sitesActionRepository,
                                       final MgDaoRequestRepository requestRepository, final BulkMetrics bulkMetrics) {
     this.objectRepository = objectRepository;
     this.storageDriverFactory = DriverApiRegistry.getDriverApiFactory();
     this.nativeListingRepository = nativeListingRepository;
     this.sitesListingRepository = sitesListingRepository;
+    this.sitesActionRepository = sitesActionRepository;
     this.requestRepository = requestRepository;
     this.bulkMetrics = bulkMetrics;
   }
@@ -1045,5 +1051,94 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
     } catch (final RuntimeException e) {
       throw new CcsDbException(e);
     }
+  }
+
+  @Override
+  public void importActions(final DaoRequest daoRequest, final Iterator<ReconciliationSitesAction> iterator)
+      throws CcsDbException {
+    sitesActionRepository.delete(
+        new DbQuery(RestQuery.QUERY.EQ, DaoSitesActionRepository.REQUESTID, daoRequest.getId()));
+    final AtomicReference<CcsDbException> possibleDbException = new AtomicReference<>();
+    final AtomicLong countEntries = new AtomicLong(0);
+    final BlockingQueue<List<ReconciliationSitesAction>> blockingQueue = new ArrayBlockingQueue<>(10);
+    final Semaphore semaphore = new Semaphore(0);
+    SystemTools.STANDARD_EXECUTOR_SERVICE.execute(
+        () -> applyBulkImportQueue(blockingQueue, semaphore, countEntries, possibleDbException));
+    final int max = MongoBulkInsertHelper.MAX_BATCH;
+    final List<ReconciliationSitesAction> toAdds = new ArrayList<>(max);
+    try {
+      try {
+        while (iterator.hasNext()) {
+          final var daoSitesListing = iterator.next();
+          toAdds.add(daoSitesListing);
+          if (toAdds.size() >= max) {
+            final List<ReconciliationSitesAction> toAddsBis = new ArrayList<>(toAdds);
+            blockingQueue.put(toAddsBis);
+            toAdds.clear();
+          }
+          if (possibleDbException.get() != null) {
+            throw possibleDbException.get();
+          }
+        }
+        if (!toAdds.isEmpty()) {
+          blockingQueue.put(toAdds);
+        }
+      } finally {
+        blockingQueue.put(Collections.emptyList());
+      }
+      semaphore.acquire();
+      sitesActionRepository.flushAll();
+      if (possibleDbException.get() != null) {
+        throw possibleDbException.get();
+      }
+      bulkMetrics.incrementCounter(1, LOCAL_RECONCILIATOR, BulkMetrics.KEY_SITE, BulkMetrics.TAG_FROM_REMOTE_SITE);
+    } catch (final InterruptedException e) { // NOSONAR intentional
+      throw new CcsDbException(e);
+    } finally {
+      SystemTools.consumeAll(iterator);
+    }
+    daoRequest.setActions(countEntries.get()).setStep(ReconciliationStep.DISPATCH);
+    bulkMetrics.incrementCounter(countEntries.get(), LOCAL_RECONCILIATOR, BulkMetrics.KEY_OBJECT,
+        BulkMetrics.TAG_FROM_REMOTE_SITES_LISTING);
+    LOGGER.infof("Remote save listing %d items", countEntries.get());
+    requestRepository.update(DbQuery.idEquals(daoRequest.getId()),
+        new DbUpdate().set(DaoRequestRepository.ACTIONS, daoRequest.getActions()).set(DaoRequestRepository.STEP, daoRequest.getStep()));
+  }
+
+  private void applyBulkImportQueue(final BlockingQueue<List<ReconciliationSitesAction>> blockingQueue,
+                                    final Semaphore semaphore, final AtomicLong countEntries,
+                                    final AtomicReference<CcsDbException> possibleDbException) {
+    try {
+      while (true) {
+        var list = blockingQueue.take();
+        if (list.isEmpty()) {
+          // End
+          return;
+        }
+        for (var item : list) {
+          final var dao = sitesActionRepository.createEmptyItem().fromDto(item);
+          sitesActionRepository.addToInsertBulk(dao);
+          countEntries.incrementAndGet();
+        }
+        sitesActionRepository.flushAll();
+        list.clear();
+        if (possibleDbException.get() != null) {
+          return;
+        }
+      }
+    } catch (final RuntimeException | InterruptedException e) { // NOSONAR intentional
+      LOGGER.warn(e);
+      possibleDbException.compareAndSet(null, new CcsDbException(e));
+    } catch (final CcsDbException e) {
+      LOGGER.warn(e);
+      possibleDbException.compareAndSet(null, e);
+    } finally {
+      semaphore.release();
+    }
+  }
+
+  @Override
+  public void applyActions(final DaoRequest daoRequest) throws CcsDbException {
+    LOGGER.infof("Start Apply Reconciliation for %s", daoRequest.getId());
   }
 }

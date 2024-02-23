@@ -38,7 +38,7 @@ public class DriverGoogleTest extends DriverGoogleBase {
     // Sometime, test failed on DriverApiFactory not setup
     if (DriverApiRegistry.getDriverApiFactory() == null) {
       // Ensure container is started
-      Thread.sleep(500);
+      Thread.sleep(100);
       DriverApiRegistry.setDriverApiFactory(CDI.current().select(DriverGoogleApiFactory.class).get());
     }
     oldSha = QuarkusProperties.serverComputeSha256();

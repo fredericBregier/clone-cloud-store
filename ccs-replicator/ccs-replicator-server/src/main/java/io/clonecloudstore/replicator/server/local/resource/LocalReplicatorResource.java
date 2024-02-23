@@ -16,6 +16,8 @@
 
 package io.clonecloudstore.replicator.server.local.resource;
 
+import java.io.InputStream;
+
 import io.clonecloudstore.accessor.config.AccessorConstants;
 import io.clonecloudstore.accessor.model.AccessorBucket;
 import io.clonecloudstore.accessor.model.AccessorObject;
@@ -28,6 +30,7 @@ import io.clonecloudstore.common.quarkus.server.service.StreamServiceAbstract;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.StorageType;
+import io.clonecloudstore.reconciliator.model.ReconciliationRequest;
 import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.clonecloudstore.replicator.model.ReplicatorResponse;
@@ -40,6 +43,8 @@ import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HEAD;
 import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -59,8 +64,13 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_CENTRAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_RECONCILIATIONS;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_REQUESTS;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.FULL_CHECK;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.LOCAL;
+import static io.clonecloudstore.accessor.config.AccessorConstants.Api.SUB_COLL_LISTING;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_CLIENT_ID;
 import static io.clonecloudstore.accessor.config.AccessorConstants.Api.X_TYPE;
 import static io.clonecloudstore.accessor.config.AccessorConstants.HeaderObject.X_OBJECT_BUCKET;
@@ -369,6 +379,79 @@ public class LocalReplicatorResource
       } catch (final RuntimeException e) {
         ServerResponseFilter.handleExceptionFail(em, e);
       }
+    });
+  }
+
+  /**
+   * Local creation of Reconciliation Request from existing one in Central.
+   * Will run all local steps (1 to 5). <p>
+   * If request is with purge, will clean nativeListing
+   * <p>
+   * Probably returns with Accepted status
+   */
+  @POST
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + COLL_LOCAL + COLL_REQUESTS)
+  @Path(COLL_RECONCILIATIONS + COLL_LOCAL + COLL_REQUESTS)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Uni<Response> createRequestLocal(final ReconciliationRequest request) {
+    return Uni.createFrom().emitter(em -> {
+      // FIXME
+    });
+  }
+
+  /**
+   * Once Local sites listing is ready, inform through Replicator the Central of the local process end.
+   */
+  @PUT
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + COLL_CENTRAL + SUB_COLL_LISTING)
+  @Path(COLL_RECONCILIATIONS + COLL_CENTRAL + COLL_REQUESTS + "/{idRequest}" + SUB_COLL_LISTING + "/{remoteId}")
+  public Uni<Response> endRequestLocal(@PathParam("idRequest") final String idRequest,
+                                       @PathParam("remoteId") final String remoteId) {
+    return Uni.createFrom().emitter(em -> {
+      // FIXME
+    });
+  }
+
+  /**
+   * Once Local sites listing is ready, and it has informed through Replicator the Central,
+   * then Central will request the listing from remote Local. Once all listing are done, Central will compute Actions.
+   * <p>
+   * If request is with purge, will clean sitesListing
+   */
+  @GET
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + COLL_LOCAL + SUB_COLL_LISTING)
+  @Path(COLL_RECONCILIATIONS + COLL_LOCAL + COLL_REQUESTS + "/{idRequest}" + SUB_COLL_LISTING)
+  @Produces(MediaType.APPLICATION_OCTET_STREAM)
+  public Uni<InputStream> getSitesListing(@PathParam("idRequest") final String idRequest) {
+    return Uni.createFrom().emitter(em -> {
+      // FIXME
+    });
+  }
+
+  /**
+   * Once Central action listing is ready, inform through Replicator the Local remote of the process end.
+   */
+  @PUT
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + COLL_LOCAL + SUB_COLL_LISTING)
+  @Path(COLL_RECONCILIATIONS + COLL_LOCAL + COLL_REQUESTS + "/{idRequest}" + SUB_COLL_LISTING)
+  public Uni<Response> endRequestCentral(@PathParam("idRequest") final String idRequest) {
+    return Uni.createFrom().emitter(em -> {
+      // FIXME
+    });
+  }
+
+  /**
+   * Once all listing are done, Central will compute Actions and then inform through Replicator remote sites.
+   * Each one will ask for their own local actions. Those will be saved locally as final actions.
+   */
+  @GET
+  @Tag(name = AccessorConstants.Api.TAG_REPLICATOR + COLL_CENTRAL + SUB_COLL_LISTING)
+  @Path(COLL_RECONCILIATIONS + COLL_CENTRAL + COLL_REQUESTS + "/{idRequest}" + SUB_COLL_LISTING + "/{remoteId}")
+  @Produces(MediaType.APPLICATION_OCTET_STREAM)
+  public Uni<InputStream> getActionsListing(@PathParam("idRequest") final String idRequest,
+                                            @PathParam("remoteId") final String remoteId) {
+    return Uni.createFrom().emitter(em -> {
+      // FIXME
     });
   }
 }

@@ -19,8 +19,6 @@ package io.clonecloudstore.driver.google;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -44,6 +42,7 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import io.clonecloudstore.common.quarkus.stream.ChunkInputStreamNotBuffered;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
+import io.clonecloudstore.common.standard.inputstream.PipedInputOutputStream;
 import io.clonecloudstore.common.standard.properties.StandardProperties;
 import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.common.standard.system.SystemTools;
@@ -574,10 +573,8 @@ public class DriverGoogleHelper {
       }
       final var readChannel = blob.reader(Blob.BlobSourceOption.shouldReturnRawInputStream(true));
       readChannel.setChunkSize(StandardProperties.getBufSize());
-      final var inputStream = new PipedInputStream(StandardProperties.DEFAULT_PIPED_BUFFER_SIZE); // NOSONAR intentional
-      final var outputStream = new PipedOutputStream(inputStream); // NOSONAR intentional
-      final var finalInputStream =
-          new InputStreamClosing(inputStream, outputStream, readChannel); // NOSONAR intentional
+      final var inputStream = new PipedInputOutputStream(); // NOSONAR intentional
+      final var finalInputStream = new InputStreamClosing(inputStream, readChannel); // NOSONAR intentional
       SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
         try {
           var read = 0;
@@ -585,12 +582,12 @@ public class DriverGoogleHelper {
           final var buffer = ByteBuffer.wrap(buf);
           while ((read = readChannel.read(buffer)) >= 0) {
             if (read > 0) {
-              outputStream.write(buf, 0, read);
+              inputStream.write(buf, 0, read);
             }
             buffer.clear();
           }
-          outputStream.flush();
-          outputStream.close();
+          inputStream.flush();
+          inputStream.closeOutput();
         } catch (final IOException e) {
           LOGGER.warn(e);
           finalInputStream.setException(e);
@@ -598,7 +595,7 @@ public class DriverGoogleHelper {
         }
       });
       return finalInputStream;
-    } catch (final IOException | CcsInvalidArgumentRuntimeException e) {
+    } catch (final CcsInvalidArgumentRuntimeException e) {
       throw new DriverException(e);
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
@@ -727,15 +724,12 @@ public class DriverGoogleHelper {
   }
 
   private static class InputStreamClosing extends InputStream {
-    private final PipedInputStream pipedInputStream;
-    private final PipedOutputStream pipedOutputStream;
+    private final PipedInputOutputStream pipedInputOutputStream;
     private final ReadChannel readChannel;
     private IOException exception = null;
 
-    private InputStreamClosing(PipedInputStream pipedInputStream, PipedOutputStream pipedOutputStream,
-                               ReadChannel readChannel) {
-      this.pipedInputStream = pipedInputStream;
-      this.pipedOutputStream = pipedOutputStream;
+    private InputStreamClosing(PipedInputOutputStream pipedInputOutputStream, ReadChannel readChannel) {
+      this.pipedInputOutputStream = pipedInputOutputStream;
       this.readChannel = readChannel;
     }
 
@@ -752,60 +746,60 @@ public class DriverGoogleHelper {
     @Override
     public int read() throws IOException {
       checkException();
-      return pipedInputStream.read();
+      return pipedInputOutputStream.read();
     }
 
     @Override
     public int read(final byte[] b) throws IOException {
       checkException();
-      return pipedInputStream.read(b);
+      return pipedInputOutputStream.read(b);
     }
 
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException {
       checkException();
-      return pipedInputStream.read(b, off, len);
+      return pipedInputOutputStream.read(b, off, len);
     }
 
     @Override
     public long skip(final long n) throws IOException {
       checkException();
-      return pipedInputStream.skip(n);
+      return pipedInputOutputStream.skip(n);
     }
 
     @Override
     public int available() throws IOException {
       checkException();
-      return pipedInputStream.available();
+      return pipedInputOutputStream.available();
     }
 
     @Override
     public void close() {
-      SystemTools.silentlyCloseNoException(pipedInputStream);
-      SystemTools.silentlyCloseNoException(pipedOutputStream);
+      SystemTools.silentlyCloseNoException(pipedInputOutputStream);
+      pipedInputOutputStream.closeOutput();
       readChannel.close();
     }
 
     @Override
     public void mark(final int readLimit) {
-      pipedInputStream.mark(readLimit);
+      pipedInputOutputStream.mark(readLimit);
     }
 
     @Override
     public void reset() throws IOException {
       checkException();
-      pipedInputStream.reset();
+      pipedInputOutputStream.reset();
     }
 
     @Override
     public boolean markSupported() {
-      return pipedInputStream.markSupported();
+      return pipedInputOutputStream.markSupported();
     }
 
     @Override
     public long transferTo(final OutputStream out) throws IOException {
       checkException();
-      return SystemTools.transferTo(pipedInputStream, out);
+      return SystemTools.transferTo(pipedInputOutputStream, out);
     }
   }
 }

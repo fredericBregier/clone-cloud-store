@@ -43,13 +43,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.PROXY_TEST;
+import static io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService.ULTRA_COMPRESSION_TEST;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @QuarkusTest
 @Disabled("Only for checking")
-public class ApiServerBenchRunIT {
+class ApiServerBenchRunIT {
   private static final Logger LOG = Logger.getLogger(ApiServerBenchRunIT.class);
   final Random random = new Random();
   @Inject
@@ -73,9 +74,9 @@ public class ApiServerBenchRunIT {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream("test", new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN, false,
-              false);
-      assertEquals("test", businessOut.name);
+          client.postInputStream(ULTRA_COMPRESSION_TEST, new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'),
+              ApiQuarkusService.LEN, false, false);
+      assertEquals(ULTRA_COMPRESSION_TEST, businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
     } catch (final CcsWithStatusException e) {
@@ -90,10 +91,11 @@ public class ApiServerBenchRunIT {
 
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
-      final var inputStreamBusinessOut = client.getInputStream("test", ApiQuarkusService.LEN, false, false);
+      final var inputStreamBusinessOut =
+          client.getInputStream(ULTRA_COMPRESSION_TEST, ApiQuarkusService.LEN, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -134,14 +136,6 @@ public class ApiServerBenchRunIT {
       LOG.info(sorted);
     } finally {
       QuarkusProperties.setBufSize(oldBufSize);
-    }
-  }
-
-  private void threadWaitRandom() {
-    try {
-      Thread.sleep(random.nextInt(10, 50));
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
     }
   }
 
@@ -209,8 +203,8 @@ public class ApiServerBenchRunIT {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN,
-              false, false);
+          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'),
+              ApiQuarkusService.LEN, false, false);
       assertEquals("test", businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
@@ -223,14 +217,14 @@ public class ApiServerBenchRunIT {
     var speed = ApiQuarkusService.LEN / 1024.0 / 1024.0 / ((stop - start) / 1000000000.0);
     LOG.info("Speed (MB/s): " + speed);
     maxSpeed += speed;
-    threadWaitRandom();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
-          client.getInputStream(PROXY_TEST + "test", ApiQuarkusService.LEN, false, false);
+          client.getInputStream(PROXY_TEST + ULTRA_COMPRESSION_TEST, ApiQuarkusService.LEN, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -244,7 +238,6 @@ public class ApiServerBenchRunIT {
     if (!result.containsKey(name) || result.get(name) < maxSpeed) {
       result.put(name, maxSpeed);
     }
-    threadWaitRandom();
   }
 
   @Test

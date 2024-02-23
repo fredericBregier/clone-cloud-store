@@ -407,7 +407,7 @@ public class MgPurgeService implements PurgeService {
     objectRepository.update(DbQuery.idEquals(expire.getId()), update);
     // Signal Proactive delete order
     try {
-      //Send use replicator service to send delete order.
+      // Use replicator service to send delete order.
       localBrokerService.deleteObject(expire.getBucket(), expire.getName(), clientId);
     } catch (final RuntimeException e) {
       throw new CcsOperationException("Relicator Object Deletion error", e);

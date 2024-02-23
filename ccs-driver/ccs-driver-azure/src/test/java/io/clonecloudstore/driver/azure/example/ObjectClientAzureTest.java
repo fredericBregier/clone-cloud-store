@@ -48,7 +48,7 @@ class ObjectClientAzureTest extends ObjectClientAzureBase {
     // Sometime, test failed on DriverApiFactory not setup
     if (DriverApiRegistry.getDriverApiFactory() == null) {
       // Ensure container is started
-      Thread.sleep(500);
+      Thread.sleep(100);
       DriverApiRegistry.setDriverApiFactory(CDI.current().select(DriverAzureApiFactory.class).get());
     }
     old = QuarkusProperties.serverComputeSha256();

@@ -1,19 +1,3 @@
-/*
- * Copyright (c) 2024. Clone Cloud Store (CCS), Contributors and Frederic Bregier
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed
- *  under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES
- *  OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
 package org.jboss.resteasy.reactive.client.handlers;
 
 import java.io.ByteArrayInputStream;
@@ -54,7 +38,6 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.RequestOptions;
 import io.vertx.core.streams.Pipe;
 import io.vertx.core.streams.Pump;
-import io.vertx.core.streams.ReadStream;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
@@ -63,12 +46,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.WriterInterceptor;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.AsyncResultUni;
 import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
+import org.jboss.resteasy.reactive.client.impl.InputStreamReadStream;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
@@ -178,21 +163,14 @@ public class ClientSendRequestHandler implements ClientRestHandler {
               attachSentHandlers(sent, httpClientRequest, requestContext);
             }
           });
-        } else if (requestContext.getEntity() != null &&
-            requestContext.getEntity().getEntity() instanceof InputStream) {
-          Future<HttpClientResponse> sent;
-          ReadStream<Buffer> actualEntity;
-          try {
-            actualEntity =
-                ClientSendRequestHandler.this.setRequestHeadersForSendingInputStream(httpClientRequest, requestContext);
-            sent = httpClientRequest.send(actualEntity);
-            if (loggingScope != LoggingScope.NONE) {
-              clientLogger.logRequest(httpClientRequest, null, false);
-            }
-            attachSentHandlers(sent, httpClientRequest, requestContext);
-          } catch (Throwable e) {
-            requestContext.resume(e);
-          }
+        } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
+          MultivaluedMap<String, String> headerMap = requestContext.getRequestHeaders().asMap();
+          updateRequestHeadersFromConfig(requestContext, headerMap);
+          setVertxHeaders(httpClientRequest, headerMap);
+          Future<HttpClientResponse> sent = httpClientRequest.send(
+              new InputStreamReadStream(Vertx.currentContext().owner(),
+                  (InputStream) requestContext.getEntity().getEntity(), httpClientRequest));
+          attachSentHandlers(sent, httpClientRequest, requestContext);
         } else {
           Future<HttpClientResponse> sent;
           Buffer actualEntity;
@@ -516,8 +494,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
       // no need to set the entity.getMediaType, it comes from the variant
       setEntityRelatedHeaders(headerMap, entity);
 
-      actualEntity = state.writeEntity(entity, headerMap,
-          state.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR));
+      actualEntity = state.writeEntity(entity, headerMap, getWriterInterceptors(state));
     } else {
       // some servers don't like the fact that a POST or PUT does not have a method body if there is no
       // content-length header associated
@@ -528,6 +505,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     // set the Vertx headers after we've run the interceptors because they can modify them
     setVertxHeaders(httpClientRequest, headerMap);
     return actualEntity;
+  }
+
+  private WriterInterceptor[] getWriterInterceptors(RestClientRequestContext context) {
+    return context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR);
+  }
+
+  private boolean hasWriterInterceptors(RestClientRequestContext context) {
+    WriterInterceptor[] interceptors = getWriterInterceptors(context);
+    return interceptors != null && interceptors.length > 0;
   }
 
   private void adaptRequest(HttpClientRequest request) {
@@ -579,20 +565,5 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());
       }
     }
-  }
-
-  private ReadStream<Buffer> setRequestHeadersForSendingInputStream(HttpClientRequest httpClientRequest,
-                                                                    RestClientRequestContext state) {
-    MultivaluedMap<String, String> headerMap = state.getRequestHeaders().asMap();
-    updateRequestHeadersFromConfig(state, headerMap);
-    headerMap.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM);
-    Entity<?> entity = state.getEntity();
-    InputStream inputStream = (InputStream) entity.getEntity();
-    httpClientRequest.setChunked(true);
-    Vertx vertx = Vertx.currentContext().owner();
-    ReadStream<Buffer> readStream = new AsyncInputStream(vertx, inputStream, maxChunkSize);
-    // set the Vertx headers after we've run the interceptors because they can modify them
-    setVertxHeaders(httpClientRequest, headerMap);
-    return readStream;
   }
 }

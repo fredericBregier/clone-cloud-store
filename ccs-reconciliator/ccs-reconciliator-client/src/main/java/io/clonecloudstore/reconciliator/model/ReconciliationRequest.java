@@ -26,5 +26,10 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 public record ReconciliationRequest(String id, String clientId, String bucket, AccessorFilter filter, String fromSite,
                                     String currentSite, List<String> contextSites, Instant start, long checked,
                                     long checkedDb, long checkedDriver, long checkedRemote, long actions,
-                                    boolean dryRun, Instant stop) {
+                                    boolean dryRun, ReconciliationStep step, Instant stop) {
+  public ReconciliationRequest(String id, String clientId, String bucket, AccessorFilter filter, String fromSite,
+                               String currentSite, List<String> contextSites, boolean dryRun) {
+    this(id, clientId, bucket, filter, fromSite, currentSite, contextSites, null, 0, 0, 0, 0, 0, dryRun,
+        ReconciliationStep.CREATE, null);
+  }
 }

@@ -84,7 +84,6 @@ class AccessorBucketServiceExternalTest {
 
   @Test
   void createBucket() {
-
     try {
       final var bucketName = "bucketcreatetest";
       //Create bucket
@@ -158,7 +157,6 @@ class AccessorBucketServiceExternalTest {
       assertEquals(3, FakeActionTopicConsumer.getBucketCreate());
       FakeCommonBucketResourceHelper.errorCode = 200;
       assertDoesNotThrow(() -> service.getBucket(unknownBucketName, clientId, GuidLike.getGuid(), true));
-      Thread.sleep(100);
       assertEquals(3, FakeActionTopicConsumer.getBucketCreateFromTopic(3));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
@@ -178,7 +176,6 @@ class AccessorBucketServiceExternalTest {
       FakeCommonBucketResourceHelper.errorCode = 200;
       assertThrows(CcsNotExistException.class,
           () -> service.getBucket(unknownBucketName, clientId, GuidLike.getGuid(), true));
-      Thread.sleep(100);
       assertEquals(3, FakeActionTopicConsumer.getBucketCreateFromTopic(3));
     } catch (InterruptedException e) {
       throw new RuntimeException(e);

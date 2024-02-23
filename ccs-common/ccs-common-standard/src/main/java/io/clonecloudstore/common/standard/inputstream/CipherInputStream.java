@@ -29,7 +29,7 @@ public class CipherInputStream extends AbstractCommonInputStream {
 
   @Override
   protected OutputStream getNewOutputStream(Object cipher) {
-    return new CipherOutputStream(pipedOutputStream, (Cipher) cipher);
+    return new CipherOutputStream(pipedInputOutputStream.getOutputStream(), (Cipher) cipher);
   }
 
   /**

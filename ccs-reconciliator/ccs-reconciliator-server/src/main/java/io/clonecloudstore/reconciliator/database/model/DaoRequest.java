@@ -26,6 +26,7 @@ import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.common.quarkus.properties.JsonUtil;
 import io.clonecloudstore.common.standard.exception.CcsInvalidArgumentRuntimeException;
 import io.clonecloudstore.reconciliator.model.ReconciliationRequest;
+import io.clonecloudstore.reconciliator.model.ReconciliationStep;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
@@ -67,6 +68,8 @@ public abstract class DaoRequest {
   long actions;
   @Column(name = DaoRequestRepository.DRY_RUN)
   boolean dryRun;
+  @Column(name = DaoRequestRepository.STEP)
+  ReconciliationStep step;
   @Column(name = DaoRequestRepository.STOP)
   Instant stop;
 
@@ -203,6 +206,15 @@ public abstract class DaoRequest {
     return this;
   }
 
+  public ReconciliationStep getStep() {
+    return step;
+  }
+
+  public DaoRequest setStep(final ReconciliationStep step) {
+    this.step = step;
+    return this;
+  }
+
   public Instant getStop() {
     return stop;
   }
@@ -228,7 +240,7 @@ public abstract class DaoRequest {
         .setFromSite(dto.fromSite()).setCurrentSite(dto.currentSite()).setContextSites(dto.contextSites())
         .setStart(dto.start()).setChecked(dto.checked()).setCheckedDb(dto.checkedDb())
         .setCheckedDriver(dto.checkedDriver()).setCheckedRemote(dto.checkedRemote()).setActions(dto.actions())
-        .setDryRun(dto.dryRun()).setStop(dto.stop());
+        .setDryRun(dto.dryRun()).setStep(dto.step()).setStop(dto.stop());
     return this;
   }
 
@@ -237,7 +249,7 @@ public abstract class DaoRequest {
   public ReconciliationRequest getDto() {
     return new ReconciliationRequest(getId(), getClientId(), getBucket(), getFilter(), getFromSite(), getCurrentSite(),
         getContextSites(), getStart(), getChecked(), getCheckedDb(), getCheckedDriver(), getCheckedRemote(),
-        getActions(), isDryRun(), getStop());
+        getActions(), isDryRun(), getStep(), getStop());
   }
 
   @Override
@@ -255,7 +267,7 @@ public abstract class DaoRequest {
           Objects.equals(getCheckedDriver(), that.getCheckedDriver()) &&
           Objects.equals(getCheckedRemote(), that.getCheckedRemote()) &&
           Objects.equals(getActions(), that.getActions()) && Objects.equals(isDryRun(), that.isDryRun()) &&
-          Objects.equals(getStop(), that.getStop());
+          Objects.equals(getStep(), that.getStep()) && Objects.equals(getStop(), that.getStop());
     }
     return false;
   }
@@ -264,7 +276,7 @@ public abstract class DaoRequest {
   public int hashCode() {
     return Objects.hash(getClientId(), getBucket(), getFilter(), getFromSite(), getCurrentSite(), getContextSites(),
         getStart(), getChecked(), getCheckedDb(), getCheckedDriver(), getCheckedRemote(), getActions(), isDryRun(),
-        getStop());
+        getStep(), getStop());
   }
 
 }

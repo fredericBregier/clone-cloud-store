@@ -42,5 +42,15 @@
       <groupId>io.clonecloudstore</groupId>
       <artifactId>ccs-replicator-model</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-common-quarkus-server</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.clonecloudstore.test</groupId>
+      <artifactId>ccs-test-server</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

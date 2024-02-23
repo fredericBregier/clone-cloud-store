@@ -1,0 +1,82 @@
+quarkus:
+  log:
+    console:
+      format: "%d{HH:mm:ss,SSS} %-5p [%c{2.}] [%l] (%t) (%X) %s%e%n"
+  scheduler:
+    enabled: false
+  hibernate-orm:
+    jdbc:
+      statement-batch-size: 50
+      statement-fetch-size: 1000
+    fetch:
+      batch-size: 1000
+    cache:
+      "cache":
+        memory:
+          object-count: 0
+    second-level-caching-enabled: false
+
+mp:
+  messaging:
+    incoming:
+      request-local-in:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_LOCAL:request-local}
+        retry-attempts: 10
+        group:
+          id: reconciliation
+        #broadcast: true
+        auto:
+          offset:
+            reset: earliest
+      request-ready-for-central-in:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_READY_FOR_CENTRAL:request-ready-for-central}
+        retry-attempts: 10
+        group:
+          id: reconciliation
+        #broadcast: true
+        auto:
+          offset:
+            reset: earliest
+      request-ready-for-local-in:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_READY_FOR_LOCAL:request-ready-for-local}
+        retry-attempts: 10
+        group:
+          id: reconciliation
+        #broadcast: true
+        auto:
+          offset:
+            reset: earliest
+      request-reconciliation-in:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_RECONCILIATION:request-reconciliation}
+        retry-attempts: 10
+        group:
+          id: reconciliation
+        #broadcast: true
+        auto:
+          offset:
+            reset: earliest
+    outgoing:
+      request-local-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_LOCAL:request-local}
+        retries: 10
+        merge: true
+      request-ready-for-central-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_READY_FOR_CENTRAL:request-ready-for-central}
+        retries: 10
+        merge: true
+      request-ready-for-local-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_READY_FOR_LOCAL:request-ready-for-local}
+        retries: 10
+        merge: true
+      request-reconciliation-out:
+        connector: smallrye-kafka
+        topic: ${CCS_REQUEST_RECONCILIATION:request-reconciliation}
+        retries: 10
+        merge: true

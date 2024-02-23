@@ -209,7 +209,7 @@ Object with special Buffered option
 .. figure:: ../images/clone-cloud-store-diagram-Accessor-Read-Buffered.drawio.png
   :alt: Get Local/Remote Object's Content with Buffered option
 
-  Get Local/Remote Object's Content with Buffered option
+  Get Local/Remote Object's Content with Buffered option (Accessor Public and Internal)
 
 
 Bucket Internal

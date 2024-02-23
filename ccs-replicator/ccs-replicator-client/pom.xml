@@ -67,6 +67,10 @@
       <artifactId>ccs-replicator-model</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.clonecloudstore</groupId>
+      <artifactId>ccs-reconciliator-client</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.clonecloudstore.test</groupId>
       <artifactId>ccs-test-fake-accessor</artifactId>
       <scope>test</scope>

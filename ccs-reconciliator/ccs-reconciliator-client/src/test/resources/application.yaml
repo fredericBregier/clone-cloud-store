@@ -1,0 +1,11 @@
+quarkus:
+  rest-client:
+    "io.clonecloudstore.reconciliator.client.api.ReconciliatorApi":
+      url: http://localhost:8081
+      verify-host: false
+
+ccs:
+  driverMaxChunkSize: 134217728
+  driver:
+    s3:
+      maxPartSizeForUnknownLength: 10000000

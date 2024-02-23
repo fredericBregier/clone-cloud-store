@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.clonecloudstore.accessor.model.AccessorBucket;
@@ -38,7 +39,6 @@ import io.clonecloudstore.common.database.utils.DbQuery;
 import io.clonecloudstore.common.database.utils.RestQuery;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
 import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
-import io.clonecloudstore.common.quarkus.modules.ReconciliatorProperties;
 import io.clonecloudstore.common.quarkus.modules.ServiceProperties;
 import io.clonecloudstore.common.standard.guid.GuidLike;
 import io.clonecloudstore.common.standard.stream.StreamIteratorUtils;
@@ -55,9 +55,9 @@ import io.clonecloudstore.reconciliator.database.model.DaoSitesActionRepository;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListing;
 import io.clonecloudstore.reconciliator.database.model.DaoSitesListingRepository;
 import io.clonecloudstore.reconciliator.database.model.LocalReconciliationService;
-import io.clonecloudstore.reconciliator.database.model.PurgeService;
 import io.clonecloudstore.reconciliator.fake.FakeRequestTopicConsumer;
 import io.clonecloudstore.reconciliator.model.ReconciliationAction;
+import io.clonecloudstore.reconciliator.model.ReconciliationSitesAction;
 import io.clonecloudstore.reconciliator.model.ReconciliationSitesListing;
 import io.clonecloudstore.reconciliator.model.SingleSiteObject;
 import io.clonecloudstore.test.driver.fake.FakeDriver;
@@ -74,6 +74,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
+import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRepository.REQUESTID;
 import static io.clonecloudstore.reconciliator.database.model.LocalReconciliationService.DELETED_RANK;
 import static io.clonecloudstore.reconciliator.database.model.LocalReconciliationService.DELETING_RANK;
 import static io.clonecloudstore.reconciliator.database.model.LocalReconciliationService.READY_RANK;
@@ -97,8 +98,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(MongoKafkaProfile.class)
 @TestMethodOrder(MethodOrderer.MethodName.class)
-class MgDaoPurgeReconciliationTest {
-  private static final Logger LOGGER = Logger.getLogger(MgDaoPurgeReconciliationTest.class);
+class MgReconciliationTest {
+  private static final Logger LOGGER = Logger.getLogger(MgReconciliationTest.class);
   private static final String BUCKET = "mybucket";
   private static final String CLIENT_ID = "client-id";
   private static final String FROM_SITE = "from-site";
@@ -126,9 +127,6 @@ class MgDaoPurgeReconciliationTest {
   Instance<LocalReconciliationService> daoServiceInstance;
   LocalReconciliationService daoService;
   @Inject
-  Instance<PurgeService> daoPurgeServiceInstance;
-  PurgeService purgeService;
-  @Inject
   Instance<CentralReconciliationService> daoCentralServiceInstance;
   CentralReconciliationService daoCentralService;
   @Inject
@@ -144,7 +142,6 @@ class MgDaoPurgeReconciliationTest {
     nativeListingRepository = nativeListingRepositoryInstance.get();
     sitesListingRepository = sitesListingRepositoryInstance.get();
     sitesActionRepository = sitesActionRepositoryInstance.get();
-    purgeService = daoPurgeServiceInstance.get();
     daoService = daoServiceInstance.get();
     daoCentralService = daoCentralServiceInstance.get();
     if (init.compareAndSet(false, true)) {
@@ -252,247 +249,6 @@ class MgDaoPurgeReconciliationTest {
     } catch (DriverException | IOException e) {
       fail(e);
     }
-  }
-
-  private void insertBucket(final String name) {
-    try (final var driver = storageDriverFactory.getInstance()) {
-      driver.bucketCreate(new StorageBucket(name, CLIENT_ID, Instant.now().minusSeconds(110)));
-    } catch (DriverException e) {
-      fail(e);
-    }
-    try {
-      bucketRepository.insertBucket(
-          new AccessorBucket().setId(name).setSite(AccessorProperties.getAccessorSite()).setStatus(AccessorStatus.READY)
-              .setCreation(Instant.now().minusSeconds(110)).setClientId(CLIENT_ID));
-    } catch (CcsDbException e) {
-      fail(e);
-    }
-  }
-
-  private void insertObject(final String name, final AccessorStatus status, final boolean store,
-                            final Instant creationTime, final Instant expireTime) {
-    final var daoObject = objectRepository.createEmptyItem();
-    daoObject.setId(GuidLike.getGuid()).setBucket(BUCKET).setName(name).setCreation(creationTime).setExpires(expireTime)
-        .setSite(ServiceProperties.getAccessorSite()).setStatus(status).setHash("hash").setSize(10L);
-    assertDoesNotThrow(() -> objectRepository.insert(daoObject));
-    if (store) {
-      try (final var driver = storageDriverFactory.getInstance(); final var inpustream = new FakeInputStream(10L)) {
-        driver.objectPrepareCreateInBucket(
-            new StorageObject(BUCKET, name, "hash", 10L, creationTime, expireTime, HashMap.newHashMap(0)), inpustream);
-        driver.objectFinalizeCreateInBucket(BUCKET, name, 10L, "hash");
-      } catch (DriverException | IOException e) {
-        fail(e);
-      }
-    }
-  }
-
-  @Test
-  void step0PurgeNoArchive() throws CcsDbException, InterruptedException {
-    // Create buckets
-    final var bucketPurge = "archival";
-    insertBucket(bucketPurge);
-    insertBucket(BUCKET);
-    // Create objects for final purge
-    final var creation = Instant.now().minusSeconds(100);
-    final var expire = Instant.now().minusSeconds(1);
-    final var expireFuture = Instant.now().plusSeconds(100);
-    insertObject("DeleteNotPurge", AccessorStatus.DELETED, true, creation, expireFuture);
-    insertObject("DeleteNotPurgeNoStore", AccessorStatus.DELETED, false, creation, expireFuture);
-    insertObject("DeletePurge", AccessorStatus.DELETED, true, creation, expire);
-    insertObject("DeletePurgeNoStore", AccessorStatus.DELETED, false, creation, expire);
-    // Create objects for Ready expiry
-    insertObject("ReadyNotPurge", AccessorStatus.READY, true, creation, expireFuture);
-    insertObject("ReadyNotPurgeNoStore", AccessorStatus.READY, false, creation, expireFuture);
-    insertObject("ReadyPurge", AccessorStatus.READY, true, creation, expire);
-    insertObject("ReadyPurgeNoStore", AccessorStatus.READY, false, creation, expire);
-    // Insert extra bucket and object not owned by ClientID
-    final var extraClient = GuidLike.getGuid();
-    final var extraBucket = "extrabucket";
-    try {
-      bucketRepository.insertBucket(
-          new AccessorBucket().setId(extraBucket).setSite(AccessorProperties.getAccessorSite())
-              .setStatus(AccessorStatus.READY).setCreation(Instant.now().minusSeconds(110)).setClientId(extraClient));
-    } catch (CcsDbException e) {
-      fail(e);
-    }
-    final var daoObject = objectRepository.createEmptyItem();
-    daoObject.setId(GuidLike.getGuid()).setBucket(extraBucket).setName("fictive").setCreation(Instant.now())
-        .setExpires(Instant.now().minusSeconds(10)).setSite(ServiceProperties.getAccessorSite())
-        .setStatus(AccessorStatus.READY).setHash("hash").setSize(10L);
-    assertDoesNotThrow(() -> objectRepository.insert(daoObject));
-
-    objectRepository.findStream(new DbQuery()).forEach(item -> LOGGER.debugf("Before: %s", item));
-    assertEquals(9, objectRepository.countAll());
-
-    // Now check
-    purgeService.purgeObjectsOnExpiredDate(CLIENT_ID, null, 200);
-    objectRepository.findStream(new DbQuery()).forEach(item -> LOGGER.debugf("After: %s", item));
-    assertEquals(7, objectRepository.countAll());
-    objectRepository.findStream(new DbQuery()).forEach(item -> {
-      switch (item.getName()) {
-        case "DeleteNotPurge", "DeleteNotPurgeNoStore" -> assertEquals(AccessorStatus.DELETED, item.getStatus());
-        case "ReadyPurge", "ReadyPurgeNoStore" -> {
-          assertEquals(AccessorStatus.DELETED, item.getStatus());
-          assertTrue(item.getExpires().isAfter(expire));
-        }
-        case "DeletePurge", "DeletePurgeNoStore" -> fail("Should not exist");
-        case "ReadyNotPurge", "ReadyNotPurgeNoStore" -> assertEquals(AccessorStatus.READY, item.getStatus());
-      }
-    });
-    for (int i = 0; i < 100; i++) {
-      Thread.sleep(20);
-      if (FakeRequestTopicConsumer.getObjectDelete() > 0) {
-        break;
-      }
-    }
-    Thread.sleep(20);
-    LOGGER.infof("RequestConsume Object Delete %d", FakeRequestTopicConsumer.getObjectDelete());
-    assertTrue(FakeRequestTopicConsumer.getObjectDelete() > 0);
-  }
-
-  @Test
-  void step0PurgeArchive() throws CcsDbException, InterruptedException {
-    // Create buckets
-    final var bucketPurge = "archival";
-    insertBucket(bucketPurge);
-    insertBucket(BUCKET);
-    // Create objects for final purge
-    final var creation = Instant.now().minusSeconds(100);
-    final var expire = Instant.now().minusSeconds(1);
-    final var expireFuture = Instant.now().plusSeconds(100);
-    insertObject("DeleteNotPurge", AccessorStatus.DELETED, true, creation, expireFuture);
-    insertObject("DeleteNotPurgeNoStore", AccessorStatus.DELETED, false, creation, expireFuture);
-    insertObject("DeletePurge", AccessorStatus.DELETED, true, creation, expire);
-    insertObject("DeletePurgeNoStore", AccessorStatus.DELETED, false, creation, expire);
-    // Create objects for Ready expiry
-    insertObject("ReadyNotPurge", AccessorStatus.READY, true, creation, expireFuture);
-    insertObject("ReadyNotPurgeNoStore", AccessorStatus.READY, false, creation, expireFuture);
-    insertObject("ReadyPurge", AccessorStatus.READY, true, creation, expire);
-    insertObject("ReadyPurgeNoStore", AccessorStatus.READY, false, creation, expire);
-    // Insert extra bucket and object not owned by ClientID
-    final var extraClient = GuidLike.getGuid();
-    final var extraBucket = "extrabucket";
-    try {
-      bucketRepository.insertBucket(
-          new AccessorBucket().setId(extraBucket).setSite(AccessorProperties.getAccessorSite())
-              .setStatus(AccessorStatus.READY).setCreation(Instant.now().minusSeconds(110)).setClientId(extraClient));
-    } catch (CcsDbException e) {
-      fail(e);
-    }
-    final var daoObject = objectRepository.createEmptyItem();
-    daoObject.setId(GuidLike.getGuid()).setBucket(extraBucket).setName("fictive").setCreation(Instant.now())
-        .setExpires(Instant.now().minusSeconds(10)).setSite(ServiceProperties.getAccessorSite())
-        .setStatus(AccessorStatus.READY).setHash("hash").setSize(10L);
-    assertDoesNotThrow(() -> objectRepository.insert(daoObject));
-
-    objectRepository.findStream(new DbQuery()).forEach(item -> LOGGER.debugf("Before: %s", item));
-    assertEquals(9, objectRepository.countAll());
-
-    // Now check
-    purgeService.purgeObjectsOnExpiredDate(CLIENT_ID, bucketPurge, 200);
-    objectRepository.findStream(new DbQuery()).forEach(item -> LOGGER.debugf("After: %s", item));
-    assertEquals(8, objectRepository.countAll());
-    objectRepository.findStream(new DbQuery()).forEach(item -> {
-      switch (item.getName()) {
-        case "DeleteNotPurge", "DeleteNotPurgeNoStore" -> assertEquals(AccessorStatus.DELETED, item.getStatus());
-        case "ReadyPurge" -> {
-          if (item.getBucket().equals(BUCKET)) {
-            assertEquals(AccessorStatus.DELETED, item.getStatus());
-            assertTrue(item.getExpires().isAfter(expire));
-          } else {
-            assertEquals(bucketPurge, item.getBucket());
-            assertEquals(AccessorStatus.READY, item.getStatus());
-            assertTrue(item.getExpires().isAfter(expire));
-          }
-        }
-        case "ReadyPurgeNoStore" -> {
-          assertEquals(BUCKET, item.getBucket());
-          assertEquals(AccessorStatus.DELETED, item.getStatus());
-          assertTrue(item.getExpires().isAfter(expire));
-        }
-        case "DeletePurge", "DeletePurgeNoStore" -> fail("Should not exist");
-        case "ReadyNotPurge", "ReadyNotPurgeNoStore" -> assertEquals(AccessorStatus.READY, item.getStatus());
-      }
-    });
-    for (int i = 0; i < 100; i++) {
-      Thread.sleep(20);
-      if (FakeRequestTopicConsumer.getObjectDelete() > 0) {
-        break;
-      }
-    }
-    Thread.sleep(20);
-    LOGGER.infof("RequestConsume Object Delete %d", FakeRequestTopicConsumer.getObjectDelete());
-    assertTrue(FakeRequestTopicConsumer.getObjectDelete() > 0);
-  }
-
-  private void insertDefaultObjects(final int count, final Instant create, final Instant expire) throws CcsDbException {
-    for (int i = 0; i < count; i++) {
-      final String name = OBJECT_NAME + i;
-      var status = AccessorStatus.values()[i % (AccessorStatus.values().length - 1) + 1];
-      final var daoObject = objectRepository.createEmptyItem();
-      daoObject.setId(GuidLike.getGuid()).setBucket(BUCKET).setName(name).setCreation(create).setExpires(expire)
-          .setSite(ServiceProperties.getAccessorSite()).setStatus(status).setHash("hash");
-      objectRepository.addToInsertBulk(daoObject);
-    }
-    objectRepository.flushAll();
-  }
-
-  @Test
-  void step0PurgeArchiveWith10000() throws CcsDbException, InterruptedException {
-    // 5 000/s
-    final var limit = 10000;
-    LOGGER.infof("Create Object");
-    // Create buckets
-    final var bucketPurge = "archival";
-    insertBucket(bucketPurge);
-    final var creation = Instant.now().minusSeconds(100);
-    final var expire = Instant.now().minusSeconds(1);
-    insertDefaultObjects(limit, creation, expire);
-    // Init storage
-    LOGGER.infof("Create Some StorageObject");
-    // Create objects for final purge
-    createStorageContent(creation, expire, limit);
-    Thread.sleep(10);
-    LOGGER.infof("Start");
-    assertEquals(limit, objectRepository.countAll());
-    long countToPurge = 0;
-    long countToDelete = 0;
-    for (var status : AccessorStatus.values()) {
-      var count = objectRepository.count(new DbQuery(RestQuery.QUERY.EQ, DaoAccessorObjectRepository.STATUS, status));
-      LOGGER.debugf("Count %s: %d", status, count);
-      if (status.equals(AccessorStatus.DELETED)) {
-        countToPurge += count;
-      }
-      if (status.equals(AccessorStatus.READY)) {
-        countToDelete += count;
-      }
-    }
-    // Now check
-    var start = System.nanoTime();
-    var log = ReconciliatorProperties.isReconciliatorPurgeLog();
-    ReconciliatorProperties.setCcsReconciliatorPurgeLog(false);
-    try {
-      purgeService.purgeObjectsOnExpiredDate(CLIENT_ID, bucketPurge, 200);
-    } finally {
-      ReconciliatorProperties.setCcsReconciliatorPurgeLog(log);
-    }
-    var stop = System.nanoTime();
-    long duration = (stop - start) / 1000000;
-    float speed = limit * 1000 / (float) duration;
-    LOGGER.infof("Duration: %d ms, Speed on 1 site: %f item/s", duration, speed);
-    for (int i = 0; i < 100; i++) {
-      Thread.sleep(20);
-      if (FakeRequestTopicConsumer.getObjectDelete() >= countToDelete) {
-        break;
-      }
-    }
-    LOGGER.infof("RequestConsume Object Delete %d", FakeRequestTopicConsumer.getObjectDelete());
-    for (var status : AccessorStatus.values()) {
-      var count = objectRepository.count(new DbQuery(RestQuery.QUERY.EQ, DaoAccessorObjectRepository.STATUS, status));
-      LOGGER.debugf("Post Count %s: %d", status, count);
-    }
-    assertEquals(limit - countToPurge + countToDelete, objectRepository.countAll());
-    assertTrue(FakeRequestTopicConsumer.getObjectDelete() > 0);
   }
 
   @Test
@@ -2422,19 +2178,31 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(1, requestTmp.getContextSitesDone().size());
-    daoCentralService.getSitesActon(daoRequest).forEachRemaining(sitesAction -> {
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite()).forEachRemaining(sitesAction -> {
       if (!checkActionDelete(sitesAction)) {
         fail("Should not contain " + sitesAction);
       }
     });
+
+    // Site has one status as to delete action so only one (other is already deleted)
+    var iterator = daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite());
+    assertTrue(iterator.hasNext());
+    assertTrue(iterator.next().getName().endsWith(DELETE_ACTION.name()));
+    assertFalse(iterator.hasNext());
+    iterator.close();
     daoRequest.setCurrentSite("site2");
+    // Site 2 is deleted so no action
+    iterator = daoCentralService.getSitesActon(daoRequest, "site2");
+    assertFalse(iterator.hasNext());
+    iterator.close();
+
     ((MgCentralReconciliationService) daoCentralService).computeActionsReadyLike(daoRequest, exceptionAtomicReference);
     assertNull(exceptionAtomicReference.get());
     sitesActionRepository.findStream(new DbQuery()).forEach(sitesAction -> LOGGER.debugf("Ready %s", sitesAction));
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(2, requestTmp.getContextSitesDone().size());
-    daoCentralService.getSitesActon(daoRequest).forEachRemaining(sitesAction -> {
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite()).forEachRemaining(sitesAction -> {
       if (!checkActionDelete(sitesAction) && !checkActionDReady(sitesAction)) {
         fail("Should not contain " + sitesAction);
       }
@@ -2446,7 +2214,7 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(3, requestTmp.getContextSitesDone().size());
-    daoCentralService.getSitesActon(daoRequest).forEachRemaining(sitesAction -> {
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite()).forEachRemaining(sitesAction -> {
       if (!checkActionDelete(sitesAction) && !checkActionDReady(sitesAction) && !checkActionUpload(sitesAction)) {
         fail("Should not contain " + sitesAction);
       }
@@ -2459,7 +2227,7 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(4, requestTmp.getContextSitesDone().size());
-    daoCentralService.getSitesActon(daoRequest).forEachRemaining(sitesAction -> {
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite()).forEachRemaining(sitesAction -> {
       if (!checkActionDelete(sitesAction) && !checkActionDReady(sitesAction) && !checkActionUpload(sitesAction) &&
           !checkActionInvalid(sitesAction)) {
         fail("Should not contain " + sitesAction);
@@ -2473,12 +2241,20 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(4, requestTmp.getContextSitesDone().size());
-    daoCentralService.getSitesActon(daoRequest).forEachRemaining(sitesAction -> {
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite()).forEachRemaining(sitesAction -> {
       if (!checkActionDelete(sitesAction) && !checkActionDReady(sitesAction) && !checkActionUpload(sitesAction) &&
           !checkActionInvalid(sitesAction)) {
         fail("Should not contain " + sitesAction);
       }
     });
+    daoRequest.setCurrentSite("site3");
+    AtomicLong count = new AtomicLong();
+    daoCentralService.getSitesActon(daoRequest, "site3").forEachRemaining(item -> count.incrementAndGet());
+    assertEquals(9, count.get());
+    daoRequest.setCurrentSite("site");
+    count.set(0);
+    daoCentralService.getSitesActon(daoRequest, "site").forEachRemaining(item -> count.incrementAndGet());
+    assertEquals(7, count.get());
 
     var daoRequest2 = requestRepository.findOne(new DbQuery());
     assertEquals(0, daoRequest2.getActions());
@@ -2488,6 +2264,20 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
     requestTmp = requestRepository.findOne(DbQuery.idEquals(daoRequest.getId()));
     assertEquals(4, requestTmp.getContextSitesDone().size());
+
+    daoRequest.setCurrentSite("site3");
+    LOGGER.infof("Current %s", daoRequest.getCurrentSite());
+    final var finalListToImport = new ArrayList<ReconciliationSitesAction>();
+    daoCentralService.getSitesActon(daoRequest, daoRequest.getCurrentSite())
+        .forEachRemaining(daoSitesAction -> finalListToImport.add(daoSitesAction.getDto()));
+    finalListToImport.forEach(item -> LOGGER.debugf("Contain %s", item));
+    sitesActionRepository.findStream(new DbQuery(RestQuery.QUERY.EQ, REQUESTID, daoRequest2.getId()))
+        .forEach(item -> LOGGER.debugf("Was %s", item));
+    assertEquals(daoRequest2.getActions(), finalListToImport.size());
+
+    sitesActionRepository.deleteAllDb();
+    daoService.importActions(daoRequest, finalListToImport.iterator());
+    assertEquals(daoRequest.getActions(), finalListToImport.size());
   }
 
   @Test
@@ -2576,7 +2366,7 @@ class MgDaoPurgeReconciliationTest {
 
   @Test
   void stepComputeActionsWith1000() throws CcsDbException, InterruptedException {
-    // 58 800/s
+    // 58 800/s for Compute, 130 000/s for Export, 70 000/s for Import
     final int limit = 10000;
     var daoRequest = requestRepository.createEmptyItem();
     daoRequest.setId(REQUEST_ID + 0).setBucket(BUCKET).setFromSite(FROM_SITE).setClientId(CLIENT_ID)
@@ -2617,18 +2407,37 @@ class MgDaoPurgeReconciliationTest {
     daoCentralService.saveRemoteNativeListing(daoRequest, list.iterator());
     Thread.sleep(10);
     // Test
-    final var start = System.nanoTime();
-    daoCentralService.computeActions(daoRequest);
+    var start = System.nanoTime();
     daoCentralService.updateRequestFromRemoteListing(daoRequest);
-    final var stop = System.nanoTime();
+    daoCentralService.computeActions(daoRequest);
+    var stop = System.nanoTime();
     var daoRequest2 = requestRepository.findOne(new DbQuery());
     assertEquals(list.size() - limit / 10, daoRequest2.getActions());
     assertEquals(daoRequest2.getActions(), sitesActionRepository.countAll());
     assertEquals(1, daoRequest2.getContextSitesDone().size());
-    daoCentralService.cleanSitesAction(daoRequest2);
-    assertEquals(0, sitesActionRepository.countAll());
     long duration = (stop - start) / 1000000;
     float speed = limit * 1000 / (float) duration;
     LOGGER.infof("Duration: %d ms, Speed: %f item/s", duration, speed);
+
+    List<ReconciliationSitesAction> reconciliationSitesActionList = new ArrayList<>();
+    daoRequest2.setCurrentSite("site3");
+    start = System.nanoTime();
+    daoCentralService.getSitesActon(daoRequest2, "site3")
+        .forEachRemaining(item -> reconciliationSitesActionList.add(item.getDto()));
+    stop = System.nanoTime();
+    LOGGER.infof("Count for %s = %d", daoRequest2.getCurrentSite(), reconciliationSitesActionList.size());
+    duration = (stop - start) / 1000000;
+    speed = limit * 1000 / (float) duration;
+    LOGGER.infof("Duration Export: %d ms, Speed: %f item/s", duration, speed);
+    daoCentralService.cleanSitesAction(daoRequest2);
+    assertEquals(0, sitesActionRepository.countAll());
+
+    start = System.nanoTime();
+    daoService.importActions(daoRequest2, reconciliationSitesActionList.iterator());
+    stop = System.nanoTime();
+    assertEquals(reconciliationSitesActionList.size(), sitesActionRepository.countAll());
+    duration = (stop - start) / 1000000;
+    speed = limit * 1000 / (float) duration;
+    LOGGER.infof("Duration Import: %d ms, Speed: %f item/s", duration, speed);
   }
 }

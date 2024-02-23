@@ -34,5 +34,6 @@ public interface DaoRequestRepository extends RepositoryBaseInterface<DaoRequest
   String CHECKED_REMOTE = "checkedRemote";
   String ACTIONS = "actions";
   String DRY_RUN = "dryRun";
+  String STEP = "step";
   String STOP = "stop";
 }

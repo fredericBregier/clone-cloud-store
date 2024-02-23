@@ -304,6 +304,7 @@ public class RestQuery {
     NEQ,
     GTE,
     LTE,
+    REVERSE_IN,
     START_WITH,
     JSON_EQ,
     JSON_NEQ,

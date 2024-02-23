@@ -102,6 +102,11 @@ class DbPostgreQueryTest {
     parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
     testItemString(parsed, QUERY.NEQ);
 
+    dbQuery = new DbQuery(QUERY.REVERSE_IN, "field", "value");
+    json = objectMapper.writeValueAsString(dbQuery);
+    parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
+    testItemString(parsed, QUERY.REVERSE_IN);
+
     dbQuery = new DbQuery(QUERY.START_WITH, "field", "value");
     json = objectMapper.writeValueAsString(dbQuery);
     parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
@@ -140,6 +145,11 @@ class DbPostgreQueryTest {
     json = objectMapper.writeValueAsString(dbQuery);
     parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
     testItemObject(parsed, QUERY.NEQ, object);
+
+    dbQuery = new DbQuery(QUERY.REVERSE_IN, "field", object);
+    json = objectMapper.writeValueAsString(dbQuery);
+    parsed = DbQuery.fromRestQuery(objectMapper.readValue(json, RestQuery.class));
+    testItemObject(parsed, QUERY.REVERSE_IN, object);
 
 
     final List<String> values = new ArrayList<>();
@@ -321,6 +331,7 @@ class DbPostgreQueryTest {
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.NEQ, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.GTE, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.LTE, "field", values));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.REVERSE_IN, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.START_WITH, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.JSON_EQ, "field", values));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.JSON_NEQ, "field", values));
@@ -329,6 +340,7 @@ class DbPostgreQueryTest {
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.NEQ, "field", valuesLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.GTE, "field", valuesLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.LTE, "field", valuesLong));
+    assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.REVERSE_IN, "field", valuesLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.START_WITH, "field", valuesLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.JSON_EQ, "field", valuesLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.JSON_NEQ, "field", valuesLong));
@@ -337,6 +349,8 @@ class DbPostgreQueryTest {
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.NEQ, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.GTE, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.LTE, "field", (Object[]) array));
+    assertThrows(CcsInvalidArgumentRuntimeException.class,
+        () -> new DbQuery(QUERY.REVERSE_IN, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> new DbQuery(QUERY.START_WITH, "field", (Object[]) array));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.JSON_EQ, "field", (Object[]) array));
@@ -347,6 +361,8 @@ class DbPostgreQueryTest {
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.NEQ, "field", (Object[]) arrayLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.GTE, "field", (Object[]) arrayLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class, () -> new DbQuery(QUERY.LTE, "field", (Object[]) arrayLong));
+    assertThrows(CcsInvalidArgumentRuntimeException.class,
+        () -> new DbQuery(QUERY.REVERSE_IN, "field", (Object[]) arrayLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
         () -> new DbQuery(QUERY.START_WITH, "field", (Object[]) arrayLong));
     assertThrows(CcsInvalidArgumentRuntimeException.class,
