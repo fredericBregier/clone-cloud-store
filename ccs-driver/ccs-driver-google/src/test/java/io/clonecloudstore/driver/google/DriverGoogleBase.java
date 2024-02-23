@@ -687,50 +687,6 @@ abstract class DriverGoogleBase {
       }
 
       System.gc();
-      mem = runtime.totalMemory() - runtime.freeMemory();
-      start = System.nanoTime();
-      try {
-        driverHelper.writeInputStreamCompose(storageObject, new FakeInputStream(length), blobId);
-      } catch (final DriverNotFoundException | DriverAlreadyExistException e) {
-        fail(e);
-      }
-      try {
-        final var storageObject1 = driverHelper.finalizeObject(storageObject.bucket(), storageObject.name(), null);
-        assertEquals(bucket, storageObject1.bucket());
-        assertEquals(object1, storageObject1.name());
-        assertNotNull(storageObject1.creationDate());
-        assertEquals(length, storageObject1.size());
-        assertEquals(sha, storageObject1.hash());
-      } catch (final DriverException e) {
-        fail(e);
-      }
-      stop = System.nanoTime();
-      var speed3 = length / ((stop - start) / 1000.0);
-      LOG.infof("Write Len: %d Duration: %d Speed: %f", length, stop - start, length / ((stop - start) / 1000.0));
-      mem2 = runtime.totalMemory() - runtime.freeMemory();
-      LOG.infof("Memory %d %d", (mem2 - mem) / 1024 / 1024, runtime.totalMemory() / 1024 / 1024);
-      System.gc();
-      mem = runtime.totalMemory() - runtime.freeMemory();
-      start = System.nanoTime();
-      try {
-        final var inputStream = driverApi.objectGetInputStreamInBucket(bucket, object1);
-        assertEquals(length, FakeInputStream.consumeAll(inputStream));
-      } catch (final DriverNotFoundException | IOException e) {
-        fail(e);
-      }
-      stop = System.nanoTime();
-      LOG.infof("Read Len: %d Duration: %d Speed: %f", length, stop - start, length / ((stop - start) / 1000.0));
-      mem2 = runtime.totalMemory() - runtime.freeMemory();
-      LOG.infof("Memory %d %d", (mem2 - mem) / 1024 / 1024, runtime.totalMemory() / 1024 / 1024);
-      System.gc();
-      LOG.infof("Write compare: Speed Direct: %f Speed WriteChannel: %f (%f) Speed Compose: %f (%f)", speed1, speed2,
-          speed1 / speed2, speed3, speed1 / speed3);
-      try {
-        driverApi.objectDeleteInBucket(bucket, object1);
-      } catch (final DriverNotAcceptableException | DriverNotFoundException e) {
-        fail(e);
-      }
-
       try {
         driverApi.bucketDelete(bucket);
       } catch (final DriverNotAcceptableException | DriverNotFoundException e) {

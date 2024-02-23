@@ -54,8 +54,8 @@ public enum ReconciliationAction {
 
   public static ReconciliationAction fromStatusCode(final short code) {
     return switch (code) {
-      case 1 -> DELETE_ACTION;
-      case 2 -> DELETED_ACTION;
+      case 1 -> DELETED_ACTION;
+      case 2 -> DELETE_ACTION;
       case 10 -> READY_ACTION;
       case 11 -> UPDATE_ACTION;
       case 20 -> UPLOAD_ACTION;

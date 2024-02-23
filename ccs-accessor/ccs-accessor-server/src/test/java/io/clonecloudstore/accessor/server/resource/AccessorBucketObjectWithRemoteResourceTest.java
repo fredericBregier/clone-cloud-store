@@ -120,10 +120,8 @@ class AccessorBucketObjectWithRemoteResourceTest {
       FakeCommonObjectResourceHelper.errorCode = 404;
       var res = client.checkObjectOrDirectory(bucketName, objectName, clientId);
       assertEquals(StorageType.NONE, res);
-      Thread.sleep(100);
       assertEquals(0, getObjectCreateFromTopic(0));
       assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, objectName, clientId));
-      Thread.sleep(100);
       assertEquals(0, getObjectCreateFromTopic(0));
 
       // simple check existing object

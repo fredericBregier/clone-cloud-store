@@ -19,8 +19,6 @@ package io.clonecloudstore.common.standard.inputstream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
@@ -728,28 +726,26 @@ class MultipleActionsInputStreamTest {
   @Test
   void test20Piped() throws IOException {
     for (int z = 0; z < 3; z++) {
-      for (int i = 4; i < 34; i += 2) {
-        int bufsize = 16 * 1024 * i;
+      for (int i = 1; i < 16; i++) {
         var start = System.nanoTime();
         for (int j = 0; j < 5; j++) {
-          final FakeInputStream fakeInputStream2 = new FakeInputStream(BIG_LEN);
-          PipedOutputStream out2 = new PipedOutputStream();
-          PipedInputStream in2 = new PipedInputStream(out2, bufsize);
+          final FakeInputStream fakeInputStream2 = new FakeInputStream(BIG_LEN, (byte) 'A');
+          PipedInputOutputStream in = new PipedInputOutputStream(null, i);
           start = System.nanoTime();
-          try (in2) {
+          try (in) {
             new Thread(() -> {
-              try (out2) {
-                fakeInputStream2.transferTo(out2);
+              try {
+                in.transferFrom(fakeInputStream2);
               } catch (IOException e) {
                 throw new UncheckedIOException(e);
               }
             }).start();
-            var len = FakeInputStream.consumeAll(in2);
+            var len = FakeInputStream.consumeAll(in);
             assertEquals(BIG_LEN, len);
           }
         }
         var stop = System.nanoTime();
-        LOGGER.info("Compute " + bufsize + " in " + ((stop - start) / 1000) + " so speed " +
+        LOGGER.info("Compute " + i + " in " + ((stop - start) / 1000) + " so speed " +
             (BIG_LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0)) + " MB/s ");
       }
       LOGGER.infof("ZZZ");

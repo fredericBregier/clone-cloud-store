@@ -27,6 +27,7 @@ import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.quarkus.arc.Unremovable;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
@@ -45,6 +46,7 @@ public class RequestActionConsumer {
   }
 
   @Incoming(REPLICATOR_ACTION_IN)
+  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
   @Blocking(ordered = true)
   public void consumeOrder(final List<ReplicatorOrder> replicatorOrders) {
     QuarkusProperties.refreshModuleMdc();

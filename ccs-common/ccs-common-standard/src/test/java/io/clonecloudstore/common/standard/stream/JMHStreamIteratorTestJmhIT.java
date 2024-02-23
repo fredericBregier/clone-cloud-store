@@ -53,7 +53,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 public class JMHStreamIteratorTestJmhIT {
   @State(Scope.Benchmark)
   public static class MyState {
-    FakeIterator<Long> fakeIterator = new FakeIterator<>(1000, l -> l);
+    FakeIterator<Long> fakeIterator = new FakeIterator<>(10000, l -> l);
   }
 
   @Benchmark

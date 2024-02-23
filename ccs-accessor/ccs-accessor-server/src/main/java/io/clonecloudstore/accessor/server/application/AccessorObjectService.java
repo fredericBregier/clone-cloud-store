@@ -16,7 +16,6 @@
 
 package io.clonecloudstore.accessor.server.application;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 
@@ -239,7 +238,7 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
       final var iterator = objectRepository.findIterator(query);
       return StreamIteratorUtils.getInputStreamFromIterator(iterator, source -> ((DaoAccessorObject) source).getDto(),
           AccessorObject.class);
-    } catch (final CcsDbException | IOException e) {
+    } catch (final CcsDbException e) {
       throw new CcsOperationException("Database error on filter object : " + bucketName + " - " +
           (filter != null ? filter.toString() : "No Filter"), e);
     }

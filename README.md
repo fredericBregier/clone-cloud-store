@@ -115,6 +115,7 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
   - Currently, only MongoDB is fully supported.
   - PostgreSQL shall be available soon.
+    - Probably need to implement specific native cursor based listing for memory/cpu efficiency
   - Missing Liquibase configuration for both PostgreSql and MongoDB
 
 - Kafka is the default Topic manager. However, switching to Apache Pulsar should be easy by just applying
@@ -139,6 +140,13 @@ See [available documentation here](https://fredericBregier.github.io/clone-cloud
 
 
 ## Notes of versions
+
+# 0.9.0 2024/04
+- Add Reverse In for Query
+- Add Kafka topics for Reconciliation
+- Improve Piped Input/Output streams
+- Remove partially the quarkus patch (InputStream now supported but still some room for optimization)
+- Add API for Reconciliation (both Reconciliation and Replicator for remote Reconciliation)
 
 # 0.8.0 2024/02
 - Fully tested Reconciliation steps

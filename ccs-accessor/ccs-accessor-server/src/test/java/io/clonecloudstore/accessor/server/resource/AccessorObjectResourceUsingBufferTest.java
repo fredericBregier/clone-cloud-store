@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
+import io.clonecloudstore.accessor.client.internal.AccessorObjectInternalApiFactory;
 import io.clonecloudstore.accessor.model.AccessorObject;
 import io.clonecloudstore.accessor.server.FakeRequestTopicConsumer;
 import io.clonecloudstore.accessor.server.application.buffer.CcsBufferAccessorService;
@@ -72,6 +73,8 @@ class AccessorObjectResourceUsingBufferTest {
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factory;
+  @Inject
+  AccessorObjectInternalApiFactory internalApiFactory;
   static DriverApiFactory driverApiFactory;
   static DriverApiFactory originalDriverApiFactory;
   private static String clientId = null;
@@ -189,6 +192,11 @@ class AccessorObjectResourceUsingBufferTest {
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.OBJECT, objectType);
     }
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, true);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.OBJECT, objectType);
+    }
     try (final var client = factory.newClient()) {
       final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId);
       LOG.infof("ObjectType: %s", objectType);
@@ -199,8 +207,23 @@ class AccessorObjectResourceUsingBufferTest {
       LOG.infof("Object: %s", object);
       assertEquals(original, object);
     }
+    try (final var client = internalApiFactory.newClient()) {
+      final var object = client.getObjectInfo(bucketName, objectName, clientId);
+      LOG.infof("Object: %s", object);
+      assertEquals(original, object);
+    }
     // Get both Object and content
     try (final var client = factory.newClient()) {
+      final var inputStreamObject = client.getObject(bucketName, objectName, clientId);
+      LOG.infof("Object: %s", inputStreamObject.dtoOut());
+      assertEquals(original, inputStreamObject.dtoOut());
+      final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
+      assertEquals(100, len);
+    } catch (final IOException e) {
+      LOG.error(e, e);
+      fail(e);
+    }
+    try (final var client = internalApiFactory.newClient()) {
       final var inputStreamObject = client.getObject(bucketName, objectName, clientId);
       LOG.infof("Object: %s", inputStreamObject.dtoOut());
       assertEquals(original, inputStreamObject.dtoOut());
@@ -218,6 +241,11 @@ class AccessorObjectResourceUsingBufferTest {
     }
     try (final var client = factory.newClient()) {
       final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.NONE, objectType);
+    }
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }
@@ -283,8 +311,23 @@ class AccessorObjectResourceUsingBufferTest {
       LOG.infof("Object: %s", object);
       assertEquals(original, object);
     }
+    try (final var client = internalApiFactory.newClient()) {
+      final var object = client.getObjectInfo(bucketName, objectName, clientId);
+      LOG.infof("Object: %s", object);
+      assertEquals(original, object);
+    }
     // Get both Object and content
     try (final var client = factory.newClient()) {
+      final var inputStreamObject = client.getObject(bucketName, objectName, clientId);
+      LOG.infof("Object: %s", inputStreamObject.dtoOut());
+      assertEquals(original, inputStreamObject.dtoOut());
+      final var len = FakeInputStream.consumeAll(inputStreamObject.inputStream());
+      assertEquals(100, len);
+    } catch (final IOException e) {
+      LOG.error(e, e);
+      fail(e);
+    }
+    try (final var client = internalApiFactory.newClient()) {
       final var inputStreamObject = client.getObject(bucketName, objectName, clientId);
       LOG.infof("Object: %s", inputStreamObject.dtoOut());
       assertEquals(original, inputStreamObject.dtoOut());
@@ -302,6 +345,11 @@ class AccessorObjectResourceUsingBufferTest {
     }
     try (final var client = factory.newClient()) {
       final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId);
+      LOG.infof("ObjectType: %s", objectType);
+      assertEquals(StorageType.NONE, objectType);
+    }
+    try (final var client = internalApiFactory.newClient()) {
+      final var objectType = client.checkObjectOrDirectory(bucketName, objectName, clientId, true);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
     }

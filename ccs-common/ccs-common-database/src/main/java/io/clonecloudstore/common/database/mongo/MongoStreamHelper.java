@@ -47,7 +47,8 @@ public class MongoStreamHelper<F, E extends F> implements StreamHelperInterface<
   public Stream<E> findStream(final RepositoryBaseInterface<E> repositoryBase, final DbQuery query)
       throws CcsDbException {
     try {
-      return StreamIteratorUtils.getStreamFromIterator(findIterator(repositoryBase, query));
+      final var iterator = findIterator(repositoryBase, query);
+      return StreamIteratorUtils.getStreamFromIterator(iterator);
     } catch (final RuntimeException e) {
       throw new CcsDbException("findStream in error", e);
     }

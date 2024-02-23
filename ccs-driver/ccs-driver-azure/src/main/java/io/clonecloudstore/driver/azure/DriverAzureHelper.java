@@ -32,11 +32,13 @@ import com.azure.core.util.Context;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.models.BlobContainerItem;
+import com.azure.storage.blob.models.BlobContainerListDetails;
 import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobListDetails;
 import com.azure.storage.blob.models.BlobProperties;
 import com.azure.storage.blob.models.BlobStorageException;
+import com.azure.storage.blob.models.ListBlobContainersOptions;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.models.ParallelTransferOptions;
 import com.azure.storage.blob.options.BlobInputStreamOptions;
@@ -68,6 +70,8 @@ public class DriverAzureHelper {
   private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
   private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
   private final BlobServiceClient blobServiceClient;
+  private final ListBlobContainersOptions blobContainerOptions =
+      new ListBlobContainersOptions().setDetails(new BlobContainerListDetails().setRetrieveMetadata(true));
 
   DriverAzureHelper(final BlobServiceClient blobServiceClient) {
     this.blobServiceClient = blobServiceClient;
@@ -79,7 +83,7 @@ public class DriverAzureHelper {
 
   PagedIterable<BlobContainerItem> getBuckets() throws DriverException {
     try {
-      return blobServiceClient.listBlobContainers();
+      return blobServiceClient.listBlobContainers(blobContainerOptions, null);
     } catch (final BlobStorageException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getStatusCode(), e);
     }

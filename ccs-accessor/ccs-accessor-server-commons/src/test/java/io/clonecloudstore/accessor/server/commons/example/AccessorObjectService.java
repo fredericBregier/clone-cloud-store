@@ -16,7 +16,6 @@
 
 package io.clonecloudstore.accessor.server.commons.example;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.Objects;
@@ -245,7 +244,7 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
       throw new CcsNotExistException(e.getMessage(), e);
     } catch (final DriverNotAcceptableException e) {
       throw new CcsNotAcceptableException(e.getMessage(), e);
-    } catch (final DriverException | IOException e) {
+    } catch (final DriverException e) {
       throw new CcsOperationException(e);
     }
   }

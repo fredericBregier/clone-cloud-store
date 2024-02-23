@@ -66,7 +66,7 @@ public interface ApiServiceInterface extends Closeable {
   @POST
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  Uni<Response> createObject(@DefaultValue("name") @RestHeader(X_NAME) final String name,
+  Uni<Response> createObject(@DefaultValue("default-api-name") @RestHeader(X_NAME) final String name,
                              @DefaultValue("0") @RestHeader(X_LEN) final long len, final InputStream inputStream);
 
   @Path(API_COLLECTIONS + "/{business}")

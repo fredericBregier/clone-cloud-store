@@ -41,25 +41,17 @@ abstract class ApiFullServerDoubleAbstract {
   ApiQuarkusClientFactory factory;
 
   @BeforeEach
-  void beforeEach() {
+  void beforeEach() throws InterruptedException {
     QuarkusProperties.setServerComputeSha256(false);
-    slowdown();
-  }
-
-  private void slowdown() {
-    try {
-      Thread.sleep(10);
-    } catch (final InterruptedException e) {
-      // Ignore
-    }
+    Thread.sleep(10);
   }
 
   void check30PostInputStreamQuarkusDoubleTest() {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN,
-              false, false);
+          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'),
+              ApiQuarkusService.LEN, false, false);
       assertEquals("test", businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
@@ -69,7 +61,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -84,7 +76,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -105,7 +97,8 @@ abstract class ApiFullServerDoubleAbstract {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN), 0, false, false);
+          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'), 0, false,
+              false);
       assertEquals("test", businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
@@ -115,7 +108,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -129,7 +122,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -148,13 +141,12 @@ abstract class ApiFullServerDoubleAbstract {
 
   void check32PostInputStreamQuarkusShaDoubleTest() {
     QuarkusProperties.setServerComputeSha256(true);
-    slowdown();
-    slowdown();
+
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN,
-              false, false);
+          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'),
+              ApiQuarkusService.LEN, false, false);
       assertEquals("test", businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
@@ -164,7 +156,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -179,7 +171,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -198,12 +190,12 @@ abstract class ApiFullServerDoubleAbstract {
 
   void check33PostInputStreamQuarkusShaDoubleNoSizeTest() {
     QuarkusProperties.setServerComputeSha256(true);
-    slowdown();
-    slowdown();
+
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
-          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN), 0, false, false);
+          client.postInputStream(PROXY_TEST + "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'), 0, false,
+              false);
       assertEquals("test", businessOut.name);
       assertEquals(ApiQuarkusService.LEN, businessOut.len);
       assertNotNull(businessOut.creationDate);
@@ -213,7 +205,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -227,7 +219,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -248,10 +240,10 @@ abstract class ApiFullServerDoubleAbstract {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
-          client.getInputStream(PROXY_TEST + "test", ApiQuarkusService.LEN, false, false);
+          client.getInputStream(PROXY_TEST + ULTRA_COMPRESSION_TEST, ApiQuarkusService.LEN, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -259,7 +251,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut = client.getInputStream(PROXY_TEST + "test", ApiQuarkusService.LEN, true, true);
@@ -273,7 +265,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -293,10 +285,10 @@ abstract class ApiFullServerDoubleAbstract {
   void check35GetInputStreamQuarkusDoubleNoSizeTest() {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
-      final var inputStreamBusinessOut = client.getInputStream(PROXY_TEST + "test", 0, false, false);
+      final var inputStreamBusinessOut = client.getInputStream(PROXY_TEST + ULTRA_COMPRESSION_TEST, 0, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -304,7 +296,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut = client.getInputStream(PROXY_TEST + "test", 0, true, true);
@@ -318,7 +310,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -346,7 +338,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     final var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
-    slowdown();
+
     try (final var client = factory.newClient()) {
       final var businessOut = client.postInputStream(PROXY_TEST + ApiQuarkusService.CONFLICT_NAME,
           new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN, true, false);
@@ -374,7 +366,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     final var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
-    slowdown();
+
     try (final var client = factory.newClient()) {
       final var businessOut = client.postInputStream(PROXY_TEST + ApiQuarkusService.CONFLICT_NAME,
           new FakeInputStream(ApiQuarkusService.LEN), 0, true, false);
@@ -406,7 +398,7 @@ abstract class ApiFullServerDoubleAbstract {
     var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
     // Redo to check multiple access
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -437,7 +429,7 @@ abstract class ApiFullServerDoubleAbstract {
     var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
     // Redo to check multiple access
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -468,7 +460,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -483,7 +475,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -515,7 +507,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -529,7 +521,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -548,8 +540,7 @@ abstract class ApiFullServerDoubleAbstract {
 
   void check43PostInputStreamQuarkusShaDoubleCompressedIntraTest() {
     QuarkusProperties.setServerComputeSha256(true);
-    slowdown();
-    slowdown();
+
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -564,7 +555,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -579,7 +570,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -598,8 +589,7 @@ abstract class ApiFullServerDoubleAbstract {
 
   void check44PostInputStreamQuarkusShaDoubleNoSizeCompressedIntraTest() {
     QuarkusProperties.setServerComputeSha256(true);
-    slowdown();
-    slowdown();
+
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -614,7 +604,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -628,7 +618,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
@@ -656,7 +646,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     final var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
-    slowdown();
+
     try (final var client = factory.newClient()) {
       final var businessOut = client.postInputStream(PROXY_COMP_TEST + ApiQuarkusService.CONFLICT_NAME,
           new FakeInputStream(ApiQuarkusService.LEN), ApiQuarkusService.LEN, true, false);
@@ -684,7 +674,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     final var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
-    slowdown();
+
     try (final var client = factory.newClient()) {
       final var businessOut = client.postInputStream(PROXY_COMP_TEST + ApiQuarkusService.CONFLICT_NAME,
           new FakeInputStream(ApiQuarkusService.LEN), 0, true, false);
@@ -717,7 +707,7 @@ abstract class ApiFullServerDoubleAbstract {
     var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
     // Redo to check multiple access
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -748,7 +738,7 @@ abstract class ApiFullServerDoubleAbstract {
     var stop = System.nanoTime();
     LOG.info("Speed (ms): " + ((stop - start) / 1000000.0));
     // Redo to check multiple access
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -768,10 +758,10 @@ abstract class ApiFullServerDoubleAbstract {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
-          client.getInputStream(PROXY_COMP_TEST + "test", ApiQuarkusService.LEN, false, false);
+          client.getInputStream(PROXY_COMP_TEST + ULTRA_COMPRESSION_TEST, ApiQuarkusService.LEN, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -779,7 +769,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -794,7 +784,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =
@@ -814,10 +804,11 @@ abstract class ApiFullServerDoubleAbstract {
   void check51GetInputStreamQuarkusDoubleNoSizeCompressedIntraTest() {
     var start = System.nanoTime();
     try (final var client = factory.newClient()) {
-      final var inputStreamBusinessOut = client.getInputStream(PROXY_COMP_TEST + "test", 0, false, false);
+      final var inputStreamBusinessOut =
+          client.getInputStream(PROXY_COMP_TEST + ULTRA_COMPRESSION_TEST, 0, false, false);
       final var len = FakeInputStream.consumeAll(inputStreamBusinessOut.inputStream());
       assertEquals(ApiQuarkusService.LEN, len);
-      assertEquals("test", inputStreamBusinessOut.dtoOut().name);
+      assertEquals(ULTRA_COMPRESSION_TEST, inputStreamBusinessOut.dtoOut().name);
       assertEquals(ApiQuarkusService.LEN, inputStreamBusinessOut.dtoOut().len);
     } catch (final CcsWithStatusException | IOException e) {
       LOG.error(e.getMessage(), e);
@@ -825,7 +816,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     var stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut = client.getInputStream(PROXY_COMP_TEST + "test", 0, true, true);
@@ -839,7 +830,7 @@ abstract class ApiFullServerDoubleAbstract {
     }
     stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
-    slowdown();
+
     start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var inputStreamBusinessOut =

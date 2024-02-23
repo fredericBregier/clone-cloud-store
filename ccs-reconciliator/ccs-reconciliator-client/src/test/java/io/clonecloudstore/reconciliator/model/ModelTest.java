@@ -31,9 +31,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ModelTest {
   @Test
   void checkSimpleRecord() {
+    ReconciliationRequest requestStartUp =
+        new ReconciliationRequest("idRequest", "client", "bucket", null, "from", "current", null, false);
     ReconciliationRequest request =
-        new ReconciliationRequest("idRequest", "client", "bucket", null, "from", "current", null, Instant.now(), 0, 0,
-            0, 0, 0, false, null);
+        new ReconciliationRequest("idRequest", "client", "bucket", null, "from", "current", null,
+            requestStartUp.start(), 0, 0, 0, 0, 0, false, ReconciliationStep.CREATE, null);
+    assertEquals(request, requestStartUp);
     SingleSiteObject local = new SingleSiteObject(request.currentSite(), (short) 1, Instant.now());
     ReconciliationSitesListing sitesListing =
         new ReconciliationSitesListing("id", request.id(), request.bucket(), "name", List.of(local));
@@ -51,6 +54,9 @@ class ModelTest {
     assertEquals(local.nstatus(), sitesAction.needAction());
     assertEquals(request.fromSite(), sitesAction.needActionFrom().getFirst());
     assertEquals(request.currentSite(), sitesAction.sites().getFirst());
+    for (var action : ReconciliationAction.values()) {
+      assertEquals(action, ReconciliationAction.fromStatusCode(action.getStatus()));
+    }
   }
 
   @Test

@@ -49,7 +49,7 @@ class GoogleTest {
   }
 
   @Test
-  void azureCheck() {
+  void googleCheck() {
     new EmptyClass();
     final var bucket = "namebucket";
     final var blob = "nameblob";

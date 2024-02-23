@@ -27,23 +27,25 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HEAD;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.rest.client.annotation.RegisterClientHeaders;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.NoCache;
-import org.jboss.resteasy.reactive.RestHeader;
-import org.jboss.resteasy.reactive.RestPath;
 
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.API_COLLECTIONS;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.THROUGH;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_LEN;
 import static io.clonecloudstore.common.quarkus.example.client.ApiConstants.X_NAME;
 
+@RegisterRestClient
 @Path(ApiConstants.API_FULLROOT)
 @RegisterProvider(ClientResponseExceptionMapper.class)
 @RegisterProvider(ResponseClientFilter.class)
@@ -53,48 +55,48 @@ public interface ApiQuarkusServiceInterface extends Closeable {
 
   @Path(ApiConstants.API_COLLECTIONS + "/{name}")
   @HEAD
-  Uni<Response> checkName(@RestPath String name);
+  Uni<Response> checkName(@PathParam("name") String name);
 
   @Path(ApiConstants.API_COLLECTIONS + "/{business}")
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  Uni<ApiBusinessOut> getObjectMetadata(@RestPath String business);
+  Uni<ApiBusinessOut> getObjectMetadata(@PathParam("business") String business);
 
   @Path(API_COLLECTIONS)
   @POST
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  Uni<Response> createObject(@DefaultValue("name") @RestHeader(X_NAME) final String name,
-                             @DefaultValue("0") @RestHeader(X_LEN) final long len, final InputStream inputStream);
+  Uni<Response> createObject(@DefaultValue("default-name") @HeaderParam(X_NAME) final String name,
+                             @DefaultValue("0") @HeaderParam(X_LEN) final long len, final InputStream inputStream);
 
   @Path(API_COLLECTIONS)
   @PUT
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  Uni<Response> createObjectUsingPut(@DefaultValue("name") @RestHeader(X_NAME) final String name,
-                                     @DefaultValue("0") @RestHeader(X_LEN) final long len,
+  Uni<Response> createObjectUsingPut(@DefaultValue("default-name") @HeaderParam(X_NAME) final String name,
+                                     @DefaultValue("0") @HeaderParam(X_LEN) final long len,
                                      final InputStream inputStream);
 
   @Path(API_COLLECTIONS + THROUGH)
   @POST
   @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
-  Uni<Response> createObjectThrough(@DefaultValue("name") @RestHeader(X_NAME) final String name,
-                                    @DefaultValue("0") @RestHeader(X_LEN) final long len,
+  Uni<Response> createObjectThrough(@DefaultValue("default-name") @HeaderParam(X_NAME) final String name,
+                                    @DefaultValue("0") @HeaderParam(X_LEN) final long len,
                                     final InputStream inputStream);
 
   @Path(API_COLLECTIONS + "/{business}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  Uni<InputStream> readObject(@RestPath final String business);
+  Uni<InputStream> readObject(@PathParam("business") final String business);
 
   @Path(API_COLLECTIONS + "/{business}")
   @PUT
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  Uni<InputStream> readObjectPut(@RestPath final String business);
+  Uni<InputStream> readObjectPut(@PathParam("business") final String business);
 
   @Path(API_COLLECTIONS + THROUGH + "/{business}")
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  Uni<InputStream> readObjectThrough(@RestPath final String business);
+  Uni<InputStream> readObjectThrough(@PathParam("business") final String business);
 }

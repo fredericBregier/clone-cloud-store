@@ -22,7 +22,7 @@ import io.quarkus.arc.Unremovable;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /**
- * Bucket Client API Factory
+ * Object Client API Factory
  */
 @ApplicationScoped
 @Unremovable

@@ -19,8 +19,6 @@ package io.clonecloudstore.common.standard.inputstream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,8 +34,7 @@ import static io.clonecloudstore.common.standard.properties.StandardProperties.D
 public abstract class AbstractCommonInputStream extends InputStream {
   protected final InputStream inputStream;
   protected final OutputStream outputStream;
-  protected final PipedInputStream pipedInputStream;
-  protected final PipedOutputStream pipedOutputStream;
+  protected final PipedInputOutputStream pipedInputOutputStream;
   protected final AtomicReference<IOException> ioExceptionAtomicReference = new AtomicReference<>();
   protected long sizeRead = 0;
   protected long sizeOutput = 0;
@@ -47,8 +44,7 @@ public abstract class AbstractCommonInputStream extends InputStream {
 
   protected AbstractCommonInputStream(final InputStream inputStream, final Object extraArgument) throws IOException {
     this.inputStream = inputStream;
-    pipedInputStream = new PipedInputStream(DEFAULT_PIPED_BUFFER_SIZE);
-    pipedOutputStream = new PipedOutputStream(pipedInputStream);
+    pipedInputOutputStream = new PipedInputOutputStream(null, DEFAULT_PIPED_BUFFER_SIZE);
     outputStream = getNewOutputStream(extraArgument);
     if (outputStream != null) {
       SystemTools.STANDARD_EXECUTOR_SERVICE.execute(() -> {
@@ -80,7 +76,7 @@ public abstract class AbstractCommonInputStream extends InputStream {
     if (done.get()) {
       return -1;
     }
-    final var read = pipedInputStream.read();
+    final var read = pipedInputOutputStream.read();
     if (read >= 0) {
       sizeOutput++;
     } else {
@@ -106,7 +102,7 @@ public abstract class AbstractCommonInputStream extends InputStream {
     if (done.get()) {
       return -1;
     }
-    final var read = pipedInputStream.read(b, off, len);
+    final var read = pipedInputOutputStream.read(b, off, len);
     if (read >= 0) {
       sizeOutput += read;
     } else {
@@ -130,7 +126,7 @@ public abstract class AbstractCommonInputStream extends InputStream {
     if (done.get()) {
       return 0;
     }
-    final var len = pipedInputStream.available();
+    final var len = pipedInputOutputStream.available();
     if (len <= 0) {
       return len;
     }
@@ -140,8 +136,7 @@ public abstract class AbstractCommonInputStream extends InputStream {
   @Override
   public void close() throws IOException {
     SystemTools.silentlyCloseNoException(inputStream);
-    SystemTools.silentlyCloseNoException(pipedOutputStream);
-    SystemTools.silentlyCloseNoException(pipedInputStream);
+    SystemTools.silentlyCloseNoException(pipedInputOutputStream);
     SystemTools.silentlyCloseNoException(outputStream);
     done.set(true);
   }

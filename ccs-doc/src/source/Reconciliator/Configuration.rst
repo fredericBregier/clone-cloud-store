@@ -29,3 +29,7 @@ application.yaml configuration
      - Number of threads to use in certain steps
      - Current number of cores / 2, minimal being 2
      - Used in particular in steps where parallelism can improve efficiency for long term computations
+   * - ``quarkus.transaction-manager.default-transaction-timeout``
+     - Timeout for queries using Postgre/Mongodb
+     - 3600
+     - To enable long time queries

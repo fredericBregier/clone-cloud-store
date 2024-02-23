@@ -123,6 +123,7 @@ class DbPostgreRichInjectTest {
     assertTrue(optionalPgDbDtoExample.isPresent());
     final var pgDbDtoExample = optionalPgDbDtoExample.get();
     assertNotNull(pgDbDtoExample);
+    stream.close();
     assertEquals(1, repository.findStream(dbQuery).toList().size());
   }
 }

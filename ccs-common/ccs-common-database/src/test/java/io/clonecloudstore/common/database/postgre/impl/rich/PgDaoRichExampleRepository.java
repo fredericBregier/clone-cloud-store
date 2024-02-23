@@ -57,6 +57,7 @@ public class PgDaoRichExampleRepository extends ExtendedPanacheRepositoryBase<Da
     // Stream cannot be used outside @Transactional
     final var stream = findStream(dbQuery);
     final var optionalPgDbDtoExample = stream.findFirst();
+    stream.close();
     if (optionalPgDbDtoExample.isPresent()) {
       return optionalPgDbDtoExample.get();
     }

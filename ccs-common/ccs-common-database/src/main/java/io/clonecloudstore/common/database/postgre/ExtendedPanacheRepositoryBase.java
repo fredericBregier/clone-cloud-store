@@ -252,6 +252,7 @@ public abstract class ExtendedPanacheRepositoryBase<F, E extends F>
       final var query = (Query<E>) getEntityManager().createNativeQuery(PostgreSqlHelper.select(getTable(), dbQuery),
               forClass.getClass()).setHint(HibernateHints.HINT_FETCH_SIZE, MAX_LIST)
           .setHint(HibernateHints.HINT_READ_ONLY, true).setHint(HibernateHints.HINT_CACHEABLE, false);
+      query.setFetchSize(MAX_LIST).setReadOnly(true).setCacheable(false);
       setParameter(query, dbQuery);
       return query;
     } catch (final RuntimeException e) {

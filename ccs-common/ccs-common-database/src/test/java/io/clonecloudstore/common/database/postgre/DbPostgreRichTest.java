@@ -118,6 +118,7 @@ class DbPostgreRichTest {
     assertTrue(optionalPgDbDtoExample.isPresent());
     final var pgDbDtoExample = optionalPgDbDtoExample.get();
     assertNotNull(pgDbDtoExample);
+    stream.close();
     assertEquals(1, repository.findQuery(dbQuery).list().size());
   }
 }

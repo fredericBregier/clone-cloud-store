@@ -107,6 +107,7 @@ public class DbQuery extends RestQuery {
       case NEQ -> neq(field, value);
       case GTE -> gte(field, value);
       case LTE -> lte(field, value);
+      case REVERSE_IN -> reverseIn(field, value);
       default -> {
         // Nothing
       }
@@ -123,6 +124,7 @@ public class DbQuery extends RestQuery {
       case START_WITH -> startWith(field, value);
       case JSON_EQ -> jsonEq(field, value);
       case JSON_NEQ -> jsonNeq(field, value);
+      case REVERSE_IN -> reverseIn(field, value);
       default -> {
         // Nothing
       }
@@ -205,6 +207,17 @@ public class DbQuery extends RestQuery {
   @IgnoreProperty
   @Transient
   @JsonIgnore
+  private void reverseIn(final String field, final Object value) {
+    builder.append(PARAM).append(" =ANY(").append(field).append(END_PARENTHESIS);
+    params.add(value);
+    if (IS_DB_TYPE_MONGODB) {
+      bson = Filters.eq(field, value);
+    }
+  }
+
+  @IgnoreProperty
+  @Transient
+  @JsonIgnore
   private void startWith(final String field, final String prefix) {
     builder.append(field).append(" LIKE (").append(PARAM).append("||'%')");
     params.add(prefix);
@@ -242,6 +255,17 @@ public class DbQuery extends RestQuery {
     jsonComp(field, value, " != ");
     if (IS_DB_TYPE_MONGODB) {
       bson = Filters.ne(getMgPreMetadataField() + field, value);
+    }
+  }
+
+  @IgnoreProperty
+  @Transient
+  @JsonIgnore
+  private void reverseIn(final String field, final String value) {
+    builder.append(PARAM).append(" =ANY(").append(field).append(END_PARENTHESIS);
+    params.add(value);
+    if (IS_DB_TYPE_MONGODB) {
+      bson = Filters.eq(field, value);
     }
   }
 

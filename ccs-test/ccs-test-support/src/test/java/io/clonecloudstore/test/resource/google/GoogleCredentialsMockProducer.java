@@ -18,13 +18,12 @@ package io.clonecloudstore.test.resource.google;
 
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.NoCredentials;
 import io.quarkus.test.Mock;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
-import org.mockito.Mockito;
 
 @Mock
 @ApplicationScoped
@@ -33,8 +32,8 @@ public class GoogleCredentialsMockProducer {
   @Produces
   @Singleton
   @Default
-  public GoogleCredentials googleCredential() {
-    return Mockito.mock(GoogleCredentials.class);
+  public NoCredentials googleCredential() {
+    return NoCredentials.getInstance();
   }
 
   // only needed if you're injecting it inside one of your CDI beans

@@ -451,7 +451,8 @@ class RequestActionConsumerTest {
       assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
       // Now give the Delete access
       try (final var ownerClient = ownershipApiClientFactory.newClient()) {
-        ownerClient.update(clientIdOther, CLIENTID_BUCKET, ClientOwnership.DELETE);
+        LOG.infof("OwnerShip %s", ownerClient.update(clientIdOther, CLIENTID_BUCKET, ClientOwnership.DELETE));
+        assertTrue(ownerClient.findByBucket(clientIdOther, CLIENTID_BUCKET).include(ClientOwnership.DELETE));
       } catch (CcsWithStatusException e) {
         fail(e);
       }

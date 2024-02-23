@@ -77,22 +77,37 @@ public class OwnershipApiClient extends SimpleClientAbstract<OwnershipApi> {
       }
     }
     final var uni = getService().findByBucket(clientId, bucket);
-    return (ClientOwnership) exceptionMapper.handleUniObject(this, uni);
+    var ownership = (ClientOwnership) exceptionMapper.handleUniObject(this, uni);
+    if (cached != null) {
+      cached.add(new ClientBucketAccess(clientId, bucket, ownership));
+    }
+    return ownership;
   }
 
   private Uni<ClientOwnership> internalAdd(final String clientId, final String bucket,
                                            final ClientOwnership ownership) {
-    ((OwnershipApiClientFactory) getFactory()).clearCache(clientId);
     return getService().add(clientId, bucket, ownership);
   }
 
   /**
-   * Invalidate Cache
+   * Add without invalidating cache
    */
   public ClientOwnership add(final String clientId, final String bucket, final ClientOwnership ownership)
       throws CcsWithStatusException {
+    final var cached = listAll(clientId);
+    if (cached != null) {
+      var optional =
+          cached.stream().filter(relationClientBuckets -> bucket.equals(relationClientBuckets.bucket())).findFirst();
+      if (optional.isPresent()) {
+        throw new CcsWithStatusException(bucket, Response.Status.CONFLICT.getStatusCode());
+      }
+    }
     final var uni = internalAdd(clientId, bucket, ownership);
-    return (ClientOwnership) exceptionMapper.handleUniObject(this, uni);
+    var ownershipFinal = (ClientOwnership) exceptionMapper.handleUniObject(this, uni);
+    if (cached != null) {
+      cached.add(new ClientBucketAccess(clientId, bucket, ownershipFinal));
+    }
+    return ownershipFinal;
   }
 
   /**
@@ -100,6 +115,7 @@ public class OwnershipApiClient extends SimpleClientAbstract<OwnershipApi> {
    */
   public CompletableFuture<ClientOwnership> addAsync(final String clientId, final String bucket,
                                                      final ClientOwnership ownership) {
+    ((OwnershipApiClientFactory) getFactory()).clearCache(clientId);
     final var uni = internalAdd(clientId, bucket, ownership);
     return uni.subscribe().asCompletionStage();
   }

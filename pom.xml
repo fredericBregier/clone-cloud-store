@@ -42,14 +42,14 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.7.3</quarkus.platform.version>
-    <zstd-jni.version>1.5.5-11</zstd-jni.version>
-    <testcontainers.version>1.19.5</testcontainers.version>
-    <guava.version>33.0.0-jre</guava.version>
+    <quarkus.platform.version>3.11.0</quarkus.platform.version>
+    <zstd-jni.version>1.5.6-3</zstd-jni.version>
+    <testcontainers.version>1.19.8</testcontainers.version>
+    <guava.version>33.2.1-jre</guava.version>
     <jmh-core.version>1.37</jmh-core.version>
-    <azure-version>1.0.2</azure-version>
-    <google-version>2.7.0</google-version>
-    <google-bom-version>26.32.0</google-bom-version>
+    <azure-version>1.0.4</azure-version>
+    <google-version>2.9.0</google-version>
+    <google-bom-version>26.40.0</google-bom-version>
     <apache-httpclient.version>5.3.1</apache-httpclient.version>
     <skipITs>true</skipITs>
     <root.directory>${maven.multiModuleProjectDirectory}</root.directory>
@@ -63,7 +63,7 @@
     <maven-source.version>3.3.0</maven-source.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <maven-resources.version>3.3.1</maven-resources.version>
-    <exec-maven.version>3.1.1</exec-maven.version>
+    <exec-maven.version>3.2.0</exec-maven.version>
     <maven-antrun.version>3.1.0</maven-antrun.version>
     <maven-clean.version>3.3.2</maven-clean.version>
     <dependency-check.version>9.0.9</dependency-check.version>
@@ -268,11 +268,6 @@
       <dependency>
         <groupId>io.clonecloudstore</groupId>
         <artifactId>ccs-common-standard</artifactId>
-        <version>${revision}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.clonecloudstore</groupId>
-        <artifactId>quarkus-patch-client</artifactId>
         <version>${revision}</version>
       </dependency>
       <dependency>
@@ -499,11 +494,8 @@
         <configuration>
           <!-- until patch is merged in Quarkus -->
           <excludes>
-            <exclude>**/quarkus-patch-client-parent/**/*</exclude>
-            <exclude>io/clonecloudstore/quarkus/patch/**/*</exclude>
             <exclude>io/quarkus/**/*</exclude>
             <exclude>org/jboss/**/*</exclude>
-            <exclude>quarkus-patch-client-parent/**/*</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -863,7 +855,8 @@
       </activation>
       <properties>
         <skipITs>false</skipITs>
-        <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.enabled>true</quarkus.native.enabled>
+        <quarkus.package.jar.enabled>false</quarkus.package.jar.enabled>
       </properties>
     </profile>
     <profile>
@@ -875,7 +868,6 @@
   </profiles>
 
   <modules>
-    <module>quarkus-patch-client-parent</module>
     <module>ccs-test</module>
     <module>ccs-common</module>
     <module>ccs-driver</module>

@@ -102,10 +102,8 @@ public class RequestActionService {
 
   /**
    * Create bucket from client Id and BucketName
-   *
-   * @return AccessorBucket add on Database and in object storage
    */
-  public AccessorBucket createBucket(final ReplicatorOrder replicatorOrder)
+  public void createBucket(final ReplicatorOrder replicatorOrder)
       throws CcsAlreadyExistException, CcsOperationException {
     checkReplicatorOrderBucketName(replicatorOrder);
     // Check if bucket already exist in database.
@@ -127,16 +125,15 @@ public class RequestActionService {
       result.setClientId(replicatorOrder.clientId());
       result.setSite(ServiceProperties.getAccessorSite());
     }
-    return createBucketFromDto(result);
+    createBucketFromDto(result);
   }
 
   /**
    * Create Bucket from DTO Accessor
    *
    * @param bucket Accessor Bucket with functional data
-   * @return AccessorBucket add on Database and in object storage
    */
-  private AccessorBucket createBucketFromDto(final AccessorBucket bucket) throws CcsOperationException {
+  private void createBucketFromDto(final AccessorBucket bucket) throws CcsOperationException {
     LOGGER.debugf("Create bucket %s in database and in object storage", bucket.getId());
     try {
       // Insert in Database
@@ -152,7 +149,7 @@ public class RequestActionService {
       }
       //Create Bucket in Object Storage
       final var storageBucket = new StorageBucket(newBucket.getId(), newBucket.getClientId(), newBucket.getCreation());
-      return createBucketOnStorage(storageBucket, newBucket);
+      createBucketOnStorage(storageBucket, newBucket);
     } catch (final CcsDbException e) {
       throw new CcsOperationException("Database error on bucket " + bucket.getId() + " creation", e);
     } finally {
@@ -170,7 +167,7 @@ public class RequestActionService {
     }
   }
 
-  private AccessorBucket createBucketOnStorage(final StorageBucket storageBucket, final AccessorBucket bucket)
+  private void createBucketOnStorage(final StorageBucket storageBucket, final AccessorBucket bucket)
       throws CcsDbException {
     try (final var storageDriver = storageDriverFactory.getInstance();
          final var ownershipClient = ownershipApiClientFactory.newClient()) {
@@ -179,9 +176,8 @@ public class RequestActionService {
       storageDriver.bucketCreate(storageBucket);
       finalizeAddOwnership(ownershipClient, completableFuture);
       // Update Database in Database with status Ready.
-      var newBucket = bucketRepository.updateBucketStatus(bucket, AccessorStatus.READY, null);
+      bucketRepository.updateBucketStatus(bucket, AccessorStatus.READY, null);
       LOGGER.debugf("Bucket %s created in database and in object storage", bucket.getId());
-      return newBucket;
     } catch (final CcsOperationException e) {
       LOGGER.error(e.getMessage());
       bucketRepository.updateBucketStatus(bucket, AccessorStatus.ERR_UPL, null);
@@ -203,10 +199,8 @@ public class RequestActionService {
 
   /**
    * Delete bucket
-   *
-   * @return the associated DTO deleted
    */
-  public AccessorBucket deleteBucket(final ReplicatorOrder replicatorOrder)
+  public void deleteBucket(final ReplicatorOrder replicatorOrder)
       throws CcsNotExistException, CcsDeletedException, CcsOperationException, CcsNotAcceptableException {
     checkReplicatorOrderBucketName(replicatorOrder);
     try {
@@ -224,7 +218,7 @@ public class RequestActionService {
           throw new CcsNotAcceptableException("Bucket is not empty");
         }
         bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETING, null);
-        return deleteBucketOnStorage(replicatorOrder.bucketName(), bucket);
+        deleteBucketOnStorage(replicatorOrder.bucketName(), bucket);
       } else if (bucket.getStatus() == AccessorStatus.DELETED) {
         throw new CcsDeletedException("Bucket " + replicatorOrder.bucketName() + " is already deleted");
       } else {
@@ -247,8 +241,7 @@ public class RequestActionService {
     }
   }
 
-  private AccessorBucket deleteBucketOnStorage(final String bucketName, final AccessorBucket bucket)
-      throws CcsDbException {
+  private void deleteBucketOnStorage(final String bucketName, final AccessorBucket bucket) throws CcsDbException {
     try {
       try (final var storageDriver = storageDriverFactory.getInstance();
            final var ownershipClient = ownershipApiClientFactory.newClient()) {
@@ -257,7 +250,7 @@ public class RequestActionService {
         storageDriver.bucketDelete(bucketName);
         finalizeDeleteOwnership(ownershipClient, completableFuture);
       }
-      return bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETED, null);
+      bucketRepository.updateBucketStatus(bucket, AccessorStatus.DELETED, null);
     } catch (final DriverException | RuntimeException e) {
       LOGGER.error(e.getMessage());
       bucketRepository.updateBucketStatus(bucket, AccessorStatus.ERR_DEL, null);
@@ -366,7 +359,6 @@ public class RequestActionService {
       // Now Object check
       var daoAccessorObject = objectRepository.getObject(replicatorOrder.bucketName(), replicatorOrder.objectName());
       if (daoAccessorObject != null) {
-        // FIXME might need extra check from Reconciliation (RStatus = To_Update Rank ?)
         if (daoAccessorObject.getStatus() != AccessorStatus.DELETED) {
           if (daoAccessorObject.getStatus() == AccessorStatus.UPLOAD) {
             throw new CcsNotAcceptableException(
@@ -413,12 +405,12 @@ public class RequestActionService {
   /**
    * Once Object really created in Cloud Clone Store, finalize the Object in DB
    */
-  private DaoAccessorObject createObjectFinalize(final DaoAccessorObject daoObject) throws CcsOperationException {
+  private void createObjectFinalize(final DaoAccessorObject daoObject) throws CcsOperationException {
     try {
       // Update Database with status Ready and metadata from ObjectStorage
       objectRepository.updateObjectStatusHashLen(daoObject.getBucket(), daoObject.getName(), AccessorStatus.READY,
           daoObject.getHash(), daoObject.getSize());
-      return objectRepository.getObject(daoObject.getBucket(), daoObject.getName());
+      objectRepository.getObject(daoObject.getBucket(), daoObject.getName());
     } catch (final CcsDbException e) {
       throw new CcsOperationException(
           "Database error on create object finalize : " + daoObject.getBucket() + " - " + daoObject.getName(), e);

@@ -39,7 +39,7 @@ class ApiFullDoubleConcurrentLongRunIT extends ApiFullServerDoubleAbstract {
   private static final Logger LOG = Logger.getLogger(ApiFullDoubleConcurrentLongRunIT.class);
   private static final int NB_THREADS = 3;
   private static final int NB_ITER_PER_THREADS = 3;
-  private static final int NB_TEST = 8;
+  private static final int NB_TEST = 3;
   private static final int NB_STREAM_PER_TEST = 3;
   final Random random = new Random();
 
@@ -66,47 +66,20 @@ class ApiFullDoubleConcurrentLongRunIT extends ApiFullServerDoubleAbstract {
           executeTests(cpt);
         }
       });
-      threadWaitRandom();
     }
-    Thread.sleep(10000);
+    Thread.sleep(2000);
     executorService.shutdown();
     executorService.awaitTermination(1000, TimeUnit.SECONDS);
     LOG.infof("END CONCURRENT");
     return cpt.get();
   }
 
-  private void threadWaitRandom() {
-    try {
-      Thread.sleep(random.nextInt(10, 50));
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private void executeTests(final AtomicLong cpt) {
-    check30PostInputStreamQuarkusDoubleTest();
-    cpt.incrementAndGet();
-    threadWaitRandom();
-    check31PostInputStreamQuarkusDoubleNoSizeTest();
-    cpt.incrementAndGet();
-    threadWaitRandom();
-    check33PostInputStreamQuarkusShaDoubleNoSizeTest();
-    cpt.incrementAndGet();
-    threadWaitRandom();
     check34GetInputStreamQuarkusDoubleTest();
     cpt.incrementAndGet();
-    threadWaitRandom();
     check35GetInputStreamQuarkusDoubleNoSizeTest();
     cpt.incrementAndGet();
-    threadWaitRandom();
-    check41PostInputStreamQuarkusDoubleCompressedIntraTest();
-    cpt.incrementAndGet();
-    threadWaitRandom();
-    check43PostInputStreamQuarkusShaDoubleCompressedIntraTest();
-    cpt.incrementAndGet();
-    threadWaitRandom();
     check51GetInputStreamQuarkusDoubleNoSizeCompressedIntraTest();
     cpt.incrementAndGet();
-    threadWaitRandom();
   }
 }

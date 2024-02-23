@@ -96,6 +96,10 @@ public class AccessorConstants {
      * Specific Header for Archival from Reconciliator Purge process
      */
     public static final String X_EXPIRED_SECONDS = "x-clonecloudstore-expired-seconds";
+    /**
+     * Specific Header for Request Id from Reconciliator
+     */
+    public static final String X_REQUEST_ID = "x-clonecloudstore-request-id";
 
     private Api() {
       // Empty

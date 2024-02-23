@@ -41,7 +41,8 @@ public class ZstdCompressInputStream extends AbstractCommonInputStream {
 
   @Override
   protected OutputStream getNewOutputStream(Object level) throws IOException {
-    var zstdOutputStream = new ZstdOutputStream(pipedOutputStream, RecyclingBufferPool.INSTANCE, (int) level);
+    var zstdOutputStream =
+        new ZstdOutputStream(pipedInputOutputStream.getOutputStream(), RecyclingBufferPool.INSTANCE, (int) level);
     zstdOutputStream.setChecksum(false);
     zstdOutputStream.setCloseFrameOnFlush(true);
     return zstdOutputStream;

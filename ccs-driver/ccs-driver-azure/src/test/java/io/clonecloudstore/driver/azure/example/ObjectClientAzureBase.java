@@ -65,7 +65,7 @@ abstract class ObjectClientAzureBase {
     QuarkusProperties.setServerComputeSha256(false);
     // Remove all first
     cleanUp();
-    Thread.sleep(200);
+    Thread.sleep(100);
   }
 
   private void cleanUp() {

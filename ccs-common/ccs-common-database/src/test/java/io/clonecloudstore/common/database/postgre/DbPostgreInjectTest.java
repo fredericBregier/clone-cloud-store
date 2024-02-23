@@ -352,5 +352,6 @@ class DbPostgreInjectTest {
     final var stream = repository.findStream(dbQuery);
     final var count = stream.count();
     assertEquals(count, countReal);
+    stream.close();
   }
 }

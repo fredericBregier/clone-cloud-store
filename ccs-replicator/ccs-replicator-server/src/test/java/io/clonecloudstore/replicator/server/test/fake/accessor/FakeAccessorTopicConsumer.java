@@ -25,6 +25,7 @@ import io.clonecloudstore.replicator.config.ReplicatorConstants;
 import io.clonecloudstore.replicator.model.ReplicatorOrder;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.jboss.logging.Logger;
 
@@ -34,6 +35,7 @@ public class FakeAccessorTopicConsumer {
   private static final Logger LOGGER = Logger.getLogger(FakeAccessorTopicConsumer.class);
 
   @Incoming(ReplicatorConstants.Topic.REPLICATOR_ACTION_IN)
+  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
   @Blocking(ordered = true)
   public void consume(List<ReplicatorOrder> list) {
     QuarkusProperties.refreshModuleMdc();

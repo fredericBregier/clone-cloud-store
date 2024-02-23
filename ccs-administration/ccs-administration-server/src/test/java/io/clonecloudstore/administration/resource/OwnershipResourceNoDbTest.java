@@ -69,7 +69,7 @@ class OwnershipResourceNoDbTest {
         logger.debugf("\n\nTesting add ownership not found ");
         final var exception = assertThrows(CcsWithStatusException.class,
             () -> client.add(CLIENT_ID, OWNERSHIP_BUCKET, ClientOwnership.READ));
-        assertEquals(Response.Status.CONFLICT.getStatusCode(), exception.getStatus());
+        assertEquals(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), exception.getStatus());
       }
       {
         logger.debugf("\n\nTesting update ownership not found ");

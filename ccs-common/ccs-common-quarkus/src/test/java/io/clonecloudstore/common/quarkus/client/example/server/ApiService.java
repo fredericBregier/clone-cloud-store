@@ -69,9 +69,10 @@ public class ApiService extends StreamServiceAbstract<ApiBusinessIn, ApiBusiness
   @Produces(MediaType.APPLICATION_JSON)
   @Blocking
   public Uni<Response> createObject(final HttpServerRequest request, @Context final Closer closer,
-                                    @DefaultValue("name") @RestHeader(X_NAME) final String name,
+                                    @DefaultValue("default-name") @RestHeader(X_NAME) final String name,
                                     @DefaultValue("0") @RestHeader(X_LEN) final long len,
                                     final InputStream inputStream) {
+    LOG.infof("DEBUG name: %s", name);
     if ("INTERRUPT".equals(name)) {
       return Uni.createFrom().emitter(em -> {
         em.complete(createErrorResponse(new BadRequestException("Interrupted name")));

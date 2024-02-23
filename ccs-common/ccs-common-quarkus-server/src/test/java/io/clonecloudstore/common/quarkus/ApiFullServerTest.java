@@ -31,6 +31,7 @@ import java.security.spec.InvalidKeySpecException;
 
 import io.clonecloudstore.common.quarkus.example.WaitingInputStream;
 import io.clonecloudstore.common.quarkus.example.client.ApiQuarkusClientFactory;
+import io.clonecloudstore.common.quarkus.example.client.ApiQurkusNativeClient;
 import io.clonecloudstore.common.quarkus.example.model.ApiBusinessOut;
 import io.clonecloudstore.common.quarkus.example.server.ApiQuarkusService;
 import io.clonecloudstore.common.quarkus.properties.QuarkusProperties;
@@ -44,6 +45,7 @@ import io.clonecloudstore.common.standard.system.SystemRandomSecure;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.clonecloudstore.test.stream.VoidOutputStream;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.logging.Logger;
@@ -67,6 +69,7 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
@@ -203,6 +206,7 @@ class ApiFullServerTest {
       final var businessOut = client.getObjectMetadata("test");
       assertEquals("test", businessOut.name);
       assertNotNull(businessOut.creationDate);
+      assertTrue(client.checkName("test"));
     } catch (final CcsWithStatusException e) {
       LOG.error(e.getMessage(), e);
       fail(e);
@@ -212,6 +216,21 @@ class ApiFullServerTest {
   @Test
   void check10PostInputStreamQuarkus() {
     var start = System.nanoTime();
+    try (final var client = factory.newClient()) {
+      final var client2 = CDI.current().select(ApiQurkusNativeClient.class).get();
+      final var businessOut =
+          client2.postInputStreamDirect(client, "test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'),
+              ApiQuarkusService.LEN, false, false);
+      assertEquals("test", businessOut.name);
+      assertEquals(ApiQuarkusService.LEN, businessOut.len);
+      assertNotNull(businessOut.creationDate);
+    } catch (final CcsWithStatusException e) {
+      LOG.error(e.getMessage(), e);
+      fail(e);
+    }
+    var stop = System.nanoTime();
+    LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
+    start = System.nanoTime();
     try (final var client = factory.newClient()) {
       final var businessOut =
           client.postInputStream("test", new FakeInputStream(ApiQuarkusService.LEN, (byte) 'A'), ApiQuarkusService.LEN,
@@ -223,7 +242,7 @@ class ApiFullServerTest {
       LOG.error(e.getMessage(), e);
       fail(e);
     }
-    var stop = System.nanoTime();
+    stop = System.nanoTime();
     LOG.info("Speed (MB/s): " + ApiQuarkusService.LEN / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
     start = System.nanoTime();
     try (final var client = factory.newClient()) {

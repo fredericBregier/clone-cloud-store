@@ -181,6 +181,9 @@ one should decide if MongoDB or PostgreSql is used (see ``ccs.db.type``).
    * - ``quarkus.hibernate-orm.fetch.batch-size``
      - ``1000``
      - For bulk operation
+   * - ``quarkus.transaction-manager.default-transaction-timeout``
+     - ``60``
+     - When a request occurs, how long before timeout. For Reconciliator, timeout shall be high such as 3600
    * - ``quarkus.mongodb`` related
      -
      - For MongoDB configuration

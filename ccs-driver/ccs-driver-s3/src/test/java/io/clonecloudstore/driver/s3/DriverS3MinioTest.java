@@ -39,7 +39,7 @@ public class DriverS3MinioTest extends DriverS3Base {
     // Sometime, test failed on DriverApiFactory not setup
     if (DriverApiRegistry.getDriverApiFactory() == null) {
       // Ensure container is started
-      Thread.sleep(500);
+      Thread.sleep(100);
       DriverApiRegistry.setDriverApiFactory(CDI.current().select(DriverS3ApiFactory.class).get());
     }
     // Simulate loading the Factory from Class name

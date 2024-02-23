@@ -87,18 +87,13 @@ public class MultipleActionsInputStream extends InputStream {
   }
 
   public void asyncPipedInputStream(final AtomicReference<Exception> callerExceptionAtomicReference) {
-    try {
-      if (pipedVersion) {
-        return;
-      }
-      final TransferInputStream transfertInputStream =
-          new TransferInputStream(inputStream, callerExceptionAtomicReference);
-      countingInputStream.changeInputStream(transfertInputStream);
-      transfertInputStream.startCopyAsync();
-      pipedVersion = true;
-    } catch (final IOException e) {
-      raisedExceptionTimeout.compareAndSet(null, e);
+    if (pipedVersion) {
+      return;
     }
+    final PipedInputOutputStream pipedInputOutputStream = new PipedInputOutputStream(callerExceptionAtomicReference);
+    countingInputStream.changeInputStream(pipedInputOutputStream);
+    pipedInputOutputStream.transferFromAsync(inputStream);
+    pipedVersion = true;
   }
 
   void computeDigest(final DigestAlgo digestAlgo) throws NoSuchAlgorithmException {

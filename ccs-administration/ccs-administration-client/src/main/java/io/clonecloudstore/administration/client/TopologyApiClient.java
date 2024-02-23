@@ -73,7 +73,11 @@ public class TopologyApiClient extends SimpleClientAbstract<TopologyApi> {
       }
     }
     final var uni = getService().findBySite(site);
-    return (Topology) exceptionMapper.handleUniObject(this, uni);
+    var topology = (Topology) exceptionMapper.handleUniObject(this, uni);
+    if (cached != null) {
+      cached.add(topology);
+    }
+    return topology;
   }
 
   /**

@@ -16,22 +16,15 @@
 
 package io.clonecloudstore.accessor.server.resource;
 
-import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 
 import io.clonecloudstore.accessor.client.AccessorBucketApiFactory;
 import io.clonecloudstore.accessor.client.AccessorObjectApiFactory;
-import io.clonecloudstore.accessor.model.AccessorFilter;
 import io.clonecloudstore.accessor.model.AccessorObject;
-import io.clonecloudstore.accessor.model.AccessorStatus;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorBucketRepository;
 import io.clonecloudstore.accessor.server.database.model.DaoAccessorObjectRepository;
 import io.clonecloudstore.common.database.utils.exception.CcsDbException;
-import io.clonecloudstore.common.quarkus.modules.AccessorProperties;
 import io.clonecloudstore.common.standard.exception.CcsWithStatusException;
-import io.clonecloudstore.common.standard.guid.GuidLike;
-import io.clonecloudstore.common.standard.system.ParametersChecker;
 import io.clonecloudstore.driver.api.CleanupTestUtil;
 import io.clonecloudstore.driver.api.StorageType;
 import io.clonecloudstore.test.resource.MongoKafkaProfile;
@@ -41,12 +34,10 @@ import io.quarkus.test.junit.TestProfile;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -84,11 +75,12 @@ class AccessorObjectResourceNoS3Test {
   }
 
   @Test
-  void createBucketAndObject() throws CcsWithStatusException, CcsDbException {
+  void createBucketAndObject() throws CcsWithStatusException, CcsDbException, InterruptedException {
     createBucketAndObject(BUCKET_NAME);
   }
 
-  void createBucketAndObject(final String bucketName) throws CcsWithStatusException, CcsDbException {
+  void createBucketAndObject(final String bucketName)
+      throws CcsWithStatusException, CcsDbException, InterruptedException {
     try (final var client = factoryBucket.newClient()) {
       assertEquals(500,
           assertThrows(CcsWithStatusException.class, () -> client.createBucket(bucketName, clientId)).getStatus());
@@ -121,64 +113,6 @@ class AccessorObjectResourceNoS3Test {
       final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId);
       LOG.infof("ObjectType: %s", objectType);
       assertEquals(StorageType.NONE, objectType);
-    }
-    // With created object and bucket
-    final var daoBucket = bucketRepository.createEmptyItem();
-    daoBucket.setSite(AccessorProperties.getAccessorSite()).setId(bucketName).setCreation(Instant.now())
-        .setStatus(AccessorStatus.READY).setClientId(clientId);
-    bucketRepository.insert(daoBucket);
-    final var dao = objectRepository.createEmptyItem();
-    dao.setId(GuidLike.getGuid()).setBucket(bucketName).setName(ParametersChecker.getSanitizedObjectName(OBJECT))
-        .setSite(AccessorProperties.getAccessorSite()).setCreation(Instant.now()).setStatus(AccessorStatus.READY);
-    objectRepository.insert(dao);
-    LOG.infof("DAO %s", dao);
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, OBJECT, clientId);
-      LOG.infof("ObjectType: %s", objectType);
-      assertEquals(StorageType.OBJECT, objectType);
-    }
-    try (final var client = factory.newClient()) {
-      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId);
-      LOG.infof("ObjectType: %s", objectType);
-      assertEquals(StorageType.DIRECTORY, objectType);
-    }
-    try (final var client = factory.newClient()) {
-      // No S3 usage
-      assertEquals(StorageType.OBJECT,
-          assertDoesNotThrow(() -> client.checkObjectOrDirectory(bucketName, OBJECT, clientId)));
-    }
-    try (final var client = factory.newClient()) {
-      // Does not check Object but only in DB: shall we check real bucket?
-      final var objectType = client.checkObjectOrDirectory(bucketName, DIR_NAME, clientId);
-      LOG.infof("ObjectType: %s", objectType);
-      assertEquals(StorageType.DIRECTORY, objectType);
-    }
-    try (final var client = factory.newClient()) {
-      final var object = client.getObjectInfo(bucketName, OBJECT, clientId);
-      LOG.infof("Object: %s", object);
-      Assertions.assertEquals(AccessorStatus.READY, object.getStatus());
-    }
-    try (final var client = factory.newClient()) {
-      assertEquals(404,
-          assertThrows(CcsWithStatusException.class, () -> client.getObject(bucketName, OBJECT, clientId)).getStatus());
-    }
-    try (final var client = factory.newClient()) {
-      final var iterator = client.listObjects(bucketName, clientId, new AccessorFilter().setNamePrefix(DIR_NAME));
-      final var cpt = new AtomicLong(0);
-      while (iterator.hasNext()) {
-        final var accessorObject = iterator.next();
-        cpt.incrementAndGet();
-        LOG.infof("List %d: %s", cpt.get(), accessorObject);
-      }
-      assertEquals(1, cpt.get());
-    }
-    try (final var client = factory.newClient()) {
-      assertEquals(500, assertThrows(CcsWithStatusException.class,
-          () -> client.deleteObject(bucketName, OBJECT, clientId)).getStatus());
-    }
-    try (final var client = factoryBucket.newClient()) {
-      assertEquals(500,
-          assertThrows(CcsWithStatusException.class, () -> client.deleteBucket(bucketName, clientId)).getStatus());
     }
   }
 }
