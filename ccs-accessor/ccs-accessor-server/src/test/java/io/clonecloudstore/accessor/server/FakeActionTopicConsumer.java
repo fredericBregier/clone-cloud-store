@@ -32,11 +32,11 @@ import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class FakeActionTopicConsumer {
-  private static final Logger LOGGER = Logger.getLogger(FakeActionTopicConsumer.class);
   static final AtomicLong bucketCreate = new AtomicLong(0);
   static final AtomicLong bucketDelete = new AtomicLong(0);
   static final AtomicLong objectCreate = new AtomicLong(0);
   static final AtomicLong objectDelete = new AtomicLong(0);
+  private static final Logger LOGGER = Logger.getLogger(FakeActionTopicConsumer.class);
 
   public static long getBucketCreateFromTopic(final long desired) throws InterruptedException {
     for (int i = 0; i < 200; i++) {
@@ -48,28 +48,6 @@ public class FakeActionTopicConsumer {
       Thread.sleep(10);
     }
     return getBucketCreate();
-  }
-
-  @Incoming(ReplicatorConstants.Topic.REPLICATOR_ACTION_IN)
-  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
-  @Blocking(ordered = true)
-  public void consume(final List<ReplicatorOrder> orders) {
-    QuarkusProperties.refreshModuleMdc();
-    for (final var order : orders) {
-      SimpleClientAbstract.setMdcOpId(order.opId());
-      LOGGER.infof("Recv %s", order);
-      if (order.objectName() != null) {
-        switch (order.action()) {
-          case CREATE -> objectCreate.incrementAndGet();
-          case DELETE -> objectDelete.incrementAndGet();
-        }
-      } else {
-        switch (order.action()) {
-          case CREATE -> bucketCreate.incrementAndGet();
-          case DELETE -> bucketDelete.incrementAndGet();
-        }
-      }
-    }
   }
 
   public static void reset() {
@@ -93,5 +71,27 @@ public class FakeActionTopicConsumer {
 
   public static long getObjectDelete() {
     return objectDelete.get();
+  }
+
+  @Incoming(ReplicatorConstants.Topic.REPLICATOR_ACTION_IN)
+  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
+  @Blocking(ordered = true)
+  public void consume(final List<ReplicatorOrder> orders) {
+    QuarkusProperties.refreshModuleMdc();
+    for (final var order : orders) {
+      SimpleClientAbstract.setMdcOpId(order.opId());
+      LOGGER.infof("Recv %s", order);
+      if (order.objectName() != null) {
+        switch (order.action()) {
+          case CREATE -> objectCreate.incrementAndGet();
+          case DELETE -> objectDelete.incrementAndGet();
+        }
+      } else {
+        switch (order.action()) {
+          case CREATE -> bucketCreate.incrementAndGet();
+          case DELETE -> bucketDelete.incrementAndGet();
+        }
+      }
+    }
   }
 }

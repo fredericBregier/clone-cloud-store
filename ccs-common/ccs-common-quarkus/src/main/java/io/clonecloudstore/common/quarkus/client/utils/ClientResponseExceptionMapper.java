@@ -49,9 +49,9 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR
 @ApplicationScoped
 @Unremovable
 public class ClientResponseExceptionMapper implements ResponseExceptionMapper<RuntimeException> {
-  private static final Logger LOGGER = Logger.getLogger(ClientResponseExceptionMapper.class);
   static final String NO_RESPONSE = "No Response";
   static final String RESPONSE_ISSUE = "Response issue: ";
+  private static final Logger LOGGER = Logger.getLogger(ClientResponseExceptionMapper.class);
 
   /**
    * Web Application Exception (Runtime) to Ccs With Status Exception (Exception)

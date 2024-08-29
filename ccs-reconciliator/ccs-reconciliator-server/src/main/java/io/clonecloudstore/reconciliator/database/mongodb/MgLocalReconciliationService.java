@@ -124,8 +124,8 @@ import static io.clonecloudstore.reconciliator.model.ReconciliationAction.UPLOAD
 @LookupIfProperty(name = CCS_DB_TYPE, stringValue = MONGO)
 @ApplicationScoped
 public class MgLocalReconciliationService implements LocalReconciliationService {
-  private static final Logger LOGGER = Logger.getLogger(MgLocalReconciliationService.class);
   public static final String LOCAL_RECONCILIATOR = "local_reconciliator";
+  private static final Logger LOGGER = Logger.getLogger(MgLocalReconciliationService.class);
   private final MgDaoAccessorObjectRepository objectRepository;
   private final DriverApiFactory storageDriverFactory;
   private final MgDaoNativeListingRepository nativeListingRepository;
@@ -146,6 +146,81 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
     this.sitesActionRepository = sitesActionRepository;
     this.requestRepository = requestRepository;
     this.bulkMetrics = bulkMetrics;
+  }
+
+  private static Document getFilterPreviousRequest(final DaoRequest daoPreviousRequest) {
+    if (daoPreviousRequest.getStart() != null) {
+      return new Document(MG_AND, List.of(new Document(BUCKET, daoPreviousRequest.getBucket()),
+          new Document(SITE, ServiceProperties.getAccessorSite()),
+          new Document(CREATION, new Document(MG_LTE, daoPreviousRequest.getStart()))));
+    }
+    return new Document(MG_AND, List.of(new Document(BUCKET, daoPreviousRequest.getBucket()),
+        new Document(SITE, ServiceProperties.getAccessorSite())));
+  }
+
+  private static Document getUnsetDriverDbRequestId() {
+    return new Document(MG_UNSET, List.of(DRIVER, DB, REQUESTID));
+  }
+
+  private static Document getDbMissingDriverExistForCurrentSite(final DaoRequest daoRequest) {
+    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
+        .append(DB, new Document(MG_EXISTS, false))
+        .append(MgDaoReconciliationUtils.DRIVER_EVENT, new Document(MG_EXISTS, true))
+        .append(MgDaoReconciliationUtils.DRIVER_SITE,
+            new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())));
+  }
+
+  private static Document getMatchDbMissingDriverExistForCurrentSite(final DaoRequest daoRequest) {
+    return new Document(MG_MATCH, getDbMissingDriverExistForCurrentSite(daoRequest));
+  }
+
+  private static Document getMergeIntoSitesListingTakingExistingArray() {
+    return new Document(MG_MERGE, new Document(MG_INTO, DaoSitesListingRepository.TABLE_NAME).append(MG_ON, DEFAULT_PK)
+        .append(MG_WHEN_MATCHED, List.of(new Document(MG_ADD_FIELDS, new Document(DaoSitesListingRepository.LOCAL,
+            new Document(MgDaoReconciliationUtils.MG_IF_NULL, List.of(
+                new Document(MgDaoReconciliationUtils.MG_CONCAT_ARRAYS, List.of("$" + DaoSitesListingRepository.LOCAL,
+                    MgDaoReconciliationUtils.MG_NEW + DaoSitesListingRepository.LOCAL)),
+                MgDaoReconciliationUtils.MG_NEW + DaoSitesListingRepository.LOCAL))))))
+        .append(MG_WHEN_NOT_MATCHED, MG_INSERT));
+  }
+
+  private static Document getUnsetDbDriver() {
+    return new Document(MgDaoReconciliationUtils.MG_UNSET, List.of(DB, DRIVER));
+  }
+
+  private static Document getMergeIntoObjectsMergeOrDiscard() {
+    return new Document(MG_MERGE,
+        new Document(MG_INTO, DaoAccessorObjectRepository.TABLE_NAME).append(MG_ON, List.of(SITE, BUCKET, NAME))
+            .append(MG_WHEN_MATCHED, MgDaoReconciliationUtils.MG_MERGE_MATCHED)
+            .append(MG_WHEN_NOT_MATCHED, MgDaoReconciliationUtils.MG_DISCARD));
+  }
+
+  private static Document getFilterBothDbDriverToDelete(final DaoRequest daoRequest) {
+    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
+        .append(MgDaoReconciliationUtils.MG_AND,
+            List.of(new Document(DB_SITE, new Document(MG_IN, List.of(ServiceProperties.getAccessorSite()))),
+                new Document(MgDaoReconciliationUtils.DB_NSTATUS,
+                    new Document(MG_IN, List.of(DELETING_RANK, DELETED_RANK, ERR_DEL_RANK))),
+                new Document(MgDaoReconciliationUtils.DRIVER_SITE,
+                    new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())))));
+  }
+
+  private static Document getFilterBothDbDriverToUpdate(final DaoRequest daoRequest) {
+    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
+        .append(MgDaoReconciliationUtils.MG_AND,
+            List.of(new Document(DB_SITE, new Document(MG_IN, List.of(ServiceProperties.getAccessorSite()))),
+                new Document(MgDaoReconciliationUtils.DB_NSTATUS,
+                    new Document(MG_IN, List.of(UPLOAD_RANK, ERR_UPL_RANK, TO_UPDATE_RANK))),
+                new Document(MgDaoReconciliationUtils.DRIVER_SITE,
+                    new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())))));
+  }
+
+  private static Document getAddFieldsUsingAction(final short action) {
+    return new Document(MG_ADD_FIELDS, new Document(DaoSitesListingRepository.LOCAL, List.of(
+        new Document(SITE, "$" + DB_SITE).append(NSTATUS, action).append(EVENT, new Document(MG_COND, List.of(
+            new Document(MgDaoReconciliationUtils.MG_GTE,
+                List.of("$" + MgDaoReconciliationUtils.DB_EVENT, "$" + MgDaoReconciliationUtils.DRIVER_EVENT)),
+            "$" + MgDaoReconciliationUtils.DB_EVENT, "$" + MgDaoReconciliationUtils.DRIVER_EVENT))))));
   }
 
   /**
@@ -248,16 +323,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
       LOGGER.error(e, e);
       throw new CcsDbException(e);
     }
-  }
-
-  private static Document getFilterPreviousRequest(final DaoRequest daoPreviousRequest) {
-    if (daoPreviousRequest.getStart() != null) {
-      return new Document(MG_AND, List.of(new Document(BUCKET, daoPreviousRequest.getBucket()),
-          new Document(SITE, ServiceProperties.getAccessorSite()),
-          new Document(CREATION, new Document(MG_LTE, daoPreviousRequest.getStart()))));
-    }
-    return new Document(MG_AND, List.of(new Document(BUCKET, daoPreviousRequest.getBucket()),
-        new Document(SITE, ServiceProperties.getAccessorSite())));
   }
 
   /**
@@ -644,22 +709,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
     }
   }
 
-  private static Document getUnsetDriverDbRequestId() {
-    return new Document(MG_UNSET, List.of(DRIVER, DB, REQUESTID));
-  }
-
-  private static Document getDbMissingDriverExistForCurrentSite(final DaoRequest daoRequest) {
-    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
-        .append(DB, new Document(MG_EXISTS, false))
-        .append(MgDaoReconciliationUtils.DRIVER_EVENT, new Document(MG_EXISTS, true))
-        .append(MgDaoReconciliationUtils.DRIVER_SITE,
-            new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())));
-  }
-
-  private static Document getMatchDbMissingDriverExistForCurrentSite(final DaoRequest daoRequest) {
-    return new Document(MG_MATCH, getDbMissingDriverExistForCurrentSite(daoRequest));
-  }
-
   public void step52UpsertMissingObjectsFromExistingDriverIntoSiteListing(final DaoRequest daoRequest,
                                                                           final AtomicReference<CcsDbException> exceptionAtomicReference,
                                                                           final BlockingQueue<List<DaoSitesListing>> blockingQueue) {
@@ -722,20 +771,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
     }
   }
 
-  private static Document getMergeIntoSitesListingTakingExistingArray() {
-    return new Document(MG_MERGE, new Document(MG_INTO, DaoSitesListingRepository.TABLE_NAME).append(MG_ON, DEFAULT_PK)
-        .append(MG_WHEN_MATCHED, List.of(new Document(MG_ADD_FIELDS, new Document(DaoSitesListingRepository.LOCAL,
-            new Document(MgDaoReconciliationUtils.MG_IF_NULL, List.of(
-                new Document(MgDaoReconciliationUtils.MG_CONCAT_ARRAYS, List.of("$" + DaoSitesListingRepository.LOCAL,
-                    MgDaoReconciliationUtils.MG_NEW + DaoSitesListingRepository.LOCAL)),
-                MgDaoReconciliationUtils.MG_NEW + DaoSitesListingRepository.LOCAL))))))
-        .append(MG_WHEN_NOT_MATCHED, MG_INSERT));
-  }
-
-  private static Document getUnsetDbDriver() {
-    return new Document(MgDaoReconciliationUtils.MG_UNSET, List.of(DB, DRIVER));
-  }
-
   public void step53UpdateWhereNoDriverIntoObjects(final DaoRequest daoRequest,
                                                    final AtomicReference<CcsDbException> exceptionAtomicReference) {
     // Only if exists in Objects table
@@ -781,13 +816,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
         exceptionAtomicReference.compareAndSet(null, new CcsDbException(e));
       }
     });
-  }
-
-  private static Document getMergeIntoObjectsMergeOrDiscard() {
-    return new Document(MG_MERGE,
-        new Document(MG_INTO, DaoAccessorObjectRepository.TABLE_NAME).append(MG_ON, List.of(SITE, BUCKET, NAME))
-            .append(MG_WHEN_MATCHED, MgDaoReconciliationUtils.MG_MERGE_MATCHED)
-            .append(MG_WHEN_NOT_MATCHED, MgDaoReconciliationUtils.MG_DISCARD));
   }
 
   public void step54UpsertWhereNoDriverIntoSiteListing(final DaoRequest daoRequest,
@@ -858,26 +886,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
     });
   }
 
-  private static Document getFilterBothDbDriverToDelete(final DaoRequest daoRequest) {
-    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
-        .append(MgDaoReconciliationUtils.MG_AND,
-            List.of(new Document(DB_SITE, new Document(MG_IN, List.of(ServiceProperties.getAccessorSite()))),
-                new Document(MgDaoReconciliationUtils.DB_NSTATUS,
-                    new Document(MG_IN, List.of(DELETING_RANK, DELETED_RANK, ERR_DEL_RANK))),
-                new Document(MgDaoReconciliationUtils.DRIVER_SITE,
-                    new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())))));
-  }
-
-  private static Document getFilterBothDbDriverToUpdate(final DaoRequest daoRequest) {
-    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
-        .append(MgDaoReconciliationUtils.MG_AND,
-            List.of(new Document(DB_SITE, new Document(MG_IN, List.of(ServiceProperties.getAccessorSite()))),
-                new Document(MgDaoReconciliationUtils.DB_NSTATUS,
-                    new Document(MG_IN, List.of(UPLOAD_RANK, ERR_UPL_RANK, TO_UPDATE_RANK))),
-                new Document(MgDaoReconciliationUtils.DRIVER_SITE,
-                    new Document(MG_IN, List.of(ServiceProperties.getAccessorSite())))));
-  }
-
   public void step56UpdateBothDbDriverIntoSiteListing(final DaoRequest daoRequest,
                                                       final AtomicReference<CcsDbException> exceptionAtomicReference,
                                                       final BlockingQueue<List<DaoSitesListing>> blockingQueue) {
@@ -944,14 +952,6 @@ public class MgLocalReconciliationService implements LocalReconciliationService 
         exceptionAtomicReference.compareAndSet(null, new CcsDbException(e));
       }
     });
-  }
-
-  private static Document getAddFieldsUsingAction(final short action) {
-    return new Document(MG_ADD_FIELDS, new Document(DaoSitesListingRepository.LOCAL, List.of(
-        new Document(SITE, "$" + DB_SITE).append(NSTATUS, action).append(EVENT, new Document(MG_COND, List.of(
-            new Document(MgDaoReconciliationUtils.MG_GTE,
-                List.of("$" + MgDaoReconciliationUtils.DB_EVENT, "$" + MgDaoReconciliationUtils.DRIVER_EVENT)),
-            "$" + MgDaoReconciliationUtils.DB_EVENT, "$" + MgDaoReconciliationUtils.DRIVER_EVENT))))));
   }
 
   private void updateObjectFromDriverQueue(final BlockingQueue<List<DaoSitesListing>> blockingQueue,

@@ -49,15 +49,15 @@ public class DriverAzureProperties {
    */
   public static final String CCS_DRIVER_AZURE_MAX_PART_SIZE_FOR_UNKNOWN_LENGTH =
       "ccs.driver.azure.maxPartSizeForUnknownLength";
-  private static final int AZURE_MAX_CONCURRENCY = Math.min(
-      Math.max(QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_AZURE_MAX_CONCURRENCY, DEFAULT_CONCURRENCY), 1),
-      DEFAULT_MAX_CONCURRENCY);
-  private static long azureMaxPartSize = Math.min(
-      Math.max(QuarkusSystemPropertyUtil.getLongConfig(CCS_DRIVER_AZURE_MAX_PART_SIZE, DEFAULT_SIZE_NOT_PART),
-          DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_SIZE_NOT_PART);
-  private static int azureMaxPartSizeForUnknownLength = Math.min(Math.max(
+  private static final int AZURE_MAX_CONCURRENCY =
+      Math.clamp(QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_AZURE_MAX_CONCURRENCY, DEFAULT_CONCURRENCY), 1,
+          DEFAULT_MAX_CONCURRENCY);
+  private static long azureMaxPartSize =
+      Math.clamp(QuarkusSystemPropertyUtil.getLongConfig(CCS_DRIVER_AZURE_MAX_PART_SIZE, DEFAULT_SIZE_NOT_PART),
+          DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_SIZE_NOT_PART);
+  private static int azureMaxPartSizeForUnknownLength = Math.clamp(
       QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_AZURE_MAX_PART_SIZE_FOR_UNKNOWN_LENGTH,
-          QuarkusProperties.getDriverMaxChunkSize()), DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_PART_SIZE_INT);
+          QuarkusProperties.getDriverMaxChunkSize()), DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_PART_SIZE_INT);
 
   static {
     QuarkusProperties.setDriverMaxChunkSize(azureMaxPartSizeForUnknownLength);
@@ -85,14 +85,14 @@ public class DriverAzureProperties {
    * Used to change dynamically the setup
    */
   public static void setDynamicPartSize(final long size) {
-    azureMaxPartSize = Math.min(Math.max(size, DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_SIZE_NOT_PART);
+    azureMaxPartSize = Math.clamp(size, DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_SIZE_NOT_PART);
   }
 
   /**
    * Used to change dynamically the setup
    */
   public static void setDynamicPartSizeForUnknownLength(final int size) {
-    azureMaxPartSizeForUnknownLength = Math.min(Math.max(size, DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_PART_SIZE_INT);
+    azureMaxPartSizeForUnknownLength = Math.clamp(size, DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_PART_SIZE_INT);
     QuarkusProperties.setDriverMaxChunkSize(azureMaxPartSizeForUnknownLength);
   }
 }

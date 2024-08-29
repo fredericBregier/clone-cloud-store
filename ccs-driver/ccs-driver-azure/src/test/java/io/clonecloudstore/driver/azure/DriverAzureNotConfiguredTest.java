@@ -40,11 +40,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @QuarkusTest
 @TestProfile(NoResourceProfile.class)
 class DriverAzureNotConfiguredTest {
-  @Inject
-  DriverAzureHelper driverAzureHelper;
   static boolean bucketAlready = false;
   static int headBucket = 404;
   static int headObject = 400;
+  @Inject
+  DriverAzureHelper driverAzureHelper;
 
   @Test
   void noS3ConfiguredCheck() {

@@ -91,18 +91,59 @@ import static io.clonecloudstore.driver.s3.DriverS3Properties.getDriverS3Region;
 @ApplicationScoped
 @Unremovable
 public class DriverS3Helper {
+  public static final String FOR = " for ";
+  public static final String OBJECT_CANNOT_BE_CREATED_CODE = "Object cannot be created, code: ";
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
   static final String OBJECT_DOES_NOT_EXIST = "Object does not exist: ";
   static final String BUCKET_ALREADY_EXISTS = "Bucket already exists: ";
   private static final Logger LOGGER = Logger.getLogger(DriverS3Helper.class);
   private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
   private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
-  public static final String FOR = " for ";
-  public static final String OBJECT_CANNOT_BE_CREATED_CODE = "Object cannot be created, code: ";
 
 
   DriverS3Helper() {
     // Empty
+  }
+
+  private static void internalCreateBucket(final S3Client s3Client, final StorageBucket bucket,
+                                           final CreateBucketRequest bucketRequest)
+      throws DriverNotAcceptableException, DriverAlreadyExistException {
+    try {
+      final var response = s3Client.createBucket(bucketRequest);
+      if (!response.sdkHttpResponse().isSuccessful()) {
+        throw new DriverNotAcceptableException(
+            "Bucket cannot be created, code: " + response.sdkHttpResponse().statusCode() + FOR + bucket);
+      }
+      createTag(s3Client, bucket);
+    } catch (final BucketAlreadyExistsException ignored) {
+      throw new DriverAlreadyExistException(BUCKET_ALREADY_EXISTS + bucket);
+    }
+  }
+
+  private static void createTag(final S3Client s3Client, final StorageBucket bucket)
+      throws DriverNotAcceptableException {
+    final var tag = Tag.builder().key(CLIENT_ID).value(bucket.clientId()).build();
+    final var tagging = Tagging.builder().tagSet(tag).build();
+    final var putTag = PutBucketTaggingRequest.builder().bucket(bucket.bucket()).tagging(tagging).build();
+    final var responseTag = s3Client.putBucketTagging(putTag);
+    if (!responseTag.sdkHttpResponse().isSuccessful()) {
+      throw new DriverNotAcceptableException(
+          "Bucket cannot be tagged, code: " + responseTag.sdkHttpResponse().statusCode() + FOR + bucket);
+    }
+  }
+
+  private static void setShaAsTagForObject(final S3Client s3Client, final String bucket, final String s3name,
+                                           final String sha256ForTag) {
+    try {
+      final var putObjectTaggingResponse = s3Client.putObjectTagging(
+          PutObjectTaggingRequest.builder().bucket(bucket).key(s3name)
+              .tagging(t -> t.tagSet(b -> b.key(SHA_256).value(sha256ForTag))).build());
+      if (!putObjectTaggingResponse.sdkHttpResponse().isSuccessful()) {
+        LOGGER.warn("Cannot set SHA256 tag");
+      }
+    } catch (final RuntimeException e) {
+      LOGGER.warnf("Cannot tag object: %s (%s)", s3name, e);
+    }
   }
 
   S3Client getClient() throws DriverRuntimeException {
@@ -163,33 +204,6 @@ public class DriverS3Helper {
       }
     } catch (final RuntimeException e) {
       throw new DriverException(e);
-    }
-  }
-
-  private static void internalCreateBucket(final S3Client s3Client, final StorageBucket bucket,
-                                           final CreateBucketRequest bucketRequest)
-      throws DriverNotAcceptableException, DriverAlreadyExistException {
-    try {
-      final var response = s3Client.createBucket(bucketRequest);
-      if (!response.sdkHttpResponse().isSuccessful()) {
-        throw new DriverNotAcceptableException(
-            "Bucket cannot be created, code: " + response.sdkHttpResponse().statusCode() + FOR + bucket);
-      }
-      createTag(s3Client, bucket);
-    } catch (final BucketAlreadyExistsException ignored) {
-      throw new DriverAlreadyExistException(BUCKET_ALREADY_EXISTS + bucket);
-    }
-  }
-
-  private static void createTag(final S3Client s3Client, final StorageBucket bucket)
-      throws DriverNotAcceptableException {
-    final var tag = Tag.builder().key(CLIENT_ID).value(bucket.clientId()).build();
-    final var tagging = Tagging.builder().tagSet(tag).build();
-    final var putTag = PutBucketTaggingRequest.builder().bucket(bucket.bucket()).tagging(tagging).build();
-    final var responseTag = s3Client.putBucketTagging(putTag);
-    if (!responseTag.sdkHttpResponse().isSuccessful()) {
-      throw new DriverNotAcceptableException(
-          "Bucket cannot be tagged, code: " + responseTag.sdkHttpResponse().statusCode() + FOR + bucket);
     }
   }
 
@@ -616,20 +630,6 @@ public class DriverS3Helper {
       throw new DriverNotFoundException(e);
     } catch (final RuntimeException e) {
       throw new DriverException(e);
-    }
-  }
-
-  private static void setShaAsTagForObject(final S3Client s3Client, final String bucket, final String s3name,
-                                           final String sha256ForTag) {
-    try {
-      final var putObjectTaggingResponse = s3Client.putObjectTagging(
-          PutObjectTaggingRequest.builder().bucket(bucket).key(s3name)
-              .tagging(t -> t.tagSet(b -> b.key(SHA_256).value(sha256ForTag))).build());
-      if (!putObjectTaggingResponse.sdkHttpResponse().isSuccessful()) {
-        LOGGER.warn("Cannot set SHA256 tag");
-      }
-    } catch (final RuntimeException e) {
-      LOGGER.warnf("Cannot tag object: %s (%s)", s3name, e);
     }
   }
 

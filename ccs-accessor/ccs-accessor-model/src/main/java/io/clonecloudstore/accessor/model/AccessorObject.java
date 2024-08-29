@@ -36,6 +36,10 @@ import jakarta.persistence.Transient;
 @RegisterForReflection
 public class AccessorObject {
   /**
+   * Metadata if any for this Object
+   */
+  private final Map<String, String> metadata = new HashMap<>();
+  /**
    * Internal Id
    */
   private String id;
@@ -71,10 +75,6 @@ public class AccessorObject {
    * Length of the content of this Object
    */
   private long size;
-  /**
-   * Metadata if any for this Object
-   */
-  private final Map<String, String> metadata = new HashMap<>();
 
   public AccessorObject() {
     // Empty
@@ -171,6 +171,12 @@ public class AccessorObject {
     return metadata;
   }
 
+  public AccessorObject setMetadata(final Map<String, String> metadata) {
+    ParametersChecker.checkSanityMap(metadata);
+    this.metadata.putAll(metadata);
+    return this;
+  }
+
   @Transient
   @JsonIgnore
   public AccessorObject addMetadata(final String key, final String value) {
@@ -185,12 +191,6 @@ public class AccessorObject {
   public String getMetadata(final String key) {
     ParametersChecker.checkSanityString(key);
     return metadata.get(key);
-  }
-
-  public AccessorObject setMetadata(final Map<String, String> metadata) {
-    ParametersChecker.checkSanityMap(metadata);
-    this.metadata.putAll(metadata);
-    return this;
   }
 
   @Override

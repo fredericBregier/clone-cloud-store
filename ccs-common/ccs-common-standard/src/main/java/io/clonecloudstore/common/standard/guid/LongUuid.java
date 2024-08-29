@@ -81,26 +81,6 @@ public final class LongUuid {
   }
 
   /**
-   * @return a new Uuid as long
-   */
-  public static long getLongUuid() {
-    final var time = System.currentTimeMillis();
-    // atomically
-    final var count = COUNTER.getAndIncrement() % MAX_COUNTER;
-    // Jvmd Id on 4 first bits
-    // Timestamp on 40 bits (2^40 ms = 35 years rolling)
-    // Count on 20 bits => 2^20 (1M / ms)
-    var uuidAsLong = (JvmProcessMacIds.getJvmByteId() & 0xF0L) << 56;
-    uuidAsLong |= (time & 0xFFFFFFFFFFL) << 20;
-    uuidAsLong |= count & 0xFFFFFL;
-    return uuidAsLong;
-  }
-
-  static int getCounter() {
-    return COUNTER.getAndIncrement() % MAX_COUNTER;
-  }
-
-  /**
    * Constructor that takes a byte array as UUID's content
    *
    * @param bytes UUID content
@@ -124,6 +104,26 @@ public final class LongUuid {
       throw new CcsInvalidArgumentRuntimeException("Attempted to parse malformed UUID: " + id);
     }
     System.arraycopy(BaseXx.getFromBase16(id), 0, uuid, 0, UUID_SIZE);
+  }
+
+  /**
+   * @return a new Uuid as long
+   */
+  public static long getLongUuid() {
+    final var time = System.currentTimeMillis();
+    // atomically
+    final var count = COUNTER.getAndIncrement() % MAX_COUNTER;
+    // Jvmd Id on 4 first bits
+    // Timestamp on 40 bits (2^40 ms = 35 years rolling)
+    // Count on 20 bits => 2^20 (1M / ms)
+    var uuidAsLong = (JvmProcessMacIds.getJvmByteId() & 0xF0L) << 56;
+    uuidAsLong |= (time & 0xFFFFFFFFFFL) << 20;
+    uuidAsLong |= count & 0xFFFFFL;
+    return uuidAsLong;
+  }
+
+  static int getCounter() {
+    return COUNTER.getAndIncrement() % MAX_COUNTER;
   }
 
   /**

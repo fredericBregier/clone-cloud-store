@@ -37,17 +37,6 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID
 
 @Provider
 public class ServerResponseFilter implements ContainerResponseFilter {
-  @Override
-  public void filter(final ContainerRequestContext containerRequestContext,
-                     final ContainerResponseContext responseContext) throws IOException {
-    if (!responseContext.getHeaders().containsKey(X_OP_ID)) {
-      responseContext.getHeaders().putSingle(X_OP_ID, SimpleClientAbstract.getMdcOpId());
-    }
-    if (!responseContext.getHeaders().containsKey(X_MODULE)) {
-      responseContext.getHeaders().putSingle(X_MODULE, QuarkusProperties.getCcsModule().name());
-    }
-  }
-
   public static void handleException(final UniEmitter<? super Response> em, final Exception e) {
     switch (e) {
       case final CcsClientGenericException cc:
@@ -77,6 +66,17 @@ public class ServerResponseFilter implements ContainerResponseFilter {
         break;
       default:
         em.fail(new CcsOperationException(e.getMessage()));
+    }
+  }
+
+  @Override
+  public void filter(final ContainerRequestContext containerRequestContext,
+                     final ContainerResponseContext responseContext) throws IOException {
+    if (!responseContext.getHeaders().containsKey(X_OP_ID)) {
+      responseContext.getHeaders().putSingle(X_OP_ID, SimpleClientAbstract.getMdcOpId());
+    }
+    if (!responseContext.getHeaders().containsKey(X_MODULE)) {
+      responseContext.getHeaders().putSingle(X_MODULE, QuarkusProperties.getCcsModule().name());
     }
   }
 }

@@ -49,8 +49,8 @@ public final class FakeDriver implements DriverApi {
   private static final Map<String, CountDownLatch> STORAGE_OBJECT_CREATIONS = new ConcurrentHashMap<>();
   private static final String BUCKET_NOT_FOUND = "Bucket not found";
   private static final String OBJECT_NOT_FOUND = "Object not found";
-  private final byte[] bytes = new byte[StandardProperties.getBufSize()];
   public static boolean shallRaiseAnException = false;
+  private final byte[] bytes = new byte[StandardProperties.getBufSize()];
 
   public FakeDriver() {
     LOGGER.info("Fake Driver Creation");

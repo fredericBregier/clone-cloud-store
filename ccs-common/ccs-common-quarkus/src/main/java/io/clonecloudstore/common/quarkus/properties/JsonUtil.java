@@ -56,6 +56,22 @@ public final class JsonUtil {
     setupCcsProperties();
   }
 
+  /**
+   * @return an ObjectMapper, either the one in the Quarkus CDI or a from scratch if none exists yet
+   */
+  @Unremovable
+  public static ObjectMapper getInstance() {
+    return jsonHandler.mapper;
+  }
+
+  /**
+   * @return an ObjectMapper with No Null field serialization
+   */
+  @Unremovable
+  public static ObjectMapper getInstanceNoNull() {
+    return jsonHandler.mapperNoNull;
+  }
+
   void startup(@Observes final StartupEvent event) { // NOSONAR intentional
     ObjectMapper objectMapper = null;
     if (Arc.container() != null) {
@@ -72,22 +88,6 @@ public final class JsonUtil {
   private void setupCcsProperties() {
     mapperNoNull = mapper.copy().setSerializationInclusion(JsonInclude.Include.NON_NULL);
     StandardProperties.setCdiObjectMapper(mapper);
-  }
-
-  /**
-   * @return an ObjectMapper, either the one in the Quarkus CDI or a from scratch if none exists yet
-   */
-  @Unremovable
-  public static ObjectMapper getInstance() {
-    return jsonHandler.mapper;
-  }
-
-  /**
-   * @return an ObjectMapper with No Null field serialization
-   */
-  @Unremovable
-  public static ObjectMapper getInstanceNoNull() {
-    return jsonHandler.mapperNoNull;
   }
 
   @Singleton

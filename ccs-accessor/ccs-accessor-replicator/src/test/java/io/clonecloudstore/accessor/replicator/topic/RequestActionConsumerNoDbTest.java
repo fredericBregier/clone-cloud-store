@@ -51,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 @QuarkusTest
 @TestProfile(KafkaProfile.class)
 class RequestActionConsumerNoDbTest {
-  private static final Logger LOG = Logger.getLogger(RequestActionConsumerNoDbTest.class);
   public static final String OP_ID = GuidLike.getGuid();
   public static final String CLIENTID_BUCKET0 = "clientid-bucket0";
   public static final String CLIENTID_BUCKET = "clientid-bucket";
@@ -60,6 +59,7 @@ class RequestActionConsumerNoDbTest {
   public static final String TO = "to";
   public static final String OBJECT_NAME = "/directory/objectname";
   public static final int WAIT_FOR_CONSUME = 100;
+  private static final Logger LOG = Logger.getLogger(RequestActionConsumerNoDbTest.class);
   private static final AtomicBoolean initDone = new AtomicBoolean(false);
   @Inject
   DriverApiFactory storageDriverFactory;

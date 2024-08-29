@@ -57,8 +57,8 @@ import org.jboss.resteasy.reactive.RestPath;
 @Path(ApiConstants.API_ROOT)
 public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, StreamHandler> {
   public static final String NOT_ACCEPTABLE_NAME = "notAcceptableName";
-  public DriverApiFactory driverApiFactory;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
+  public DriverApiFactory driverApiFactory;
 
 
   public ApiService() {

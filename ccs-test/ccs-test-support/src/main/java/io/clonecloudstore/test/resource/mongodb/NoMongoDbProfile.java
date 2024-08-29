@@ -16,11 +16,21 @@
 
 package io.clonecloudstore.test.resource.mongodb;
 
+import java.util.Map;
+
 import io.clonecloudstore.test.resource.CommonProfile;
+import io.clonecloudstore.test.resource.ResourcesConstants;
 
 public class NoMongoDbProfile extends CommonProfile {
   @Override
   public String getConfigProfile() {
     return "test-no-mongo";
+  }
+
+  @Override
+  public Map<String, String> getConfigOverrides() {
+    return getConfigOverrides(Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, "false",
+        ResourcesConstants.QUARKUS_HIBERNATE_ORM_ENABLED, "false", ResourcesConstants.CCS_DB_TYPE,
+        ResourcesConstants.MONGO));
   }
 }

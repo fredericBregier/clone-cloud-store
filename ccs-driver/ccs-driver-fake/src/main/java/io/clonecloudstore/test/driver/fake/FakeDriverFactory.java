@@ -29,15 +29,15 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class FakeDriverFactory implements DriverApiFactory {
   private static final FakeDriver instance = new FakeDriver();
 
-  @Override
-  public DriverApi getInstance() {
-    return instance;
-  }
-
   /**
    * CleanUp function for testing purpose
    */
   public static void cleanUp() {
     instance.cleanUp();
+  }
+
+  @Override
+  public DriverApi getInstance() {
+    return instance;
   }
 }

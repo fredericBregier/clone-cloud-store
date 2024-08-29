@@ -8,6 +8,7 @@ quarkus:
     max-event-loop-execute-time: 10S
   devservices:
     enabled: false
+
   rest-client:
     "io.clonecloudstore.accessor.client.api.AccessorBucketApi":
       url: http://localhost:8081

@@ -60,17 +60,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(AzureProfile.class)
 class AccessorObjectResourceTest {
-  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceTest.class);
   public static final String BUCKET_NAME = "testbucket";
   public static final String BUCKET_MULTI_NAME = "testbucketmulti";
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
-
+  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceTest.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

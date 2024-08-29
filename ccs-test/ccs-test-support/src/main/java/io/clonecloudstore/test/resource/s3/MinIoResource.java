@@ -60,6 +60,17 @@ public class MinIoResource implements QuarkusTestResourceLifecycleManager {
     return EU_WEST_1;
   }
 
+  /**
+   * Fix bug with "localhost"
+   */
+  private static String getUrlForTest() {
+    var url = MINIO_CONTAINER.getS3URL();
+    if (url.contains("localhost")) {
+      url = url.replace("localhost", "127.0.0.1");
+    }
+    return url;
+  }
+
   @Override
   public Map<String, String> start() {
     if (!MINIO_CONTAINER.isRunning()) {
@@ -77,16 +88,5 @@ public class MinIoResource implements QuarkusTestResourceLifecycleManager {
   @Override
   public void stop() {
     MINIO_CONTAINER.stop();
-  }
-
-  /**
-   * Fix bug with "localhost"
-   */
-  private static String getUrlForTest() {
-    var url = MINIO_CONTAINER.getS3URL();
-    if (url.contains("localhost")) {
-      url = url.replace("localhost", "127.0.0.1");
-    }
-    return url;
   }
 }

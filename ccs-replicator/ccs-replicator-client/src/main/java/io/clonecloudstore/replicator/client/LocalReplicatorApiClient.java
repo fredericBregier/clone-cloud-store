@@ -56,6 +56,14 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
     super(factory, factory.getUri());
   }
 
+  private static String getTargetFromResponse(final Response response) {
+    var target = response.getHeaderString(AccessorConstants.Api.X_TARGET_ID);
+    if (ParametersChecker.isEmpty(target)) {
+      return null;
+    }
+    return target;
+  }
+
   public ReplicatorResponse<AccessorBucket> getBucket(final String bucket, final String clientId, final String opId)
       throws CcsWithStatusException {
     return getBucket(bucket, clientId, "", opId);
@@ -77,14 +85,6 @@ public class LocalReplicatorApiClient extends ClientAbstract<ReplicatorOrder, Ac
                                                      final String clientId, final String opId)
       throws CcsWithStatusException {
     return checkBucket(bucket, fullCheck, clientId, "", opId);
-  }
-
-  private static String getTargetFromResponse(final Response response) {
-    var target = response.getHeaderString(AccessorConstants.Api.X_TARGET_ID);
-    if (ParametersChecker.isEmpty(target)) {
-      return null;
-    }
-    return target;
   }
 
   public ReplicatorResponse<StorageType> checkBucket(final String bucket, final boolean fullCheck,

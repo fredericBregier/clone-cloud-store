@@ -102,10 +102,6 @@ public class RestQuery {
     ParametersChecker.checkSanity(values);
   }
 
-  static boolean isSingleArgQuery(final QUERY query) {
-    return query.ordinal() < QUERY.CONTAINS.ordinal();
-  }
-
   /**
    * Constructor from Parameters
    */
@@ -191,10 +187,6 @@ public class RestQuery {
     }
   }
 
-  private static boolean isObjectArgQuery(final QUERY query) {
-    return query.ordinal() < QUERY.START_WITH.ordinal();
-  }
-
   /**
    * Constructor from Parameters
    */
@@ -227,6 +219,14 @@ public class RestQuery {
       throw new CcsInvalidArgumentRuntimeException(ARGUMENT_SHALL_NOT_BE_EMPTY);
     }
     restQueries = queries.toArray(EMPTY_ARRAY_REST_QUERIES);
+  }
+
+  static boolean isSingleArgQuery(final QUERY query) {
+    return query.ordinal() < QUERY.CONTAINS.ordinal();
+  }
+
+  private static boolean isObjectArgQuery(final QUERY query) {
+    return query.ordinal() < QUERY.START_WITH.ordinal();
   }
 
   /**

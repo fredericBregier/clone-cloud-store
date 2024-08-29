@@ -44,12 +44,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 class AccessorBucketPublicResourceTest {
 
   private static final Logger LOG = Logger.getLogger(AccessorBucketApiClient.class);
+  private static final String clientId = UUID.randomUUID().toString();
   @Inject
   AccessorBucketApiFactory factory;
   @Inject
   DriverApiFactory driverApiFactory;
-
-  private static final String clientId = UUID.randomUUID().toString();
 
   @BeforeAll
   static void beforeAll() {

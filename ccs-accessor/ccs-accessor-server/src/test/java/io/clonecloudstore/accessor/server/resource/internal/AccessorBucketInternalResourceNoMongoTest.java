@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @TestProfile(GoogleProfile.class)
 class AccessorBucketInternalResourceNoMongoTest {
 
+  private static String clientId = null;
   @Inject
   AccessorBucketInternalApiFactory factory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

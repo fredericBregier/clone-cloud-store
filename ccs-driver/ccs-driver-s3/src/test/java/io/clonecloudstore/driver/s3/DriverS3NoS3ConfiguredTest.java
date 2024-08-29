@@ -67,11 +67,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @QuarkusTest
 @TestProfile(NoResourceProfile.class)
 class DriverS3NoS3ConfiguredTest {
-  @Inject
-  DriverS3Helper driverS3Helper;
   static boolean bucketAlready = false;
   static int headBucket = 404;
   static int headObject = 400;
+  @Inject
+  DriverS3Helper driverS3Helper;
 
   @Test
   void noS3WrongConfigurationCheck() {

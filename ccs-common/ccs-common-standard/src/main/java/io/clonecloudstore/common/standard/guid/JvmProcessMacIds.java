@@ -91,13 +91,6 @@ public final class JvmProcessMacIds {
   }
 
   /**
-   * @return the Mac and PID as byte array of size 6
-   */
-  public static byte[] getMacPid() {
-    return jvmBytesMacPid;
-  }
-
-  /**
    * Up to the 8 first bytes will be used. If Null or less than 6 bytes, extra
    * bytes will be randomly generated, up to 6 bytes.
    *
@@ -119,6 +112,13 @@ public final class JvmProcessMacIds {
       }
     }
     internalInitialize();
+  }
+
+  /**
+   * @return the Mac and PID as byte array of size 6
+   */
+  public static byte[] getMacPid() {
+    return jvmBytesMacPid;
   }
 
   private static void internalInitialize() {

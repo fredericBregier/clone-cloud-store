@@ -38,10 +38,10 @@ import org.jboss.logging.Logger;
  * @param <S> the type for the Rest Service as Quarkus definition
  */
 public abstract class SimpleClientFactoryAbstract<S extends Closeable> implements Closeable {
+  public static final String DEFAULT_VALUE = "http://127.0.0.1:8081";
   private static final Logger LOGGER = Logger.getLogger(SimpleClientFactoryAbstract.class);
   private static final String PREFIX_URL = "quarkus.rest-client.\"";
   private static final String POSTFIX_URL = "\".url";
-  public static final String DEFAULT_VALUE = "http://127.0.0.1:8081";
   private static final String QUARKUS_REST_CLIENT_INTERFACE = "$$QuarkusRestClientInterface";
   Vertx vertx = null;
   private boolean tls;

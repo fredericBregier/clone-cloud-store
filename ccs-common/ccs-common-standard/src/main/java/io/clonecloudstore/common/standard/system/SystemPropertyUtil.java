@@ -51,8 +51,6 @@ public class SystemPropertyUtil {
     // Unused
   }
 
-  private static final Platform mOs = getOS();
-
   /**
    * Returns the value of the Java system property with the specified {@code
    * key}, while falling back to the specified
@@ -85,7 +83,7 @@ public class SystemPropertyUtil {
       refresh();
       return def;
     }
-  }
+  }  private static final Platform mOs = getOS();
 
   /**
    * Re-retrieves all system properties so that any post-launch properties
@@ -536,4 +534,6 @@ public class SystemPropertyUtil {
      */
     UNSUPPORTED
   }
+
+
 }

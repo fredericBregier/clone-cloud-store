@@ -33,8 +33,8 @@ import io.clonecloudstore.common.standard.system.SystemTools;
 public class ZstdDecompressInputStream extends InputStream {
   private final InputStream inputStream;
   private final ZstdInputStream zstdInputStream;
-  private long sizeDecompressed = 0;
   private final AtomicBoolean done = new AtomicBoolean(false);
+  private long sizeDecompressed = 0;
 
   public ZstdDecompressInputStream(final InputStream inputStream) throws IOException {
     this.inputStream = inputStream;

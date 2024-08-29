@@ -49,13 +49,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(AzureMongoKafkaProfile.class)
 class AccessorApacheBucketResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorApacheBucketResourceTest.class);
+  private static String clientId = null;
   AccessorApiFactory factory;
   @Inject
   Instance<DaoAccessorBucketRepository> repositoryInstance;
   DaoAccessorBucketRepository repository;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

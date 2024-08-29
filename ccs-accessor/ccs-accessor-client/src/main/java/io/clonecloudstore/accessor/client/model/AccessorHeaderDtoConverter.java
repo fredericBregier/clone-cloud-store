@@ -43,6 +43,10 @@ public class AccessorHeaderDtoConverter {
   };
   private static final String INVALID_ARGUMENT = "Invalid Argument";
 
+  protected AccessorHeaderDtoConverter() {
+    // Empty
+  }
+
   private static Instant getInstant(final MultivaluedMap<String, String> headers, final String headerName) {
     final var instantAsString = getString(headers, headerName);
     if (ParametersChecker.isNotEmpty(instantAsString)) {
@@ -339,10 +343,6 @@ public class AccessorHeaderDtoConverter {
     } catch (final IllegalArgumentException e) {
       return StorageType.NONE;
     }
-  }
-
-  protected AccessorHeaderDtoConverter() {
-    // Empty
   }
 
 }

@@ -115,8 +115,8 @@ import static io.clonecloudstore.reconciliator.model.ReconciliationAction.UPLOAD
 @LookupIfProperty(name = CCS_DB_TYPE, stringValue = MONGO)
 @ApplicationScoped
 public class MgCentralReconciliationService implements CentralReconciliationService {
-  private static final Logger LOGGER = Logger.getLogger(MgCentralReconciliationService.class);
   public static final String CENTRAL_RECONCILIATION = "central_reconciliation";
+  private static final Logger LOGGER = Logger.getLogger(MgCentralReconciliationService.class);
   private static final String CCS_FROM = "$$from.";
   private static final String CCS_TEMP_SOURCE = "tempSource";
   private final MgDaoSitesListingRepository sitesListingRepository;
@@ -135,6 +135,106 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
     this.requestRepository = requestRepository;
     this.localReplicatorApiClientFactory = localReplicatorApiClientFactory;
     this.bulkMetrics = bulkMetrics;
+  }
+
+  private static List<String> getAllSites(final DaoRequest request) {
+    return request.getContextSites();
+  }
+
+  private static Document getBuildActionsFinalTargetSites() {
+    return new Document(MG_ADD_FIELDS,
+        new Document(SITES, new Document(MG_SET_UNION, List.of("$unknownStatusSites", "$tempSites"))));
+  }
+
+  private static Document getBaseMatchActions(final DaoRequest daoRequest) {
+    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
+        .append(DaoSitesListingRepository.LOCAL, new Document(MG_EXISTS, true));
+  }
+
+  private static Document getValidTargetSitesForDelete() {
+    return new Document(MG_LET, new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM,
+        new Document(MG_FILTER, new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+            new Document(MG_NE, List.of(MG_THIS + NSTATUS, DELETED_ACTION.getStatus())))))).append(IN,
+        CCS_FROM + SITE));
+  }
+
+  private static Document getBuildActionsDelete() {
+    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new BsonNull()).append(
+        DaoSitesActionRepository.NEED_ACTION, DELETE_ACTION.getStatus());
+  }
+
+  private static Document getMergeIntoActions() {
+    return new Document(MG_MERGE, new Document(MG_INTO, DaoSitesActionRepository.TABLE_NAME).append(MG_ON, DEFAULT_PK)
+        .append(MG_WHEN_MATCHED, MG_REPLACE).append(MG_WHEN_NOT_MATCHED, MG_INSERT));
+  }
+
+  private static Document getBuildActionsReadyLike() {
+    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_COND,
+        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), new Document(MG_LET,
+            new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN,
+                CCS_FROM + SITE)), new Document(MG_LET, new Document(MG_VARS,
+            new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, UPDATE_ACTION.getStatus())))))).append(IN,
+            CCS_FROM + SITE))))).append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_COND, List.of(
+        new Document(MG_EQ, List.of(new Document(MG_SIZE, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$" + LOCAL_NSTATUS).append(COND, new Document(MG_OR,
+                    List.of(new Document(MG_LTE, List.of(MgDaoReconciliationUtils.GG_THIS, DELETE_ACTION.getStatus())),
+                        new Document(MG_GTE, List.of(MgDaoReconciliationUtils.GG_THIS, UPLOAD_ACTION.getStatus()))))))),
+            0)), UPDATE_ACTION.getStatus(), UPLOAD_ACTION.getStatus()))).append(CCS_TEMP_SOURCE, new Document(MG_COND,
+        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), READY_ACTION.getStatus(),
+            UPDATE_ACTION.getStatus())));
+  }
+
+  private static Document getValidTargetSitesReadyLike() {
+    return new Document(MG_LET, new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM,
+        new Document(MG_FILTER, new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+            new Document(MG_NE, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN, CCS_FROM + SITE));
+  }
+
+  private static Document getBuildActionsUpload() {
+    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_COND,
+        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), new Document(MG_LET,
+            new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN,
+                CCS_FROM + SITE)), new Document(MG_LET, new Document(MG_VARS,
+            new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
+                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, UPDATE_ACTION.getStatus())))))).append(IN,
+            CCS_FROM + SITE))))).append(DaoSitesActionRepository.NEED_ACTION, UPLOAD_ACTION.getStatus())
+        .append(CCS_TEMP_SOURCE, new Document(MG_COND,
+            List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)),
+                READY_ACTION.getStatus(), new Document(MG_COND,
+                    List.of(new Document(MG_IN, List.of(UPDATE_ACTION.getStatus(), "$" + LOCAL_NSTATUS)),
+                        UPDATE_ACTION.getStatus(), 0)))));
+  }
+
+  private static Document getFilterActionsNotEmpty() {
+    return new Document(MG_MATCH, new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
+            DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_NOT, new Document(MG_SIZE, 0)))
+        .append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_NE, 0)));
+  }
+
+  private static Document getBuildActionsInvalidUpload() {
+    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new BsonNull()).append(
+        DaoSitesActionRepository.NEED_ACTION, ERROR_ACTION.getStatus()).append(SITES, getValidTargetSitesForDelete());
+  }
+
+  private static Document addPartialTargetSites(final Document addVarStep, final Document validTarget,
+                                                final DaoRequest daoRequest) {
+    return addVarStep.append("unknownStatusSites", new Document(MG_LET,
+            new Document(MG_VARS, new Document("all", getAllSites(daoRequest))).append(IN, new Document(MG_FILTER,
+                new Document(MG_INPUT, "$$all").append(COND, new Document(MG_NOT,
+                    new Document(MG_IN, List.of(MgDaoReconciliationUtils.GG_THIS, "$" + LOCAL_SITE))))))))
+        .append("tempSites", validTarget);
+  }
+
+  private static Document getUnsetLocalTempVars() {
+    return new Document(MG_UNSET,
+        List.of(DaoSitesListingRepository.LOCAL, CCS_TEMP_SOURCE, "tempSites", "unknownStatusSites"));
   }
 
   /**
@@ -302,10 +402,6 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
     }
   }
 
-  private static List<String> getAllSites(final DaoRequest request) {
-    return request.getContextSites();
-  }
-
   /**
    * Compute actions from sites listing<br>
    * Step8: in 2 steps, all sites declared, not all sites declared
@@ -361,33 +457,6 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
     }
   }
 
-  private static Document getBuildActionsFinalTargetSites() {
-    return new Document(MG_ADD_FIELDS,
-        new Document(SITES, new Document(MG_SET_UNION, List.of("$unknownStatusSites", "$tempSites"))));
-  }
-
-  private static Document getBaseMatchActions(final DaoRequest daoRequest) {
-    return new Document(REQUESTID, daoRequest.getId()).append(BUCKET, daoRequest.getBucket())
-        .append(DaoSitesListingRepository.LOCAL, new Document(MG_EXISTS, true));
-  }
-
-  private static Document getValidTargetSitesForDelete() {
-    return new Document(MG_LET, new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM,
-        new Document(MG_FILTER, new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-            new Document(MG_NE, List.of(MG_THIS + NSTATUS, DELETED_ACTION.getStatus())))))).append(IN,
-        CCS_FROM + SITE));
-  }
-
-  private static Document getBuildActionsDelete() {
-    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new BsonNull()).append(
-        DaoSitesActionRepository.NEED_ACTION, DELETE_ACTION.getStatus());
-  }
-
-  private static Document getMergeIntoActions() {
-    return new Document(MG_MERGE, new Document(MG_INTO, DaoSitesActionRepository.TABLE_NAME).append(MG_ON, DEFAULT_PK)
-        .append(MG_WHEN_MATCHED, MG_REPLACE).append(MG_WHEN_NOT_MATCHED, MG_INSERT));
-  }
-
   public void computeActionsReadyLike(final DaoRequest daoRequest,
                                       final AtomicReference<CcsDbException> exceptionAtomicReference) {
     try {
@@ -416,32 +485,6 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
     }
   }
 
-  private static Document getBuildActionsReadyLike() {
-    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_COND,
-        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), new Document(MG_LET,
-            new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN,
-                CCS_FROM + SITE)), new Document(MG_LET, new Document(MG_VARS,
-            new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, UPDATE_ACTION.getStatus())))))).append(IN,
-            CCS_FROM + SITE))))).append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_COND, List.of(
-        new Document(MG_EQ, List.of(new Document(MG_SIZE, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$" + LOCAL_NSTATUS).append(COND, new Document(MG_OR,
-                    List.of(new Document(MG_LTE, List.of(MgDaoReconciliationUtils.GG_THIS, DELETE_ACTION.getStatus())),
-                        new Document(MG_GTE, List.of(MgDaoReconciliationUtils.GG_THIS, UPLOAD_ACTION.getStatus()))))))),
-            0)), UPDATE_ACTION.getStatus(), UPLOAD_ACTION.getStatus()))).append(CCS_TEMP_SOURCE, new Document(MG_COND,
-        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), READY_ACTION.getStatus(),
-            UPDATE_ACTION.getStatus())));
-  }
-
-  private static Document getValidTargetSitesReadyLike() {
-    return new Document(MG_LET, new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM,
-        new Document(MG_FILTER, new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-            new Document(MG_NE, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN, CCS_FROM + SITE));
-  }
-
   public void computeActionsUpload(final DaoRequest daoRequest,
                                    final AtomicReference<CcsDbException> exceptionAtomicReference) {
     try {
@@ -463,30 +506,6 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       LOGGER.warn(e);
       exceptionAtomicReference.compareAndSet(null, new CcsDbException(e));
     }
-  }
-
-  private static Document getBuildActionsUpload() {
-    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_COND,
-        List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)), new Document(MG_LET,
-            new Document(MG_VARS, new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, READY_ACTION.getStatus())))))).append(IN,
-                CCS_FROM + SITE)), new Document(MG_LET, new Document(MG_VARS,
-            new Document(CCS_FIRST, LOCAL_O_EVENT).append(MG_FROM, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$" + DaoSitesListingRepository.LOCAL).append(COND,
-                    new Document(MG_EQ, List.of(MG_THIS + NSTATUS, UPDATE_ACTION.getStatus())))))).append(IN,
-            CCS_FROM + SITE))))).append(DaoSitesActionRepository.NEED_ACTION, UPLOAD_ACTION.getStatus())
-        .append(CCS_TEMP_SOURCE, new Document(MG_COND,
-            List.of(new Document(MG_IN, List.of(READY_ACTION.getStatus(), "$" + LOCAL_NSTATUS)),
-                READY_ACTION.getStatus(), new Document(MG_COND,
-                    List.of(new Document(MG_IN, List.of(UPDATE_ACTION.getStatus(), "$" + LOCAL_NSTATUS)),
-                        UPDATE_ACTION.getStatus(), 0)))));
-  }
-
-  private static Document getFilterActionsNotEmpty() {
-    return new Document(MG_MATCH, new Document(SITES, new Document(MG_NOT, new Document(MG_SIZE, 0))).append(
-            DaoSitesActionRepository.NEED_ACTION_FROM, new Document(MG_NOT, new Document(MG_SIZE, 0)))
-        .append(DaoSitesActionRepository.NEED_ACTION, new Document(MG_NE, 0)));
   }
 
   public void computeActionsInvalidUpload(final DaoRequest daoRequest,
@@ -511,25 +530,6 @@ public class MgCentralReconciliationService implements CentralReconciliationServ
       LOGGER.warn(e);
       exceptionAtomicReference.compareAndSet(null, new CcsDbException(e));
     }
-  }
-
-  private static Document getBuildActionsInvalidUpload() {
-    return new Document(DaoSitesActionRepository.NEED_ACTION_FROM, new BsonNull()).append(
-        DaoSitesActionRepository.NEED_ACTION, ERROR_ACTION.getStatus()).append(SITES, getValidTargetSitesForDelete());
-  }
-
-  private static Document addPartialTargetSites(final Document addVarStep, final Document validTarget,
-                                                final DaoRequest daoRequest) {
-    return addVarStep.append("unknownStatusSites", new Document(MG_LET,
-            new Document(MG_VARS, new Document("all", getAllSites(daoRequest))).append(IN, new Document(MG_FILTER,
-                new Document(MG_INPUT, "$$all").append(COND, new Document(MG_NOT,
-                    new Document(MG_IN, List.of(MgDaoReconciliationUtils.GG_THIS, "$" + LOCAL_SITE))))))))
-        .append("tempSites", validTarget);
-  }
-
-  private static Document getUnsetLocalTempVars() {
-    return new Document(MG_UNSET,
-        List.of(DaoSitesListingRepository.LOCAL, CCS_TEMP_SOURCE, "tempSites", "unknownStatusSites"));
   }
 
   @Override

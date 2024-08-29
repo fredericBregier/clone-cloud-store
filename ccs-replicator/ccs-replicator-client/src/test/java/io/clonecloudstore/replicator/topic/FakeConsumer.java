@@ -31,11 +31,11 @@ import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class FakeConsumer {
-  private static final Logger LOGGER = Logger.getLogger(FakeConsumer.class);
   static final CountDownLatch bucketCreate = new CountDownLatch(1);
   static final CountDownLatch bucketDelete = new CountDownLatch(1);
   static final CountDownLatch objectCreate = new CountDownLatch(1);
   static final CountDownLatch objectDelete = new CountDownLatch(1);
+  private static final Logger LOGGER = Logger.getLogger(FakeConsumer.class);
 
   @Incoming(ReplicatorConstants.Topic.REPLICATOR_REQUEST_IN)
   @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)

@@ -14,10 +14,12 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.test.resource.azure;
+package io.clonecloudstore.test.resource.s3.azure;
 
 import com.azure.storage.blob.BlobServiceClient;
 import io.clonecloudstore.test.resource.ResourcesConstants;
+import io.clonecloudstore.test.resource.azure.AzureProfile;
+import io.clonecloudstore.test.resource.azure.AzureResource;
 import io.clonecloudstore.test.resource.s3.EmptyClass;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.clonecloudstore.test.stream.VoidOutputStream;

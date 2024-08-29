@@ -35,7 +35,6 @@ import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRe
 import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRepository.SITE;
 
 public class MgDaoReconciliationUtils {
-  private static final Logger LOGGER = Logger.getLogger(MgDaoReconciliationUtils.class);
   public static final List<String> DEFAULT_PK = List.of(REQUESTID, BUCKET, NAME);
   public static final String MG_MATCH = "$match";
   public static final String MG_ADD_FIELDS = "$addFields";
@@ -103,6 +102,7 @@ public class MgDaoReconciliationUtils {
   public static final String MG_FROM = "from";
   public static final String LOCAL_O_EVENT = "$" + DaoSitesListingRepository.LOCAL + ".0." + EVENT;
   public static final String GG_THIS = "$$this";
+  private static final Logger LOGGER = Logger.getLogger(MgDaoReconciliationUtils.class);
 
   private MgDaoReconciliationUtils() {
     // Empty

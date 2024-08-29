@@ -59,8 +59,8 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR
 @Path(ApiConstants.API_ROOT)
 public class ApiService extends StreamServiceAbstract<StorageObject, StorageObject, StreamHandler> {
   public static final String NOT_ACCEPTABLE_NAME = "notAcceptableName";
-  private final DriverApiFactory driverApiFactory;
   private static final Logger LOG = Logger.getLogger(ApiService.class);
+  private final DriverApiFactory driverApiFactory;
 
 
   public ApiService(final DriverApiFactory driverApiFactory) {

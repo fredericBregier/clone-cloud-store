@@ -34,6 +34,10 @@ public class ReconciliatorProperties extends AccessorProperties {
   private static boolean reconciliatorPurgeLog =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_RECONCILIATOR_PURGE_LOG, true);
 
+  protected ReconciliatorProperties() {
+    // Nothing
+  }
+
   /**
    * @return the number of threads to use in reconciliation steps (between 2 and number of cores)
    */
@@ -55,9 +59,5 @@ public class ReconciliatorProperties extends AccessorProperties {
   public static String confugrationToString() {
     return String.format("%s, \"%s\":%d, \"%s\":%b", AccessorProperties.confugrationToString(),
         CCS_RECONCILIATOR_THREADS, getReconciliatorThreads(), CCS_RECONCILIATOR_PURGE_LOG, isReconciliatorPurgeLog());
-  }
-
-  protected ReconciliatorProperties() {
-    // Nothing
   }
 }

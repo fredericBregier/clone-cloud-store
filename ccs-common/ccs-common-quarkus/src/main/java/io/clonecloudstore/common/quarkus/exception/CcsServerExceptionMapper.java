@@ -28,8 +28,8 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_ERROR
  * Global Server Exception Mapper
  */
 public class CcsServerExceptionMapper {
-  private static final Logger LOGGER = Logger.getLogger(CcsServerExceptionMapper.class);
   public static final String EXCEPTION_MAPPER = "Exception Mapper : %s - %s - %s (%s)";
+  private static final Logger LOGGER = Logger.getLogger(CcsServerExceptionMapper.class);
 
   public static RuntimeException getCcsException(final int status) {
     return getCcsException(status, null, null);

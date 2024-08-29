@@ -59,18 +59,17 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(NoDriverForBufferProfile.class)
 class AccessorObjectResourceUsingBufferTest {
-  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceUsingBufferTest.class);
   public static final String BUCKET_NAME = "testbucket";
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
-
+  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceUsingBufferTest.class);
+  static DriverApiFactory driverApiFactory;
+  static DriverApiFactory originalDriverApiFactory;
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factory;
-  static DriverApiFactory driverApiFactory;
-  static DriverApiFactory originalDriverApiFactory;
-  private static String clientId = null;
   @Inject
   FilesystemHandler filesystemHandler;
   @Inject

@@ -35,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @TestProfile(NoResourceProfile.class)
 class AccessorBucketResourceNoS3Test {
   private static final Logger LOG = Logger.getLogger(AccessorBucketResourceNoS3Test.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

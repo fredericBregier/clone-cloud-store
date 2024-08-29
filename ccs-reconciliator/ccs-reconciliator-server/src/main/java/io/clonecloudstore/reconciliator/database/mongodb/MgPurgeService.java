@@ -73,8 +73,8 @@ import static io.clonecloudstore.reconciliator.database.model.DaoNativeListingRe
 @LookupIfProperty(name = CCS_DB_TYPE, stringValue = MONGO)
 @ApplicationScoped
 public class MgPurgeService implements PurgeService {
-  private static final Logger LOGGER = Logger.getLogger(MgPurgeService.class);
   public static final String PURGE_SERVICE = "purge_service";
+  private static final Logger LOGGER = Logger.getLogger(MgPurgeService.class);
   private final MgDaoAccessorBucketRepository bucketRepository;
   private final MgDaoAccessorObjectRepository objectRepository;
   private final DriverApiFactory storageDriverFactory;

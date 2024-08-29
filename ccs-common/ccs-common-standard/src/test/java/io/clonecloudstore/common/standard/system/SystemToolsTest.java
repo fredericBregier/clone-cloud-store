@@ -86,30 +86,6 @@ class SystemToolsTest {
     assertNotNull(assertDoesNotThrow(() -> SystemTools.silentlyClose(new OutputStreamCloseException())));
   }
 
-  private static class InputStreamCloseException extends InputStream {
-    @Override
-    public void close() throws IOException {
-      throw new IOException();
-    }
-
-    @Override
-    public int read() throws IOException {
-      return -1;
-    }
-  }
-
-  private static class OutputStreamCloseException extends OutputStream {
-    @Override
-    public void write(final int b) throws IOException {
-
-    }
-
-    @Override
-    public void close() throws IOException {
-      throw new IOException();
-    }
-  }
-
   @Test
   void testConsumeIterator() {
     final var iterator = Stream.empty().iterator();
@@ -147,5 +123,29 @@ class SystemToolsTest {
     final var guid = new GuidLike();
     assertArrayEquals(guid.getBytes(), (byte[]) SystemTools.getField(GuidLike.class, "uuid", guid));
     assertThrows(NoSuchFieldException.class, () -> SystemTools.getField(GuidLike.class, "nofield", guid));
+  }
+
+  private static class InputStreamCloseException extends InputStream {
+    @Override
+    public void close() throws IOException {
+      throw new IOException();
+    }
+
+    @Override
+    public int read() throws IOException {
+      return -1;
+    }
+  }
+
+  private static class OutputStreamCloseException extends OutputStream {
+    @Override
+    public void write(final int b) throws IOException {
+
+    }
+
+    @Override
+    public void close() throws IOException {
+      throw new IOException();
+    }
   }
 }

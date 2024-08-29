@@ -36,9 +36,9 @@ public class PipedInputOutputStream extends InputStream {
   private static final String PIPE_CLOSED = "Pipe closed";
   private final AtomicBoolean closedByWriter = new AtomicBoolean();
   private final AtomicBoolean closedByReader = new AtomicBoolean();
-  private byte[] buffer = null;
   private final BlockingQueue<byte[]> buffers;
   private final AtomicReference<Exception> exceptionAtomicReference;
+  private byte[] buffer = null;
   /**
    * The index of the position in the buffer at which the next
    * byte of data will be read by this piped input stream.

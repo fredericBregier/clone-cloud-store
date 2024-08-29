@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.test.resource.mongodb;
+package io.clonecloudstore.test.resource.noresource;
 
 import io.clonecloudstore.test.resource.ResourcesConstants;
+import io.clonecloudstore.test.resource.mongodb.NoMongoDbProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import org.eclipse.microprofile.config.ConfigProvider;

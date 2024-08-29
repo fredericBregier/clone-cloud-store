@@ -44,7 +44,7 @@
     </dependency>
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>netty-nio-client</artifactId>
+      <artifactId>aws-crt-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.clonecloudstore</groupId>

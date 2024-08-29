@@ -44,6 +44,10 @@ public class FakeCommonBucketResourceHelper {
   public static int errorCode = 0;
   public static String site = "site";
 
+  FakeCommonBucketResourceHelper() {
+    // Empty
+  }
+
   protected static AccessorBucket fromStorageBucket(final StorageBucket storageBucket, final String clientId) {
     return new AccessorBucket().setSite(site).setId(storageBucket.bucket()).setCreation(storageBucket.creationDate())
         .setStatus(AccessorStatus.READY).setClientId(clientId);
@@ -192,9 +196,5 @@ public class FakeCommonBucketResourceHelper {
         deleteBucketHelper(em, bucketName, clientId);
       }
     });
-  }
-
-  FakeCommonBucketResourceHelper() {
-    // Empty
   }
 }

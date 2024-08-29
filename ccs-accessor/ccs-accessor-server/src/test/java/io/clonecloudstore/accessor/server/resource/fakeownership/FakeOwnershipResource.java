@@ -39,8 +39,8 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_OWNE
 @Path(ADMINISTRATION_ROOT + COLL_OWNERSHIPS)
 public class FakeOwnershipResource implements OwnershipApi {
   private static final Logger LOGGER = Logger.getLogger(FakeOwnershipResource.class);
-  private final Map<String, Map<String, ClientBucketAccess>> repository = new HashMap<>();
   public static int errorCode = 0;
+  private final Map<String, Map<String, ClientBucketAccess>> repository = new HashMap<>();
 
   @Override
   public Uni<Collection<ClientBucketAccess>> listAll(final String client, final ClientOwnership ownership) {

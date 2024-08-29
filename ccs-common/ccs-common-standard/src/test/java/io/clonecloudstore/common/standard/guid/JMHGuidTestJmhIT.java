@@ -47,8 +47,12 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @BenchmarkMode(Mode.Throughput)
 @Disabled("Bench only")
 public class JMHGuidTestJmhIT {
-  @State(Scope.Benchmark)
-  public static class MyState {
+  public static void main(String[] args) throws Exception {
+    Options opt = new OptionsBuilder().include(JMHGuidTestJmhIT.class.getSimpleName())
+        //.addProfiler(StackProfiler.class)
+        .addProfiler(GCProfiler.class).build();
+
+    new Runner(opt).run();
   }
 
   @Benchmark
@@ -71,14 +75,6 @@ public class JMHGuidTestJmhIT {
     blackhole.consume(UUID.randomUUID().toString());
   }
 
-  public static void main(String[] args) throws Exception {
-    Options opt = new OptionsBuilder().include(JMHGuidTestJmhIT.class.getSimpleName())
-        //.addProfiler(StackProfiler.class)
-        .addProfiler(GCProfiler.class).build();
-
-    new Runner(opt).run();
-  }
-
   @Test
   void runBenchmark() throws Exception {
     final var optionsBuilder = new OptionsBuilder().include(this.getClass().getName() + ".*").mode(Mode.Throughput)
@@ -87,5 +83,9 @@ public class JMHGuidTestJmhIT {
         .forks(1).shouldFailOnError(true).resultFormat(ResultFormatType.CSV).shouldDoGC(true);
     final var options = optionsBuilder.build();
     new Runner(options).run();
+  }
+
+  @State(Scope.Benchmark)
+  public static class MyState {
   }
 }

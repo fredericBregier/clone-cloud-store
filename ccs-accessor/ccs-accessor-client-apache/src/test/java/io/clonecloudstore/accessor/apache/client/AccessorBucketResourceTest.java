@@ -33,8 +33,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 class AccessorBucketResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorBucketResourceTest.class);
-  static AccessorApiFactory factory;
   private static final String clientId = UUID.randomUUID().toString();
+  static AccessorApiFactory factory;
 
   @BeforeAll
   static void beforeAll() {

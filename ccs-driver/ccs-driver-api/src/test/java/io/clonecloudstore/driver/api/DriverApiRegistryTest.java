@@ -25,14 +25,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @QuarkusTest
 class DriverApiRegistryTest {
-  static class DriverApiFactoryFake implements DriverApiFactory {
-
-    @Override
-    public DriverApi getInstance() {
-      return null;
-    }
-  }
-
   @Test
   void checkRegister() {
     assertNull(DriverApiRegistry.getDriverApiFactory());
@@ -47,5 +39,13 @@ class DriverApiRegistryTest {
     assertThrows(IllegalArgumentException.class,
         () -> DriverApiRegistry.setDriverApiFactory(new DriverApiFactoryFake()));
     assertNotNull(DriverApiRegistry.getDriverApiFactory());
+  }
+
+  static class DriverApiFactoryFake implements DriverApiFactory {
+
+    @Override
+    public DriverApi getInstance() {
+      return null;
+    }
   }
 }

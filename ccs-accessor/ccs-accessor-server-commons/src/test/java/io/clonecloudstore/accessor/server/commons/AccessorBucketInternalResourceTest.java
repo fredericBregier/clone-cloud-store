@@ -41,13 +41,13 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(NoResourceProfile.class)
 class AccessorBucketInternalResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorBucketInternalResourceTest.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketInternalApiFactory factory;
   @Inject
   AccessorBucketApiFactory factoryExternal;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

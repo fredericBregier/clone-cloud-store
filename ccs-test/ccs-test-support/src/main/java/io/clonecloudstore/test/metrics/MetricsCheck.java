@@ -22,6 +22,10 @@ import org.jboss.logging.Logger;
 public class MetricsCheck {
   private static final Logger LOGGER = Logger.getLogger(MetricsCheck.class);
 
+  private MetricsCheck() {
+    // Empty
+  }
+
   /**
    * Check the counter to reach the desired value up to maxWait ms.
    *
@@ -40,9 +44,5 @@ public class MetricsCheck {
     LOGGER.errorf("Cannot find for Counter %s the value %f while having %f", counter.getId(), valueSearch,
         counter.count());
     return -1;
-  }
-
-  private MetricsCheck() {
-    // Empty
   }
 }

@@ -195,6 +195,8 @@ public abstract class DaoAccessorObject {
 
   public abstract Map<String, String> getMetadata();
 
+  public abstract DaoAccessorObject setMetadata(Map<String, String> metadata);
+
   @Transient
   @JsonIgnore
   public abstract String getMetadata(String key);
@@ -202,8 +204,6 @@ public abstract class DaoAccessorObject {
   @Transient
   @JsonIgnore
   public abstract DaoAccessorObject addMetadata(String key, String value);
-
-  public abstract DaoAccessorObject setMetadata(Map<String, String> metadata);
 
   public short getRstatus() {
     return rstatus;

@@ -78,8 +78,8 @@ import static io.clonecloudstore.reconciliator.database.mongodb.MgDaoReconciliat
 @LookupIfProperty(name = CCS_DB_TYPE, stringValue = MONGO)
 @ApplicationScoped
 public class MgInitializationService implements InitializationService {
-  private static final Logger LOGGER = Logger.getLogger(MgInitializationService.class);
   public static final String INITIALIZATION_SERVICE = "initialization-service";
+  private static final Logger LOGGER = Logger.getLogger(MgInitializationService.class);
   private final MgDaoAccessorBucketRepository bucketRepository;
   private final MgDaoAccessorObjectRepository objectRepository;
   private final MgDaoRequestRepository requestRepository;

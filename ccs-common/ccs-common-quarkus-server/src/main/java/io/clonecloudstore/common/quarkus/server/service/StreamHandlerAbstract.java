@@ -58,10 +58,13 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID
 @Dependent
 public abstract class StreamHandlerAbstract<I, O> {
   private static final Logger LOGGER = Logger.getLogger(StreamHandlerAbstract.class);
-  private HttpServerRequest request;
-  private boolean keepAlive;
+  protected final AtomicReference<Exception> exceptionAtomicReference = new AtomicReference<>();
+  protected final CountDownLatch countDownLatch = new CountDownLatch(1);
+  protected final AtomicReference<O> resultProxy = new AtomicReference<>();
   @Inject
   Vertx vertx;
+  private HttpServerRequest request;
+  private boolean keepAlive;
   private String opId;
   private boolean shallCompress;
   private boolean alreadyCompressed;
@@ -75,9 +78,6 @@ public abstract class StreamHandlerAbstract<I, O> {
   private String originalHash;
   private long inputStreamLength;
   private boolean shallDecompress;
-  protected final AtomicReference<Exception> exceptionAtomicReference = new AtomicReference<>();
-  protected final CountDownLatch countDownLatch = new CountDownLatch(1);
-  protected final AtomicReference<O> resultProxy = new AtomicReference<>();
 
   protected StreamHandlerAbstract() {
   }

@@ -44,68 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StreamIteratorUtilsTest {
   private static final int NB = 1000000;
 
-  @RegisterForReflection
-  static class Dto {
-    int value;
-    String svalue;
-
-    Dto() {
-
-    }
-
-    Dto(final AtomicInteger cpt) {
-      this.value = cpt.incrementAndGet();
-      this.svalue = value + "A";
-    }
-
-    public int getValue() {
-      return value;
-    }
-
-    public void setValue(final int value) {
-      this.value = value;
-    }
-
-    public String getSvalue() {
-      return svalue;
-    }
-
-    public void setSvalue(final String svalue) {
-      this.svalue = svalue;
-    }
-  }
-
-  @RegisterForReflection
-  static class WrongDto {
-    int value;
-    Instant svalue;
-
-    WrongDto() {
-
-    }
-
-    WrongDto(final AtomicInteger cpt) {
-      this.value = cpt.incrementAndGet();
-      this.svalue = Instant.now();
-    }
-
-    public int getValue() {
-      return value;
-    }
-
-    public void setValue(final int value) {
-      this.value = value;
-    }
-
-    public Instant getSvalue() {
-      return svalue;
-    }
-
-    public void setSvalue(final Instant instant) {
-      this.svalue = instant;
-    }
-  }
-
   @Test
   void test01StreamToJsonInputStreamFailedOnConsumeAndInputStream() throws CcsWithStatusException, IOException {
     final var stream = Stream.generate(Object::new).limit(NB);
@@ -421,6 +359,68 @@ class StreamIteratorUtilsTest {
     if (log) {
       Log.infof("Results: %s", results);
       assertFalse(results.isEmpty());
+    }
+  }
+
+  @RegisterForReflection
+  static class Dto {
+    int value;
+    String svalue;
+
+    Dto() {
+
+    }
+
+    Dto(final AtomicInteger cpt) {
+      this.value = cpt.incrementAndGet();
+      this.svalue = value + "A";
+    }
+
+    public int getValue() {
+      return value;
+    }
+
+    public void setValue(final int value) {
+      this.value = value;
+    }
+
+    public String getSvalue() {
+      return svalue;
+    }
+
+    public void setSvalue(final String svalue) {
+      this.svalue = svalue;
+    }
+  }
+
+  @RegisterForReflection
+  static class WrongDto {
+    int value;
+    Instant svalue;
+
+    WrongDto() {
+
+    }
+
+    WrongDto(final AtomicInteger cpt) {
+      this.value = cpt.incrementAndGet();
+      this.svalue = Instant.now();
+    }
+
+    public int getValue() {
+      return value;
+    }
+
+    public void setValue(final int value) {
+      this.value = value;
+    }
+
+    public Instant getSvalue() {
+      return svalue;
+    }
+
+    public void setSvalue(final Instant instant) {
+      this.svalue = instant;
     }
   }
 }

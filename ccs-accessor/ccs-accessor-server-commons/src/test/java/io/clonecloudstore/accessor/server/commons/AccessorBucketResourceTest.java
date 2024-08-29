@@ -39,11 +39,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(NoResourceProfile.class)
 class AccessorBucketResourceTest {
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factory;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

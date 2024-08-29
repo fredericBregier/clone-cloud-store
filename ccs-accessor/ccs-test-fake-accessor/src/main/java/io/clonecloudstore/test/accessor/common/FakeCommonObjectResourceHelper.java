@@ -59,6 +59,10 @@ public class FakeCommonObjectResourceHelper {
   public static long length = 100;
   public static int nbList = 0;
 
+  FakeCommonObjectResourceHelper() {
+    // Empty
+  }
+
   static StorageObject pseudoList(final AtomicInteger cpt, final String techName, final String namePrefix) {
     return new StorageObject(techName, namePrefix + cpt.incrementAndGet(), "hash", length, Instant.now());
   }
@@ -244,10 +248,6 @@ public class FakeCommonObjectResourceHelper {
         deleteObjectHelper(em, bucketName, objectName, clientId);
       }
     });
-  }
-
-  FakeCommonObjectResourceHelper() {
-    // Empty
   }
 
   public static AccessorObject getAccessorObjectForCreate(final HttpServerRequest request, final String bucketName,

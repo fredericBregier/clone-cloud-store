@@ -50,12 +50,12 @@ public class DriverGoogleProperties {
   public static final String CCS_DRIVER_GOOGLE_MAX_BUF_SIZE = "ccs.driver.google.maxBufSize";
   private static boolean googleDisableGzip =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_DRIVER_GOOGLE_DISABLE_GZIP, true);
-  private static long googleMaxPartSize = Math.min(
-      Math.max(QuarkusSystemPropertyUtil.getLongConfig(CCS_DRIVER_GOOGLE_MAX_PART_SIZE, DEFAULT_SIZE_NOT_PART),
-          DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_SIZE_NOT_PART);
-  private static int googleMaxBufSize = Math.min(
-      Math.max(QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_GOOGLE_MAX_BUF_SIZE, DEFAULT_PART_SIZE_INT),
-          DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_PART_SIZE_INT);
+  private static long googleMaxPartSize =
+      Math.clamp(QuarkusSystemPropertyUtil.getLongConfig(CCS_DRIVER_GOOGLE_MAX_PART_SIZE, DEFAULT_SIZE_NOT_PART),
+          DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_SIZE_NOT_PART);
+  private static int googleMaxBufSize =
+      Math.clamp(QuarkusSystemPropertyUtil.getIntegerConfig(CCS_DRIVER_GOOGLE_MAX_BUF_SIZE, DEFAULT_PART_SIZE_INT),
+          DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_PART_SIZE_INT);
 
   private final DriverGoogleRegister driverGoogleRegister; // NOSONAR intentional
 
@@ -89,14 +89,14 @@ public class DriverGoogleProperties {
    * Used to change dynamically the setup
    */
   public static void setDynamicPartSize(final long size) {
-    googleMaxPartSize = Math.min(Math.max(size, DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_SIZE_NOT_PART);
+    googleMaxPartSize = Math.clamp(size, DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_SIZE_NOT_PART);
   }
 
   /**
    * Used to change dynamically the setup
    */
   public static void setDynamicBufSize(final int size) {
-    googleMaxBufSize = Math.min(Math.max(size, DEFAULT_MIN_PART_SIZE), DEFAULT_MAX_PART_SIZE_INT);
+    googleMaxBufSize = Math.clamp(size, DEFAULT_MIN_PART_SIZE, DEFAULT_MAX_PART_SIZE_INT);
   }
 
   /**

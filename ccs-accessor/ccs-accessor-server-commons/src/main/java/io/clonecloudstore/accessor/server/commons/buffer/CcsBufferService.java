@@ -40,8 +40,8 @@ import org.jboss.logging.Logger;
 
 @Dependent
 public abstract class CcsBufferService {
-  private static final Logger LOGGER = Logger.getLogger(CcsBufferService.class);
   public static final String BUFFERED_IMPORT = "buffered_import";
+  private static final Logger LOGGER = Logger.getLogger(CcsBufferService.class);
   protected final DriverApiFactory driverApiFactory;
   private final FilesystemHandler filesystemHandler;
   private final BulkMetrics bulkMetrics;

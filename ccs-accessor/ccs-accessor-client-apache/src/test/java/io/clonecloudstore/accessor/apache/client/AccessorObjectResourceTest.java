@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 class AccessorObjectResourceTest {
-  AccessorApiFactory factory;
   private static final String clientId = UUID.randomUUID().toString();
+  AccessorApiFactory factory;
 
   @BeforeEach
   void beforeEach() {

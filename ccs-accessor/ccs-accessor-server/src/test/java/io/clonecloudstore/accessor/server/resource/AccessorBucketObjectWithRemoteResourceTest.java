@@ -48,11 +48,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(AzureMongoKafkaProfile.class)
 class AccessorBucketObjectWithRemoteResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorBucketObjectWithRemoteResourceTest.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factoryObject;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

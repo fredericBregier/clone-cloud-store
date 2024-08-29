@@ -33,6 +33,10 @@ import static io.clonecloudstore.accessor.server.database.model.DaoAccessorObjec
 
 public class DbQueryAccessorHelper {
 
+  private DbQueryAccessorHelper() {
+    // Empty
+  }
+
   public static DbQuery getDbQuery(final AccessorFilter filter) {
     if (filter != null) {
       final List<DbQuery> queryList = new ArrayList<>();
@@ -72,9 +76,5 @@ public class DbQueryAccessorHelper {
       return new DbQuery(RestQuery.CONJUNCTION.AND, queryList);
     }
     return null;
-  }
-
-  private DbQueryAccessorHelper() {
-    // Empty
   }
 }

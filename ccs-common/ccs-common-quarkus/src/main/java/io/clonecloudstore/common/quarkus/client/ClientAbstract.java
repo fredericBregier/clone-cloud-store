@@ -40,9 +40,9 @@ import org.jboss.logging.Logger;
  * @param <S> the type for the Rest Service as Quarkus definition
  */
 public abstract class ClientAbstract<I, O, S extends Closeable> extends SimpleClientAbstract<S> {
-  private static final Logger LOGGER = Logger.getLogger(ClientAbstract.class);
   public static final int CONTEXT_SENDING = 1;
   public static final int CONTEXT_RECEIVE = -CONTEXT_SENDING;
+  private static final Logger LOGGER = Logger.getLogger(ClientAbstract.class);
 
   /**
    * Constructor used by the Factory

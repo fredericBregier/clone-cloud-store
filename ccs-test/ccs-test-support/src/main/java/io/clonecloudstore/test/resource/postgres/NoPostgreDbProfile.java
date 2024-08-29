@@ -29,8 +29,8 @@ public class NoPostgreDbProfile extends CommonProfile {
 
   @Override
   public Map<String, String> getConfigOverrides() {
-    return Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, "false",
+    return getConfigOverrides(Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, "false",
         ResourcesConstants.QUARKUS_HIBERNATE_ORM_ENABLED, "false", ResourcesConstants.CCS_DB_TYPE,
-        ResourcesConstants.POSTGRE);
+        ResourcesConstants.POSTGRE));
   }
 }

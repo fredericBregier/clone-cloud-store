@@ -75,6 +75,23 @@ public class AccessorClient implements Closeable {
     client = this.factory.getCloseableHttpClient();
   }
 
+  private static String getString(final ClassicHttpResponse response, final String headerName) {
+    var header = response.getFirstHeader(headerName);
+    if (header != null) {
+      return header.getValue();
+    }
+    return null;
+  }
+
+  private static Instant getInstant(final ClassicHttpResponse response, final String headerName) {
+    final var instantAsString = getString(response, headerName);
+    if (ParametersChecker.isNotEmpty(instantAsString)) {
+      assert instantAsString != null;
+      return Instant.parse(instantAsString);
+    }
+    return null;
+  }
+
   /**
    * @return the collection of Buckets
    */
@@ -220,7 +237,6 @@ public class AccessorClient implements Closeable {
       throw new CcsWithStatusException(null, HttpStatus.SC_SERVER_ERROR, e.getMessage(), e);
     }
   }
-
 
   /**
    * Check if object or directory exist
@@ -414,23 +430,6 @@ public class AccessorClient implements Closeable {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  private static String getString(final ClassicHttpResponse response, final String headerName) {
-    var header = response.getFirstHeader(headerName);
-    if (header != null) {
-      return header.getValue();
-    }
-    return null;
-  }
-
-  private static Instant getInstant(final ClassicHttpResponse response, final String headerName) {
-    final var instantAsString = getString(response, headerName);
-    if (ParametersChecker.isNotEmpty(instantAsString)) {
-      assert instantAsString != null;
-      return Instant.parse(instantAsString);
-    }
-    return null;
   }
 
   private AccessorObject getAccessorObjectFromResponse(final ClassicHttpResponse response,

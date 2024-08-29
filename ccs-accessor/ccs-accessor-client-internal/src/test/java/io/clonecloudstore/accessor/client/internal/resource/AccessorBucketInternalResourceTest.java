@@ -35,10 +35,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 class AccessorBucketInternalResourceTest {
 
   private static final Logger LOG = Logger.getLogger(AccessorBucketInternalApiClient.class);
+  private static final String clientId = UUID.randomUUID().toString();
   @Inject
   AccessorBucketInternalApiFactory factory;
-
-  private static final String clientId = UUID.randomUUID().toString();
 
   @Test
   void invalidApiReplicator() {

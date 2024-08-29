@@ -33,9 +33,9 @@ import jakarta.persistence.Transient;
  */
 @RegisterForReflection
 public class DtoRichExample {
-  private String guid;
   private final Set<String> set1 = new HashSet<>();
   private final Map<String, String> map1 = new HashMap<>();
+  private String guid;
   private String field1;
 
   public String getField1() {

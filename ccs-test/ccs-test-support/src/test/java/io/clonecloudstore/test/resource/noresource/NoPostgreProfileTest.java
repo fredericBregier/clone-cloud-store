@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.test.resource.postgre;
+package io.clonecloudstore.test.resource.noresource;
 
 import io.clonecloudstore.test.resource.ResourcesConstants;
 import io.clonecloudstore.test.resource.postgres.NoPostgreDbProfile;

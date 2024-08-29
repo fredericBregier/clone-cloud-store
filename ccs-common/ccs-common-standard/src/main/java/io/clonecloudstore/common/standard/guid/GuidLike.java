@@ -35,6 +35,10 @@ import io.clonecloudstore.common.standard.system.BaseXx;
  */
 public final class GuidLike {
   /**
+   * GUID Like Base 32 size
+   */
+  public static final int UUID_B32_SIZE = 26;
+  /**
    * Bits size of Counter
    */
   private static final int SIZE_COUNTER = 20;
@@ -57,10 +61,6 @@ public final class GuidLike {
   /**
    * GUID Like Base 32 size
    */
-  public static final int UUID_B32_SIZE = 26;
-  /**
-   * GUID Like Base 32 size
-   */
   private static final int UUID_B64_SIZE = 22;
   private static final short BYTE_MASK = 0xFF;
   private static final short BYTE_SIZE = 8;
@@ -69,13 +69,6 @@ public final class GuidLike {
    * real UUID
    */
   private final byte[] uuid;
-
-  /**
-   * @return Convenient method to get String GUID (similar to new GuidLike().getId())
-   */
-  public static String getGuid() {
-    return BaseXx.getBase32(new GuidLike().uuid);
-  }
 
   /**
    * Constructor that generates a new UUID using the current process id and
@@ -144,6 +137,20 @@ public final class GuidLike {
   }
 
   /**
+   * @return Convenient method to get String GUID (similar to new GuidLike().getId())
+   */
+  public static String getGuid() {
+    return BaseXx.getBase32(new GuidLike().uuid);
+  }
+
+  /**
+   * @return the LongUuid size in bytes
+   */
+  public static short getKeySize() {
+    return UUID_SIZE;
+  }
+
+  /**
    * @return (pseudo) time
    */
   public long getTime() {
@@ -153,13 +160,6 @@ public final class GuidLike {
       value += uuid[pos];
     }
     return value;
-  }
-
-  /**
-   * @return the LongUuid size in bytes
-   */
-  public static short getKeySize() {
-    return UUID_SIZE;
   }
 
   /**

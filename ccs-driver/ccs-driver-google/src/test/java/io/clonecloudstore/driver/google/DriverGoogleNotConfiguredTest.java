@@ -17,7 +17,7 @@
 package io.clonecloudstore.driver.google;
 
 import com.google.api.gax.retrying.RetrySettings;
-import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.Credentials;
 import com.google.cloud.TransportOptions;
 import com.google.cloud.http.HttpTransportOptions;
 import com.google.cloud.storage.Storage;
@@ -31,7 +31,6 @@ import io.clonecloudstore.test.resource.NoResourceProfile;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.quarkiverse.googlecloudservices.common.GcpBootstrapConfiguration;
 import io.quarkiverse.googlecloudservices.common.GcpConfigHolder;
-import io.quarkiverse.googlecloudservices.storage.runtime.StorageConfiguration;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import jakarta.inject.Inject;
@@ -52,11 +51,9 @@ class DriverGoogleNotConfiguredTest {
   DriverGoogleHelper driverGoogleHelper;
   DriverApi driverApi;
   @Inject
-  GoogleCredentials googleCredentials;
+  Credentials googleCredentials;
   @Inject
   GcpConfigHolder gcpConfigHolder;
-  @Inject
-  StorageConfiguration storageConfiguration;
 
 
   @BeforeEach
@@ -69,7 +66,6 @@ class DriverGoogleNotConfiguredTest {
     GcpBootstrapConfiguration gcpConfiguration = gcpConfigHolder.getBootstrapConfig();
     StorageOptions.Builder builder = StorageOptions.newBuilder().setCredentials(googleCredentials)
         .setProjectId(gcpConfiguration.projectId().orElse(null));
-    storageConfiguration.hostOverride.ifPresent(builder::setHost);
     RetrySettings retrySettings = RetrySettings.newBuilder().setInitialRetryDelay(Duration.ofMillis(100))
         .setInitialRpcTimeout(Duration.ofMillis(100)).setLogicalTimeout(Duration.ofMillis(100)).setMaxAttempts(1)
         .setMaxRpcTimeout(Duration.ofMillis(200)).setMaxRetryDelay(Duration.ofMillis(200))

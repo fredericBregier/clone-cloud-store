@@ -40,8 +40,8 @@ import org.jboss.logging.Logger;
  * Azure Driver
  */
 public class DriverAzure implements DriverApi {
-  private static final Logger LOGGER = Logger.getLogger(DriverAzure.class);
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
+  private static final Logger LOGGER = Logger.getLogger(DriverAzure.class);
   private final DriverAzureHelper driverAzureHelper;
   private final BulkMetrics bulkMetrics;
 

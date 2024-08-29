@@ -30,16 +30,15 @@ import org.testcontainers.utility.DockerImageName;
 public class AzureResource implements QuarkusTestResourceLifecycleManager {
   public static final String IMAGE = "mcr.microsoft.com/azure-storage/azurite:latest";
   static final int EXPOSED_PORT = 10000;
-  private static final String PROTOCOL = "http";
-  private static final String ACCOUNT_NAME = "devstoreaccount1";
-  private static final String ACCOUNT_KEY =
-      "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
-
   /**
    * Label to add to shared Dev Services for Azurite storage blob service running in containers.
    * This allows other applications to discover the running service and use it instead of starting a new instance.
    */
   static final String DEV_SERVICE_LABEL = "quarkus-dev-service-azure-storage-blob";
+  private static final String PROTOCOL = "http";
+  private static final String ACCOUNT_NAME = "devstoreaccount1";
+  private static final String ACCOUNT_KEY =
+      "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==";
   private static final AzureContainer AZURE_CONTAINER =
       new AzureContainer(DockerImageName.parse(IMAGE), OptionalInt.empty(), DEV_SERVICE_LABEL);
   private static final Map<String, String> conf = new HashMap<>();

@@ -36,11 +36,9 @@ public abstract class AbstractCommonInputStream extends InputStream {
   protected final OutputStream outputStream;
   protected final PipedInputOutputStream pipedInputOutputStream;
   protected final AtomicReference<IOException> ioExceptionAtomicReference = new AtomicReference<>();
+  protected final AtomicBoolean done = new AtomicBoolean(false);
   protected long sizeRead = 0;
   protected long sizeOutput = 0;
-  protected final AtomicBoolean done = new AtomicBoolean(false);
-
-  protected abstract OutputStream getNewOutputStream(Object extraArgument) throws IOException;
 
   protected AbstractCommonInputStream(final InputStream inputStream, final Object extraArgument) throws IOException {
     this.inputStream = inputStream;
@@ -63,6 +61,8 @@ public abstract class AbstractCommonInputStream extends InputStream {
       Thread.yield();
     }
   }
+
+  protected abstract OutputStream getNewOutputStream(Object extraArgument) throws IOException;
 
   protected void checkException() throws IOException {
     if (ioExceptionAtomicReference.get() != null) {

@@ -56,6 +56,57 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
     this.storageDriverFactory = DriverApiRegistry.getDriverApiFactory();
   }
 
+  private static AccessorObject filter(final AccessorObject accessorObject, final AccessorFilter filter) {
+    if (accessorObject == null || filter == null) {
+      // Status not checked
+      return accessorObject != null ? accessorObject.setStatus(AccessorStatus.READY) : null;
+    }
+    if (ParametersChecker.isNotEmpty(filter.getNamePrefix()) &&
+        !accessorObject.getName().startsWith(filter.getNamePrefix())) {
+      return null;
+    }
+    if (filter.getSizeLessThan() > 0 && accessorObject.getSize() > filter.getSizeLessThan()) {
+      return null;
+    }
+    if (filter.getSizeGreaterThan() > 0 && accessorObject.getSize() < filter.getSizeGreaterThan()) {
+      return null;
+    }
+    if (ParametersChecker.isNotEmpty(accessorObject.getCreation())) {
+      if (ParametersChecker.isNotEmpty(filter.getCreationBefore()) &&
+          filter.getCreationBefore().isBefore(accessorObject.getCreation())) {
+        return null;
+      }
+      if (ParametersChecker.isNotEmpty(filter.getCreationAfter()) &&
+          filter.getCreationAfter().isAfter(accessorObject.getCreation())) {
+        return null;
+      }
+    }
+    if (ParametersChecker.isNotEmpty(accessorObject.getExpires())) {
+      if (ParametersChecker.isNotEmpty(filter.getExpiresBefore()) &&
+          filter.getExpiresBefore().isBefore(accessorObject.getExpires())) {
+        return null;
+      }
+      if (ParametersChecker.isNotEmpty(filter.getExpiresAfter()) &&
+          filter.getExpiresAfter().isAfter(accessorObject.getExpires())) {
+        return null;
+      }
+    }
+    if (filter.getMetadataFilter() != null && accessorObject.getMetadata() != null &&
+        (!filter.getMetadataFilter().isEmpty())) {
+      final var map = accessorObject.getMetadata();
+      for (final var entry : filter.getMetadataFilter().entrySet()) {
+        if (!map.containsKey(entry.getKey())) {
+          return null;
+        }
+        if (!Objects.equals(map.get(entry.getKey()), entry.getValue())) {
+          return null;
+        }
+      }
+    }
+    // Status not checked
+    return accessorObject.setStatus(AccessorStatus.READY);
+  }
+
   private String mesg(final String bucketName, final String objectName) {
     return "Bucket: " + bucketName + " Object: " + objectName;
   }
@@ -169,57 +220,6 @@ public class AccessorObjectService implements AccessorObjectServiceInterface {
     } catch (final DriverException e) {
       throw new CcsOperationException(mesg(bucketName, objectName), e);
     }
-  }
-
-  private static AccessorObject filter(final AccessorObject accessorObject, final AccessorFilter filter) {
-    if (accessorObject == null || filter == null) {
-      // Status not checked
-      return accessorObject != null ? accessorObject.setStatus(AccessorStatus.READY) : null;
-    }
-    if (ParametersChecker.isNotEmpty(filter.getNamePrefix()) &&
-        !accessorObject.getName().startsWith(filter.getNamePrefix())) {
-      return null;
-    }
-    if (filter.getSizeLessThan() > 0 && accessorObject.getSize() > filter.getSizeLessThan()) {
-      return null;
-    }
-    if (filter.getSizeGreaterThan() > 0 && accessorObject.getSize() < filter.getSizeGreaterThan()) {
-      return null;
-    }
-    if (ParametersChecker.isNotEmpty(accessorObject.getCreation())) {
-      if (ParametersChecker.isNotEmpty(filter.getCreationBefore()) &&
-          filter.getCreationBefore().isBefore(accessorObject.getCreation())) {
-        return null;
-      }
-      if (ParametersChecker.isNotEmpty(filter.getCreationAfter()) &&
-          filter.getCreationAfter().isAfter(accessorObject.getCreation())) {
-        return null;
-      }
-    }
-    if (ParametersChecker.isNotEmpty(accessorObject.getExpires())) {
-      if (ParametersChecker.isNotEmpty(filter.getExpiresBefore()) &&
-          filter.getExpiresBefore().isBefore(accessorObject.getExpires())) {
-        return null;
-      }
-      if (ParametersChecker.isNotEmpty(filter.getExpiresAfter()) &&
-          filter.getExpiresAfter().isAfter(accessorObject.getExpires())) {
-        return null;
-      }
-    }
-    if (filter.getMetadataFilter() != null && accessorObject.getMetadata() != null &&
-        (!filter.getMetadataFilter().isEmpty())) {
-      final var map = accessorObject.getMetadata();
-      for (final var entry : filter.getMetadataFilter().entrySet()) {
-        if (!map.containsKey(entry.getKey())) {
-          return null;
-        }
-        if (!Objects.equals(map.get(entry.getKey()), entry.getValue())) {
-          return null;
-        }
-      }
-    }
-    // Status not checked
-    return accessorObject.setStatus(AccessorStatus.READY);
   }
 
   /**

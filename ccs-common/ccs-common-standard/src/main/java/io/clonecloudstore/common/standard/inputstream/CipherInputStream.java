@@ -27,16 +27,16 @@ import java.io.OutputStream;
  */
 public class CipherInputStream extends AbstractCommonInputStream {
 
-  @Override
-  protected OutputStream getNewOutputStream(Object cipher) {
-    return new CipherOutputStream(pipedInputOutputStream.getOutputStream(), (Cipher) cipher);
-  }
-
   /**
    * Constructor allowing to not flush on all packets
    */
   public CipherInputStream(final InputStream inputStream, final Cipher cipher) throws IOException {
     super(inputStream, cipher);
+  }
+
+  @Override
+  protected OutputStream getNewOutputStream(Object cipher) {
+    return new CipherOutputStream(pipedInputOutputStream.getOutputStream(), (Cipher) cipher);
   }
 
   public long getSizeRead() {

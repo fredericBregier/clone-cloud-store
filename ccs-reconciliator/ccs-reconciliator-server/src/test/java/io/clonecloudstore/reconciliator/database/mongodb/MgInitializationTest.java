@@ -77,6 +77,7 @@ class MgInitializationTest {
   private static final String OBJECT_NAME = DIR_NAME + "object_";
   private static final String OBJECT_OUT_NAME = "dir2/object_";
   private static final String REQUEST_ID = "request-id";
+  private final AtomicReference<CcsDbException> exceptionAtomicReference = new AtomicReference<>();
   @Inject
   Instance<DaoAccessorObjectRepository> objectRepositoryInstance;
   DaoAccessorObjectRepository objectRepository;
@@ -97,7 +98,6 @@ class MgInitializationTest {
   @Inject
   BulkMetrics bulkMetrics;
   AtomicBoolean init = new AtomicBoolean(false);
-  private final AtomicReference<CcsDbException> exceptionAtomicReference = new AtomicReference<>();
 
   @BeforeEach
   void beforeEach() throws CcsDbException {

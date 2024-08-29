@@ -29,9 +29,9 @@ import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
 
 public class AccessorApiFactory implements Closeable {
+  public static final int BUF_SIZE = 98304;
   private static final int DEFAULT_TIMEOUT = 30;
   private static final int DEFAULT_MAX_CLIENTS = 100;
-  public static final int BUF_SIZE = 98304;
   private final String baseUri;
   private final String clientId;
   private final int timeout;

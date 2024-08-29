@@ -16,21 +16,35 @@
 
 package io.clonecloudstore.test.resource;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
+import org.jboss.logging.Logger;
 
 public abstract class CommonProfile implements QuarkusTestProfile {
-
   public static final String FALSE = "false";
+  private static final Logger LOGGER = Logger.getLogger(CommonProfile.class);
 
-  @Override
-  public Map<String, String> getConfigOverrides() {
+  private static Map<String, String> getDefaultConfigOverrides() {
     return Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, FALSE,
         ResourcesConstants.QUARKUS_HIBERNATE_ORM_ENABLED, FALSE, ResourcesConstants.CCS_DB_TYPE,
         ResourcesConstants.MONGO, ResourcesConstants.QUARKUS_AZURE_DEVSERVICES, FALSE,
         ResourcesConstants.QUARKUS_AZURE_CONNECTION_STRING, "http", ResourcesConstants.QUARKUS_GOOGLE_PROJECT,
         "test-ccs", ResourcesConstants.QUARKUS_GOOGLE_HOST, "http://localhost:10000");
+  }
+
+  @Override
+  public Map<String, String> getConfigOverrides() {
+    return getDefaultConfigOverrides();
+  }
+
+  public Map<String, String> getConfigOverrides(final Map<String, String> override) {
+    Map<String, String> map = new HashMap<>();
+    map.putAll(getDefaultConfigOverrides());
+    map.putAll(override);
+    LOGGER.infof("Config: %s", map);
+    return map;
   }
 
   @Override

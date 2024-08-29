@@ -78,6 +78,28 @@ public class MockLocalReplicatorApiClient extends LocalReplicatorApiClient {
     return null;
   }
 
+  @Override
+  public void endRequestCentral(final String idRequest, final String clientId, final String targetId, final String opId)
+      throws CcsWithStatusException {
+    LOGGER.infof("Mock %b", runClient);
+    semaphore.release();
+    if (runClient) {
+      client.endRequestCentral(idRequest);
+    }
+  }
+
+  @Override
+  public Iterator<ReconciliationSitesAction> getActionsListing(final String idRequest, final String remoteId,
+                                                               final String clientId, final String targetId,
+                                                               final String opId) throws CcsWithStatusException {
+    LOGGER.infof("Mock %b", runClient);
+    semaphore.release();
+    if (runClient) {
+      return client.getActionsListing(idRequest, remoteId);
+    }
+    return null;
+  }
+
   private record ReconciliationSitesListingIterator(Iterator<ReconciliationSitesListing> iterator, String remoteId)
       implements Iterator<ReconciliationSitesListing> {
 
@@ -99,27 +121,5 @@ public class MockLocalReplicatorApiClient extends LocalReplicatorApiClient {
       }
       return null;
     }
-  }
-
-  @Override
-  public void endRequestCentral(final String idRequest, final String clientId, final String targetId, final String opId)
-      throws CcsWithStatusException {
-    LOGGER.infof("Mock %b", runClient);
-    semaphore.release();
-    if (runClient) {
-      client.endRequestCentral(idRequest);
-    }
-  }
-
-  @Override
-  public Iterator<ReconciliationSitesAction> getActionsListing(final String idRequest, final String remoteId,
-                                                               final String clientId, final String targetId,
-                                                               final String opId) throws CcsWithStatusException {
-    LOGGER.infof("Mock %b", runClient);
-    semaphore.release();
-    if (runClient) {
-      return client.getActionsListing(idRequest, remoteId);
-    }
-    return null;
   }
 }

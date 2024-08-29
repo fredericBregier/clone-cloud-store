@@ -36,7 +36,6 @@ import org.jboss.logmanager.MDC;
 @ApplicationScoped
 @Unremovable
 public class QuarkusProperties extends StandardProperties {
-  private static final Logger LOGGER = Logger.getLogger(QuarkusProperties.class);
   /**
    * Property to define Buffer Size for a Driver Chunk
    */
@@ -50,9 +49,10 @@ public class QuarkusProperties extends StandardProperties {
    * bandwidth)
    */
   public static final String CCS_CLIENT_RESPONSE_TIMEOUT = "ccs.client.response.timeout";
-  static final int DEFAULT_DRIVER_MAX_CHUNK_SIZE = 512 * 1024 * 1024;
-  private static final int DEFAULT_RESPONSE_TIMEOUT_MS = 300000;
   public static final String MODULE_MDC = "module";
+  static final int DEFAULT_DRIVER_MAX_CHUNK_SIZE = 512 * 1024 * 1024;
+  private static final Logger LOGGER = Logger.getLogger(QuarkusProperties.class);
+  private static final int DEFAULT_RESPONSE_TIMEOUT_MS = 300000;
   private static long clientResponseTimeOut =
       SystemPropertyUtil.get(CCS_CLIENT_RESPONSE_TIMEOUT, DEFAULT_RESPONSE_TIMEOUT_MS);
   private static Duration durationResponseTimeout = Duration.ofMillis(clientResponseTimeOut);
@@ -77,6 +77,10 @@ public class QuarkusProperties extends StandardProperties {
     optional.ifPresent(s -> setClientResponseTimeOut(Integer.parseInt(s)));
   }
 
+  protected QuarkusProperties() {
+    // Nothing
+  }
+
   /**
    * @return The duration before TimeOut occurs except InputStream
    */
@@ -92,12 +96,6 @@ public class QuarkusProperties extends StandardProperties {
     SystemPropertyUtil.set(CCS_CLIENT_RESPONSE_TIMEOUT, clientResponseTimeOut);
     QuarkusProperties.clientResponseTimeOut = clientResponseTimeOut;
     durationResponseTimeout = Duration.ofMillis(clientResponseTimeOut);
-  }
-
-  @Startup
-  void initVertx() {
-    setCdiVertx(CDI.current().select(Vertx.class).get().getDelegate());
-    MDC.put(MODULE_MDC, module.name());
   }
 
   /**
@@ -135,10 +133,6 @@ public class QuarkusProperties extends StandardProperties {
     MDC.put(MODULE_MDC, module.name());
   }
 
-  protected QuarkusProperties() {
-    // Nothing
-  }
-
   /**
    * @return True if the server shall compute Sha256 on the fly
    */
@@ -159,5 +153,11 @@ public class QuarkusProperties extends StandardProperties {
         StandardProperties.confugrationToString(), CCS_DRIVER_MAX_CHUNK_SIZE, getDriverMaxChunkSize(),
         CCS_SERVER_COMPUTE_SHA_256, getDriverMaxChunkSize(), CCS_CLIENT_RESPONSE_TIMEOUT, clientResponseTimeOut(),
         MODULE_MDC, getCcsModule());
+  }
+
+  @Startup
+  void initVertx() {
+    setCdiVertx(CDI.current().select(Vertx.class).get().getDelegate());
+    MDC.put(MODULE_MDC, module.name());
   }
 }

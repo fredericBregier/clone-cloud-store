@@ -42,10 +42,10 @@ import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 @ApplicationScoped
 @Unremovable
 public class RemoteReplicatorClientApiService {
-  // Keep arguments needed by ApiKeyGenerator
-  private static final ClientResponseExceptionMapper exceptionMapper = new ClientResponseExceptionMapper();
   public static final String REMOTE_CHECK_BUCKET = "remote-check-bucket";
   public static final String REMOTE_CHECK_OBJECT = "remote-check-object";
+  // Keep arguments needed by ApiKeyGenerator
+  private static final ClientResponseExceptionMapper exceptionMapper = new ClientResponseExceptionMapper();
 
   @CacheResult(cacheName = REMOTE_CHECK_BUCKET, keyGenerator = RemoteReplicatorApiKeyGenerator.class)
   public StorageType checkBucketCache(final RemoteReplicatorApi client, final URI uri, final String bucket,

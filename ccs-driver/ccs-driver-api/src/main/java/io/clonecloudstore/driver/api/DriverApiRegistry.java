@@ -25,20 +25,8 @@ public class DriverApiRegistry {
   private static final Logger LOGGER = Logger.getLogger(DriverApiRegistry.class);
   private static DriverApiFactory driverApiFactory;
 
-  /**
-   * Used by DriverApi implementation to setup the registry (only one value kept)
-   */
-  public static void setDriverApiFactory(final DriverApiFactory driverApiFactorySetup) {
-    if (driverApiFactorySetup == null) {
-      LOGGER.error("Driver Registry initialized with null Driver!");
-      throw new IllegalArgumentException("DriverApiFactory cannot be null for registration");
-    }
-    if (driverApiFactory != null && driverApiFactory.getClass() != driverApiFactorySetup.getClass()) {
-      LOGGER.errorf("Driver Registry initialized with 2 Drivers! Initial is %s while second is %s. Check dependencies",
-          driverApiFactory.getClass().getName(), driverApiFactorySetup.getClass().getName());
-      throw new IllegalArgumentException("DriverApiFactory registered twice");
-    }
-    internalSetDriverApiFactory(driverApiFactorySetup);
+  private DriverApiRegistry() {
+    // Empty
   }
 
   static void internalSetDriverApiFactory(final DriverApiFactory driverApiFactorySetup) {
@@ -56,7 +44,19 @@ public class DriverApiRegistry {
     return driverApiFactory;
   }
 
-  private DriverApiRegistry() {
-    // Empty
+  /**
+   * Used by DriverApi implementation to setup the registry (only one value kept)
+   */
+  public static void setDriverApiFactory(final DriverApiFactory driverApiFactorySetup) {
+    if (driverApiFactorySetup == null) {
+      LOGGER.error("Driver Registry initialized with null Driver!");
+      throw new IllegalArgumentException("DriverApiFactory cannot be null for registration");
+    }
+    if (driverApiFactory != null && driverApiFactory.getClass() != driverApiFactorySetup.getClass()) {
+      LOGGER.errorf("Driver Registry initialized with 2 Drivers! Initial is %s while second is %s. Check dependencies",
+          driverApiFactory.getClass().getName(), driverApiFactorySetup.getClass().getName());
+      throw new IllegalArgumentException("DriverApiFactory registered twice");
+    }
+    internalSetDriverApiFactory(driverApiFactorySetup);
   }
 }

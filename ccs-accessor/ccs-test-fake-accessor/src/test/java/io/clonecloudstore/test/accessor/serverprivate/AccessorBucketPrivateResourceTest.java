@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 class AccessorBucketPrivateResourceTest {
 
   private static final Logger LOG = Logger.getLogger(AccessorBucketPrivateResourceTest.class);
+  private static final String clientId = UUID.randomUUID().toString();
   @Inject
   AccessorBucketInternalApiFactory factory;
   @Inject
@@ -49,17 +50,15 @@ class AccessorBucketPrivateResourceTest {
   @Inject
   DriverApiFactory driverApiFactory;
 
-  private static final String clientId = UUID.randomUUID().toString();
+  @BeforeAll
+  static void beforeAll() {
+    FakeDriverFactory.cleanUp();
+  }
 
   @BeforeEach
   void beforeEach() {
     FakeCommonBucketResourceHelper.errorCode = 0;
     FakeCommonObjectResourceHelper.errorCode = 0;
-  }
-
-  @BeforeAll
-  static void beforeAll() {
-    FakeDriverFactory.cleanUp();
   }
 
   @Test

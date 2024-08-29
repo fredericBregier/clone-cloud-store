@@ -38,13 +38,12 @@ import static io.clonecloudstore.reconciliator.database.model.DaoSitesListingRep
  */
 @MongoEntity(collection = TABLE_NAME)
 public class MgDaoSitesListing extends DaoSitesListing {
-  @BsonId
-  @Column(length = UUID_B32_SIZE)
-  private String id;
-
   @BsonProperty(LOCAL)
   @Column(name = LOCAL)
   List<SingleSiteObject> local;
+  @BsonId
+  @Column(length = UUID_B32_SIZE)
+  private String id;
 
   public MgDaoSitesListing() {
     //Empty

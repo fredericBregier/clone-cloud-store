@@ -32,6 +32,10 @@ import static io.clonecloudstore.common.standard.system.ParametersChecker.SITE_L
 
 @MongoEntity(collection = TABLE_NAME)
 public class MgDaoTopology extends DaoTopology {
+  @BsonId
+  @Column(nullable = false, length = SITE_LENGTH)
+  private String id;
+
   public MgDaoTopology() {
     //Empty
   }
@@ -39,10 +43,6 @@ public class MgDaoTopology extends DaoTopology {
   public MgDaoTopology(final Topology dto) {
     fromDto(dto);
   }
-
-  @BsonId
-  @Column(nullable = false, length = SITE_LENGTH)
-  private String id;
 
   @Transient
   @BsonIgnore

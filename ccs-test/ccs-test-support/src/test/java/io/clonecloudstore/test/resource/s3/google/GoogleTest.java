@@ -14,13 +14,15 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.test.resource.google;
+package io.clonecloudstore.test.resource.s3.google;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import io.clonecloudstore.test.resource.ResourcesConstants;
+import io.clonecloudstore.test.resource.google.GoogleProfile;
+import io.clonecloudstore.test.resource.google.GoogleResource;
 import io.clonecloudstore.test.resource.s3.EmptyClass;
 import io.clonecloudstore.test.stream.FakeInputStream;
 import io.clonecloudstore.test.stream.VoidOutputStream;

@@ -65,14 +65,27 @@ import static io.clonecloudstore.driver.google.DriverGoogleProperties.SHA_256;
 @ApplicationScoped
 @Unremovable
 public class DriverGoogleHelper {
-  private static final Logger LOGGER = Logger.getLogger(DriverGoogleHelper.class);
   public static final String FILE_CLIENT_ID = "." + CLIENT_ID;
+  private static final Logger LOGGER = Logger.getLogger(DriverGoogleHelper.class);
   private static final String BUCKET_CANNOT_BE_NULL = "Bucket cannot be null";
   private static final String BUCKET_OR_OBJECT_CANNOT_BE_NULL = "Bucket or Object cannot be null";
   private final Storage storage;
 
   DriverGoogleHelper(final Storage storage) {
     this.storage = storage;
+  }
+
+  private static boolean isFileClientId(final String name) {
+    return FILE_CLIENT_ID.equals(name);
+  }
+
+  private static Bucket updateBucketButPossibleBugOnLabels(Bucket result, final Map<String, String> map) {
+    try {
+      result = result.toBuilder().setLabels(map).build().update();
+    } catch (final BaseServiceException ignore) {
+      // Ignore due to bug
+    }
+    return result;
   }
 
   Storage getStorage() {
@@ -85,10 +98,6 @@ public class DriverGoogleHelper {
     } catch (final BaseServiceException e) {
       throw DriverException.getDriverExceptionFromStatus(e.getCode(), e);
     }
-  }
-
-  private static boolean isFileClientId(final String name) {
-    return FILE_CLIENT_ID.equals(name);
   }
 
   StorageBucket fromBucketInfo(final Bucket bucket) {
@@ -162,15 +171,6 @@ public class DriverGoogleHelper {
     } catch (final CcsInvalidArgumentRuntimeException e) {
       throw new DriverException(e);
     }
-  }
-
-  private static Bucket updateBucketButPossibleBugOnLabels(Bucket result, final Map<String, String> map) {
-    try {
-      result = result.toBuilder().setLabels(map).build().update();
-    } catch (final BaseServiceException ignore) {
-      // Ignore due to bug
-    }
-    return result;
   }
 
   void deleteBucket(final String bucket) throws DriverException {
@@ -450,7 +450,7 @@ public class DriverGoogleHelper {
         BlobInfo.newBuilder(blobId).setMetadata(map).setContentType(MediaType.APPLICATION_OCTET_STREAM).build();
     try (final var writeChannel = storage.writer(blobInfo, getBlobWriteOption())) {
       writeChannel.setChunkSize(DriverGoogleProperties.getMaxBufSize());
-      int read = 0;
+      int read;
       long size = 0;
       byte[] bytes = new byte[StandardProperties.getBufSize()];
       ByteBuffer buffer = ByteBuffer.wrap(bytes);

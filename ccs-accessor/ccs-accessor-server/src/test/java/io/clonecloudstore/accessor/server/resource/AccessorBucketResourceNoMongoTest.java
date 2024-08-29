@@ -34,9 +34,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @TestProfile(AzureKafkaProfile.class)
 class AccessorBucketResourceNoMongoTest {
 
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

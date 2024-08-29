@@ -54,9 +54,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestProfile(PostgresProfile.class)
 class DbPostgreTest {
   private static final Logger LOG = Logger.getLogger(DbPostgreTest.class);
+  private final int MAX_BULK = 1500;
   @Inject
   PgDaoExampleRepository repository;
-  private final int MAX_BULK = 1500;
 
   @Test
   void checkDb() throws JsonProcessingException, CcsDbException {

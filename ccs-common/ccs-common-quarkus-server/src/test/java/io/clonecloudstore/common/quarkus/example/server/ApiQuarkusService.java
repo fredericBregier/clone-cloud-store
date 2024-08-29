@@ -68,8 +68,8 @@ public class ApiQuarkusService extends StreamServiceAbstract<ApiBusinessIn, ApiB
   public static final String ULTRA_COMPRESSION_TEST = "ULTRA_";
   public static final String DELAY_TEST = "DELAY_";
   public static final String CIPHER = "CIPHER";
-  private static final Logger LOG = Logger.getLogger(ApiQuarkusService.class);
   public static final String THROUGH = "/through";
+  private static final Logger LOG = Logger.getLogger(ApiQuarkusService.class);
   public static Cipher cipherEnc;
   public static Cipher cipherDec;
 

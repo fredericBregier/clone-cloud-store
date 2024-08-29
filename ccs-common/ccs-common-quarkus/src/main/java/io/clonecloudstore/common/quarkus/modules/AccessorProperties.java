@@ -34,21 +34,21 @@ public class AccessorProperties extends ServiceProperties {
   public static final String CCS_ACCESSOR_STORE_MIN_SPACE_GB = "ccs.accessor.store.min_space_gb";
   public static final String CCS_ACCESSOR_STORE_PURGE_RETENTION_SECONDS = "ccs.accessor.store.purge.retention_seconds";
   public static final String CCS_ACCESSOR_STORE_SCHEDULE_DELAY = "ccs.accessor.store.schedule.delay";
+  private static final String JAVA_IO_TMPDIR = "java.io.tmpdir";
+  private static final String STORE_PATH =
+      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_PATH, System.getProperty(JAVA_IO_TMPDIR) + "/CCS");
+  private static final int STORE_MIN_SPACE_GB =
+      QuarkusSystemPropertyUtil.getIntegerConfig(CCS_ACCESSOR_STORE_MIN_SPACE_GB, 5);
+  private static final String STORE_SCHEDULE_DELAY =
+      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_SCHEDULE_DELAY, "10s");
   private static boolean remoteRead = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_READ, false);
   private static boolean fixOnAbsent =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_REMOTE_FIX_ON_ABSENT, false);
   private static boolean internalCompression =
       QuarkusSystemPropertyUtil.getBooleanConfig(CCS_INTERNAL_COMPRESSION, false);
   private static boolean storeActive = QuarkusSystemPropertyUtil.getBooleanConfig(CCS_ACCESSOR_STORE_ACTIVE, false);
-  private static final String JAVA_IO_TMPDIR = "java.io.tmpdir";
-  private static final String STORE_PATH =
-      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_PATH, System.getProperty(JAVA_IO_TMPDIR) + "/CCS");
-  private static final int STORE_MIN_SPACE_GB =
-      QuarkusSystemPropertyUtil.getIntegerConfig(CCS_ACCESSOR_STORE_MIN_SPACE_GB, 5);
   private static long storePurgeRetentionSeconds =
       QuarkusSystemPropertyUtil.getLongConfig(CCS_ACCESSOR_STORE_PURGE_RETENTION_SECONDS, 3600);
-  private static final String STORE_SCHEDULE_DELAY =
-      QuarkusSystemPropertyUtil.getStringConfig(CCS_ACCESSOR_STORE_SCHEDULE_DELAY, "10s");
 
   protected AccessorProperties() {
     // Nothing

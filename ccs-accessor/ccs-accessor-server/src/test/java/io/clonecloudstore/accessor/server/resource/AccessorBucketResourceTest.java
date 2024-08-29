@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(AzureMongoKafkaProfile.class)
 class AccessorBucketResourceTest {
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factory;
   @Inject
@@ -54,7 +55,6 @@ class AccessorBucketResourceTest {
   @Inject
   Instance<DaoAccessorBucketRepository> bucketRepositoryInstance;
   DaoAccessorBucketRepository bucketRepository;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

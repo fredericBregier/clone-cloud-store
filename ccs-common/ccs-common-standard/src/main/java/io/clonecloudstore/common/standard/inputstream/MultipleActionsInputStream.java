@@ -49,24 +49,6 @@ public class MultipleActionsInputStream extends InputStream {
   private boolean closed = false;
   private boolean pipedVersion = false;
 
-  public static MultipleActionsInputStream create(final InputStream inputStream) {
-    if (inputStream instanceof MultipleActionsInputStream mai) {
-      return mai;
-    }
-    return new MultipleActionsInputStream(inputStream);
-  }
-
-  public static MultipleActionsInputStream create(final InputStream inputStream, final boolean digestNeeded)
-      throws NoSuchAlgorithmException {
-    if (inputStream instanceof MultipleActionsInputStream mai) {
-      return mai;
-    }
-    if (digestNeeded) {
-      return new MultipleActionsInputStream(inputStream, DigestAlgo.SHA256);
-    }
-    return new MultipleActionsInputStream(inputStream);
-  }
-
   public MultipleActionsInputStream(final InputStream inputStream) {
     this(inputStream, StandardProperties.getMaxWaitMs());
   }
@@ -84,6 +66,24 @@ public class MultipleActionsInputStream extends InputStream {
     this.countingInputStream = new CountingInputStream(inputStream);
     workInputStream = countingInputStream;
     lastTime = System.currentTimeMillis();
+  }
+
+  public static MultipleActionsInputStream create(final InputStream inputStream) {
+    if (inputStream instanceof MultipleActionsInputStream mai) {
+      return mai;
+    }
+    return new MultipleActionsInputStream(inputStream);
+  }
+
+  public static MultipleActionsInputStream create(final InputStream inputStream, final boolean digestNeeded)
+      throws NoSuchAlgorithmException {
+    if (inputStream instanceof MultipleActionsInputStream mai) {
+      return mai;
+    }
+    if (digestNeeded) {
+      return new MultipleActionsInputStream(inputStream, DigestAlgo.SHA256);
+    }
+    return new MultipleActionsInputStream(inputStream);
   }
 
   public void asyncPipedInputStream(final AtomicReference<Exception> callerExceptionAtomicReference) {

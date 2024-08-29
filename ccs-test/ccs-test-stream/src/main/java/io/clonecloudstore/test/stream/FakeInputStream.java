@@ -30,8 +30,8 @@ public class FakeInputStream extends InputStream {
   public static final int DEFAULT_BUFFER_SIZE = 131072;
   private static final int MAX_AVAILABLE = 1024 * 1024 * 100;
   private final byte b;
-  protected long toSend;
   private final Random random;
+  protected long toSend;
 
   /**
    * Will generate a FakeInputStream with random values

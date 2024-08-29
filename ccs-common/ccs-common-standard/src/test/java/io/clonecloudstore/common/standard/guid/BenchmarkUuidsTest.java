@@ -75,6 +75,34 @@ class BenchmarkUuidsTest {
     return stop - start;
   }
 
+  private long setUuids(final Thread[] threads, final int effectiveN, final int n, final int numThreads)
+      throws InterruptedException {
+    final var start = System.currentTimeMillis();
+    for (var i = 0; i < numThreads; i++) {
+      threads[i] = new GeneratorUuid(n / numThreads, i);
+      threads[i].start();
+    }
+    for (var i = 0; i < numThreads; i++) {
+      threads[i].join();
+    }
+    final var stop = System.currentTimeMillis();
+    return stop - start;
+  }
+
+  private long setGuidLikes(final Thread[] threads, final int effectiveN, final int n, final int numThreads)
+      throws InterruptedException {
+    final var start = System.currentTimeMillis();
+    for (var i = 0; i < numThreads; i++) {
+      threads[i] = new GeneratorGuidLike(n / numThreads, i);
+      threads[i].start();
+    }
+    for (var i = 0; i < numThreads; i++) {
+      threads[i].join();
+    }
+    final var stop = System.currentTimeMillis();
+    return stop - start;
+  }
+
   static class Generator extends Thread {
     final int id;
     final int n;
@@ -92,20 +120,6 @@ class BenchmarkUuidsTest {
     }
   }
 
-  private long setUuids(final Thread[] threads, final int effectiveN, final int n, final int numThreads)
-      throws InterruptedException {
-    final var start = System.currentTimeMillis();
-    for (var i = 0; i < numThreads; i++) {
-      threads[i] = new GeneratorUuid(n / numThreads, i);
-      threads[i].start();
-    }
-    for (var i = 0; i < numThreads; i++) {
-      threads[i].join();
-    }
-    final var stop = System.currentTimeMillis();
-    return stop - start;
-  }
-
   static class GeneratorUuid extends Thread {
     final int id;
     final int n;
@@ -121,20 +135,6 @@ class BenchmarkUuidsTest {
         UUID.randomUUID().toString();
       }
     }
-  }
-
-  private long setGuidLikes(final Thread[] threads, final int effectiveN, final int n, final int numThreads)
-      throws InterruptedException {
-    final var start = System.currentTimeMillis();
-    for (var i = 0; i < numThreads; i++) {
-      threads[i] = new GeneratorGuidLike(n / numThreads, i);
-      threads[i].start();
-    }
-    for (var i = 0; i < numThreads; i++) {
-      threads[i].join();
-    }
-    final var stop = System.currentTimeMillis();
-    return stop - start;
   }
 
   static class GeneratorGuidLike extends Thread {

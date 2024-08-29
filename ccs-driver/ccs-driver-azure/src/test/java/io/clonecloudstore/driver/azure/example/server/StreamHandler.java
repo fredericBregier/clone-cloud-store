@@ -45,6 +45,25 @@ public class StreamHandler extends StreamHandlerAbstract<StorageObject, StorageO
   private volatile StorageObject pullAble;
   private DriverApi driverApi;
 
+  private static Map<String, String> getHeaderMap(final StorageObject apiBusinessIn) {
+    final Map<String, String> map = new HashMap<>();
+    map.put(ApiConstants.X_BUCKET, apiBusinessIn.bucket());
+    map.put(ApiConstants.X_OBJECT, apiBusinessIn.name());
+    final var creationDate = apiBusinessIn.creationDate();
+    if (creationDate != null) {
+      map.put(ApiConstants.X_CREATION_DATE, creationDate.toString());
+    }
+    final var hash = apiBusinessIn.hash();
+    if (hash != null) {
+      map.put(ApiConstants.X_HASH, hash);
+    }
+    if (apiBusinessIn.size() > 0) {
+      map.put(ApiConstants.X_LEN, Long.toString(apiBusinessIn.size()));
+    }
+    LOG.debugf("Debug Map: %s", map);
+    return map;
+  }
+
   private void setDriverApi() {
     if (driverApi == null) {
       // No native CDI here
@@ -156,24 +175,5 @@ public class StreamHandler extends StreamHandlerAbstract<StorageObject, StorageO
   protected Map<String, String> getHeaderError(final StorageObject apiBusinessIn, final int status) {
     // Business code should come here (example: get headers in case of error as Object name, Bucket name...)
     return getHeaderMap(apiBusinessIn);
-  }
-
-  private static Map<String, String> getHeaderMap(final StorageObject apiBusinessIn) {
-    final Map<String, String> map = new HashMap<>();
-    map.put(ApiConstants.X_BUCKET, apiBusinessIn.bucket());
-    map.put(ApiConstants.X_OBJECT, apiBusinessIn.name());
-    final var creationDate = apiBusinessIn.creationDate();
-    if (creationDate != null) {
-      map.put(ApiConstants.X_CREATION_DATE, creationDate.toString());
-    }
-    final var hash = apiBusinessIn.hash();
-    if (hash != null) {
-      map.put(ApiConstants.X_HASH, hash);
-    }
-    if (apiBusinessIn.size() > 0) {
-      map.put(ApiConstants.X_LEN, Long.toString(apiBusinessIn.size()));
-    }
-    LOG.debugf("Debug Map: %s", map);
-    return map;
   }
 }

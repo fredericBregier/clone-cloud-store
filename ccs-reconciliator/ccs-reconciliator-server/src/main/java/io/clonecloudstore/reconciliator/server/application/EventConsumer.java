@@ -80,6 +80,19 @@ public class EventConsumer {
     this.brokerService = brokerService;
   }
 
+  private static CcsWithStatusException informRemoteReconciliator(final String remote,
+                                                                  final LocalReplicatorApiClient client,
+                                                                  final DaoRequest dao,
+                                                                  CcsWithStatusException exception) {
+    try {
+      client.createRequestLocal(dao.getDto(), dao.getClientId(), remote, SimpleClientAbstract.getMdcOpId());
+    } catch (CcsWithStatusException e) {
+      exception = e;
+      LOGGER.errorf("Error for %s while informing remote Reconciliator for Creation: %s (%s)", dao.getId(), remote, e);
+    }
+    return exception;
+  }
+
   public boolean isActive(final String id) {
     return activeRequests.contains(id);
   }
@@ -119,19 +132,6 @@ public class EventConsumer {
     } finally {
       activeRequests.remove(id);
     }
-  }
-
-  private static CcsWithStatusException informRemoteReconciliator(final String remote,
-                                                                  final LocalReplicatorApiClient client,
-                                                                  final DaoRequest dao,
-                                                                  CcsWithStatusException exception) {
-    try {
-      client.createRequestLocal(dao.getDto(), dao.getClientId(), remote, SimpleClientAbstract.getMdcOpId());
-    } catch (CcsWithStatusException e) {
-      exception = e;
-      LOGGER.errorf("Error for %s while informing remote Reconciliator for Creation: %s (%s)", dao.getId(), remote, e);
-    }
-    return exception;
   }
 
   public void localReconciliation(final DaoRequest request) {

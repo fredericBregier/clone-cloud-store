@@ -24,9 +24,9 @@ import io.clonecloudstore.common.quarkus.properties.QuarkusSystemPropertyUtil;
  * Postgre implementation of the BulkHelper
  */
 public class PostgreBulkHelper {
+  private final AtomicInteger bulkCount = new AtomicInteger(0);
   private int maxBatch =
       QuarkusSystemPropertyUtil.getIntegerConfig("quarkus.hibernate-orm.jdbc.statement-batch-size", 50);
-  private final AtomicInteger bulkCount = new AtomicInteger(0);
 
   /**
    * Constructor

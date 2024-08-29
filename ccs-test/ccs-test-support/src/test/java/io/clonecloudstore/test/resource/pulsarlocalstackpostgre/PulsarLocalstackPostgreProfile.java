@@ -29,14 +29,14 @@ import io.clonecloudstore.test.resource.s3.LocalStackResource;
 public class PulsarLocalstackPostgreProfile extends CommonProfile {
   @Override
   public String getConfigProfile() {
-    return "test-pulsar-localstack-postgre";
+    return "test-localstack-pulsar-postgre";
   }
 
   @Override
   public Map<String, String> getConfigOverrides() {
-    return Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, "false",
+    return getConfigOverrides(Map.of(ResourcesConstants.QUARKUS_DEVSERVICES_ENABLED, "false",
         ResourcesConstants.QUARKUS_HIBERNATE_ORM_ENABLED, "true", ResourcesConstants.CCS_DB_TYPE,
-        ResourcesConstants.POSTGRE);
+        ResourcesConstants.POSTGRE));
   }
 
   @Override

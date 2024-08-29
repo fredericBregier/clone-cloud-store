@@ -37,8 +37,6 @@ import static io.clonecloudstore.common.standard.system.ParametersChecker.SITE_L
 
 @MappedSuperclass
 public abstract class DaoRequest {
-  @Column(name = DaoRequestRepository.CLIENTID, nullable = false, length = UUID_B32_SIZE)
-  private String clientId;
   @Column(name = DaoRequestRepository.BUCKET, nullable = false, length = BUCKET_LENGTH)
   String bucket;
   @Column(name = DaoRequestRepository.FILTER)
@@ -72,6 +70,8 @@ public abstract class DaoRequest {
   ReconciliationStep step;
   @Column(name = DaoRequestRepository.STOP)
   Instant stop;
+  @Column(name = DaoRequestRepository.CLIENTID, nullable = false, length = UUID_B32_SIZE)
+  private String clientId;
 
   protected DaoRequest() {
   }

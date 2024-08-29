@@ -36,10 +36,10 @@ public class ChunkInputStreamOptionalBuffer extends InputStream implements Chunk
   private final InputStream inputStream;
   private final int chunkSize;
   private final long totalLen;
+  private final boolean useDirectStream;
   private int currentLen;
   private long currentTotalRead = 0;
   private byte[] buffer;
-  private final boolean useDirectStream;
   private int currentChunkSize = -1;
   private boolean closed = false;
 

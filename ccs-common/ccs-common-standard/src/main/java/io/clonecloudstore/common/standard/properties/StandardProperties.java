@@ -60,6 +60,10 @@ public class StandardProperties {
    */
   private static ObjectMapper objectMapper = null;
 
+  protected StandardProperties() {
+    // Empty
+  }
+
   /**
    * @return the MachineId if specified as ccs.machineId using 6 bytes in Hexadecimal format
    */
@@ -133,10 +137,6 @@ public class StandardProperties {
       throw new CcsInvalidArgumentRuntimeException("ObjectMapper cannot be null");
     }
     StandardProperties.objectMapper = objectMapper;
-  }
-
-  protected StandardProperties() {
-    // Empty
   }
 
   public static String confugrationToString() {

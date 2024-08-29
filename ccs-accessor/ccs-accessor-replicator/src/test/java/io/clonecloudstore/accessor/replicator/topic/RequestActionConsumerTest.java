@@ -69,7 +69,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(MongoKafkaProfile.class)
 class RequestActionConsumerTest {
-  private static final Logger LOG = Logger.getLogger(RequestActionConsumerTest.class);
   public static final String OP_ID = GuidLike.getGuid();
   public static final String CLIENTID_BUCKET0 = "clientid-bucket0";
   public static final String CLIENTID_BUCKET = "clientid-bucket";
@@ -79,11 +78,12 @@ class RequestActionConsumerTest {
   public static final String OBJECT_NAME = "directory/objectname";
   public static final String OBJECT_NAME2 = "directory/objectname2";
   public static final int WAIT_FOR_CONSUME = 300;
+  private static final Logger LOG = Logger.getLogger(RequestActionConsumerTest.class);
+  private static final AtomicBoolean initDone = new AtomicBoolean(false);
   @Inject
   FakeReplicatorProducer emitter;
   @Inject
   BulkMetrics bulkMetrics;
-  private static final AtomicBoolean initDone = new AtomicBoolean(false);
   @Inject
   DriverApiFactory storageDriverFactory;
   @Inject
@@ -451,7 +451,8 @@ class RequestActionConsumerTest {
       assertEquals(StorageType.OBJECT, driver.directoryOrObjectExistsInBucket(CLIENTID_BUCKET, OBJECT_NAME2));
       // Now give the Delete access
       try (final var ownerClient = ownershipApiClientFactory.newClient()) {
-        LOG.infof("OwnerShip %s", ownerClient.update(clientIdOther, CLIENTID_BUCKET, ClientOwnership.DELETE));
+        var updated = ownerClient.update(clientIdOther, CLIENTID_BUCKET, ClientOwnership.DELETE);
+        LOG.infof("OwnerShip %s", updated);
         assertTrue(ownerClient.findByBucket(clientIdOther, CLIENTID_BUCKET).include(ClientOwnership.DELETE));
       } catch (CcsWithStatusException e) {
         fail(e);

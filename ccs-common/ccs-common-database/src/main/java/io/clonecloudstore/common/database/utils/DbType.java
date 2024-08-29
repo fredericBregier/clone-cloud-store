@@ -34,15 +34,6 @@ public class DbType {
     this.isMongoDbType = checkMongoDbType();
   }
 
-  /**
-   * Use to filter on Mongo code
-   *
-   * @return True if Mongo is enabled
-   */
-  public boolean isMongoDbType() {
-    return isMongoDbType;
-  }
-
   public static DbType getInstance() {
     return INSTANCE;
   }
@@ -56,5 +47,14 @@ public class DbType {
     final var value = QuarkusSystemPropertyUtil.getStringConfig(CCS_DB_TYPE, "");
     LOGGER.debugf("Found DbType: %s", value);
     return !POSTGRE.equals(value);
+  }
+
+  /**
+   * Use to filter on Mongo code
+   *
+   * @return True if Mongo is enabled
+   */
+  public boolean isMongoDbType() {
+    return isMongoDbType;
   }
 }

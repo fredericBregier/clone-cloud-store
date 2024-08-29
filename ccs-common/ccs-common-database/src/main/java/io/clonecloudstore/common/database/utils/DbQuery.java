@@ -94,6 +94,89 @@ public class DbQuery extends RestQuery {
     }
   }
 
+  /**
+   * Query using parameters
+   */
+  public DbQuery(final QUERY query, final String field, final Object... values) {
+    super(query, field, values);
+    fieldValues(query, field, values);
+  }
+
+  /**
+   * Query using parameters
+   */
+  public DbQuery(final QUERY query, final String field, final Collection<?> values) {
+    super(query, field, values);
+    fieldCollection(query, field, values);
+  }
+
+  /**
+   * Query using parameters
+   */
+  public DbQuery(final QUERY query, final String field, final String value) {
+    super(query, field, value);
+    fieldString(query, field, value);
+  }
+
+  /**
+   * Query using parameters
+   */
+  public DbQuery(final QUERY query, final String field, final Object value) {
+    super(query, field, value);
+    if (value instanceof final Collection<?> values) {
+      fieldCollection(query, field, values);
+    } else if (value instanceof final Object[] values) {
+      fieldValues(query, field, values);
+    } else {
+      fieldObject(query, field, value);
+    }
+  }
+
+  /**
+   * Query conjunction using parameters
+   */
+  public DbQuery(final CONJUNCTION conjunction, final DbQuery... queries) {
+    super(conjunction, queries);
+    conjunctionArray(conjunction, queries);
+  }
+
+  /**
+   * Query conjunction using parameters
+   */
+  public DbQuery(final CONJUNCTION conjunction, final Collection<DbQuery> queries) {
+    super(conjunction, queries.toArray(EMPTY_ARRAY_DB_QUERIES));
+    conjunctionList(conjunction, queries);
+  }
+
+  /**
+   * Helper to request on ID
+   *
+   * @param id the ID unique value
+   * @return the DbQuery
+   */
+  public static DbQuery idEquals(final String id) {
+    return new DbQuery(EQ, IS_DB_TYPE_MONGODB ? RepositoryBaseInterface.ID : RepositoryBaseInterface.ID_PG, id);
+  }
+
+  /**
+   * Build a DbQuery from RestQuery
+   *
+   * @param restQuery the RestQuery to transform
+   * @return the new DbQuery
+   */
+  public static DbQuery fromRestQuery(final RestQuery restQuery) {
+    if (restQuery.getQUERY() != null) {
+      return new DbQuery(restQuery);
+    } else if (restQuery.getConjunction() != null) {
+      final List<DbQuery> dbQueries = new ArrayList<>();
+      for (final var rq : restQuery.getRestQueries()) {
+        dbQueries.add(new DbQuery(rq));
+      }
+      return new DbQuery(restQuery.getConjunction(), dbQueries);
+    }
+    return new DbQuery();
+  }
+
   private void setMgFromSql() {
     if (IS_DB_TYPE_MONGODB) {
       builderMg.setLength(0);
@@ -457,62 +540,6 @@ public class DbQuery extends RestQuery {
     return "";
   }
 
-  /**
-   * Query using parameters
-   */
-  public DbQuery(final QUERY query, final String field, final Object... values) {
-    super(query, field, values);
-    fieldValues(query, field, values);
-  }
-
-  /**
-   * Query using parameters
-   */
-  public DbQuery(final QUERY query, final String field, final Collection<?> values) {
-    super(query, field, values);
-    fieldCollection(query, field, values);
-  }
-
-  /**
-   * Query using parameters
-   */
-  public DbQuery(final QUERY query, final String field, final String value) {
-    super(query, field, value);
-    fieldString(query, field, value);
-  }
-
-  /**
-   * Query using parameters
-   */
-  public DbQuery(final QUERY query, final String field, final Object value) {
-    super(query, field, value);
-    if (value instanceof final Collection<?> values) {
-      fieldCollection(query, field, values);
-    } else if (value instanceof final Object[] values) {
-      fieldValues(query, field, values);
-    } else {
-      fieldObject(query, field, value);
-    }
-  }
-
-  /**
-   * Query conjunction using parameters
-   */
-  public DbQuery(final CONJUNCTION conjunction, final DbQuery... queries) {
-    super(conjunction, queries);
-    conjunctionArray(conjunction, queries);
-  }
-
-  /**
-   * Helper to request on ID
-   *
-   * @param id the ID unique value
-   * @return the DbQuery
-   */
-  public static DbQuery idEquals(final String id) {
-    return new DbQuery(EQ, IS_DB_TYPE_MONGODB ? RepositoryBaseInterface.ID : RepositoryBaseInterface.ID_PG, id);
-  }
-
   private void conjunctionArray(final CONJUNCTION conjunction, final DbQuery[] queries) {
     switch (conjunction) {
       case OR -> andOr(OR, queries);
@@ -612,14 +639,6 @@ public class DbQuery extends RestQuery {
     }
   }
 
-  /**
-   * Query conjunction using parameters
-   */
-  public DbQuery(final CONJUNCTION conjunction, final Collection<DbQuery> queries) {
-    super(conjunction, queries.toArray(EMPTY_ARRAY_DB_QUERIES));
-    conjunctionList(conjunction, queries);
-  }
-
   private void conjunctionList(final CONJUNCTION conjunction, final Collection<DbQuery> queries) {
     switch (conjunction) {
       case OR -> andOr(OR, queries);
@@ -662,25 +681,6 @@ public class DbQuery extends RestQuery {
       bsonConjunction(op, filters);
     }
     return this;
-  }
-
-  /**
-   * Build a DbQuery from RestQuery
-   *
-   * @param restQuery the RestQuery to transform
-   * @return the new DbQuery
-   */
-  public static DbQuery fromRestQuery(final RestQuery restQuery) {
-    if (restQuery.getQUERY() != null) {
-      return new DbQuery(restQuery);
-    } else if (restQuery.getConjunction() != null) {
-      final List<DbQuery> dbQueries = new ArrayList<>();
-      for (final var rq : restQuery.getRestQueries()) {
-        dbQueries.add(new DbQuery(rq));
-      }
-      return new DbQuery(restQuery.getConjunction(), dbQueries);
-    }
-    return new DbQuery();
   }
 
   /**

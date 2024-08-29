@@ -31,33 +31,11 @@ import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class FakeRequestTopicConsumer {
-  private static final Logger LOGGER = Logger.getLogger(FakeRequestTopicConsumer.class);
   static final AtomicLong bucketCreate = new AtomicLong(0);
   static final AtomicLong bucketDelete = new AtomicLong(0);
   static final AtomicLong objectCreate = new AtomicLong(0);
   static final AtomicLong objectDelete = new AtomicLong(0);
-
-  @Incoming(ReplicatorConstants.Topic.REPLICATOR_REQUEST_IN)
-  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
-  @Blocking(ordered = true)
-  public void consume(final List<ReplicatorOrder> orders) {
-    QuarkusProperties.refreshModuleMdc();
-    for (final var order : orders) {
-      SimpleClientAbstract.setMdcOpId(order.opId());
-      LOGGER.debugf("Recv Order %s", order);
-      if (order.objectName() != null) {
-        switch (order.action()) {
-          case CREATE -> objectCreate.incrementAndGet();
-          case DELETE -> objectDelete.incrementAndGet();
-        }
-      } else {
-        switch (order.action()) {
-          case CREATE -> bucketCreate.incrementAndGet();
-          case DELETE -> bucketDelete.incrementAndGet();
-        }
-      }
-    }
-  }
+  private static final Logger LOGGER = Logger.getLogger(FakeRequestTopicConsumer.class);
 
   public static void reset() {
     bucketCreate.set(0);
@@ -80,5 +58,27 @@ public class FakeRequestTopicConsumer {
 
   public static long getObjectDelete() {
     return objectDelete.get();
+  }
+
+  @Incoming(ReplicatorConstants.Topic.REPLICATOR_REQUEST_IN)
+  @Acknowledgment(Acknowledgment.Strategy.PRE_PROCESSING)
+  @Blocking(ordered = true)
+  public void consume(final List<ReplicatorOrder> orders) {
+    QuarkusProperties.refreshModuleMdc();
+    for (final var order : orders) {
+      SimpleClientAbstract.setMdcOpId(order.opId());
+      LOGGER.debugf("Recv Order %s", order);
+      if (order.objectName() != null) {
+        switch (order.action()) {
+          case CREATE -> objectCreate.incrementAndGet();
+          case DELETE -> objectDelete.incrementAndGet();
+        }
+      } else {
+        switch (order.action()) {
+          case CREATE -> bucketCreate.incrementAndGet();
+          case DELETE -> bucketDelete.incrementAndGet();
+        }
+      }
+    }
   }
 }

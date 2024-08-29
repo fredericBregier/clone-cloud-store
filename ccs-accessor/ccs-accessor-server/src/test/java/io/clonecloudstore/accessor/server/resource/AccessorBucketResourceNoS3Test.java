@@ -46,12 +46,12 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(MongoKafkaProfile.class)
 class AccessorBucketResourceNoS3Test {
   private static final Logger LOG = Logger.getLogger(AccessorBucketResourceNoS3Test.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factory;
   @Inject
   Instance<DaoAccessorBucketRepository> repositoryInstance;
   DaoAccessorBucketRepository repository;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

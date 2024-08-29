@@ -51,11 +51,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @QuarkusTest
 @TestProfile(MongoKafkaProfile.class)
 class AccessorObjectInternalResourceNoS3Test {
-  private static final Logger LOG = Logger.getLogger(AccessorObjectInternalResourceNoS3Test.class);
   public static final String BUCKET_NAME = "testbucket";
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
-
+  private static final Logger LOG = Logger.getLogger(AccessorObjectInternalResourceNoS3Test.class);
+  private static String clientId = null;
   @Inject
   AccessorObjectInternalApiFactory factory;
   @Inject
@@ -66,7 +66,6 @@ class AccessorObjectInternalResourceNoS3Test {
   DaoAccessorBucketRepository bucketRepository;
   @Inject
   OwnershipApiClientFactory ownershipApiClientFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

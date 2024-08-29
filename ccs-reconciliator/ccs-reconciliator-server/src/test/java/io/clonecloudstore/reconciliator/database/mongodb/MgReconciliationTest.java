@@ -105,6 +105,7 @@ class MgReconciliationTest {
   private static final String FROM_SITE = "from-site";
   private static final String OBJECT_NAME = "dir/object_";
   private static final String REQUEST_ID = "request-id";
+  private final AtomicReference<CcsDbException> exceptionAtomicReference = new AtomicReference<>();
   @Inject
   Instance<DaoAccessorObjectRepository> objectRepositoryInstance;
   DaoAccessorObjectRepository objectRepository;
@@ -132,7 +133,6 @@ class MgReconciliationTest {
   @Inject
   DriverApiFactory storageDriverFactory;
   AtomicBoolean init = new AtomicBoolean(false);
-  private final AtomicReference<CcsDbException> exceptionAtomicReference = new AtomicReference<>();
 
   @BeforeEach
   void beforeEach() throws CcsDbException {

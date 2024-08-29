@@ -37,6 +37,10 @@ import jakarta.persistence.Transient;
 @RegisterForReflection
 public class AccessorFilter {
   /**
+   * Optional metadata filter based on equality
+   */
+  private final Map<String, String> metadataFilter = new HashMap<>();
+  /**
    * Optional Prefix for the name, including path
    */
   private String namePrefix;
@@ -68,10 +72,6 @@ public class AccessorFilter {
    * Optional length filter greater than this length
    */
   private long sizeGreaterThan;
-  /**
-   * Optional metadata filter based on equality
-   */
-  private final Map<String, String> metadataFilter = new HashMap<>();
 
   public AccessorFilter() {
     // Empty

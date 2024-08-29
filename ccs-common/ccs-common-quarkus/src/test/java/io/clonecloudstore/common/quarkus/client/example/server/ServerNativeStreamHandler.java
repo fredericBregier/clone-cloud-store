@@ -48,6 +48,23 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
   protected ServerNativeStreamHandler() {
   }
 
+  private static Map<String, String> getHeaderMap(final ApiBusinessOut apiBusinessOut) {
+    final var map = new HashMap<String, String>();
+    map.put(X_NAME, apiBusinessOut.name);
+    map.put(ApiConstants.X_LEN, Long.toString(apiBusinessOut.len));
+    map.put(ApiConstants.X_CREATION_DATE,
+        apiBusinessOut.creationDate != null ? apiBusinessOut.creationDate.toString() : "");
+    return map;
+  }
+
+  private static Map<String, String> getHeaderMap(final ApiBusinessIn apiBusinessIn) {
+    final var map = new HashMap<String, String>();
+    map.put(X_NAME, apiBusinessIn.name);
+    map.put(ApiConstants.X_LEN, Long.toString(apiBusinessIn.len));
+    map.put(ApiConstants.X_CREATION_DATE, Instant.now().toString());
+    return map;
+  }
+
   @Override
   protected void clear() {
     semaphore.release();
@@ -130,23 +147,6 @@ public class ServerNativeStreamHandler extends NativeStreamHandlerAbstract<ApiBu
     // Business code should come here (example: get headers in case of error as Object name, Bucket name...)
     final Map<String, String> map = new HashMap<>();
     map.put(X_NAME, apiBusinessIn.name);
-    return map;
-  }
-
-  private static Map<String, String> getHeaderMap(final ApiBusinessOut apiBusinessOut) {
-    final var map = new HashMap<String, String>();
-    map.put(X_NAME, apiBusinessOut.name);
-    map.put(ApiConstants.X_LEN, Long.toString(apiBusinessOut.len));
-    map.put(ApiConstants.X_CREATION_DATE,
-        apiBusinessOut.creationDate != null ? apiBusinessOut.creationDate.toString() : "");
-    return map;
-  }
-
-  private static Map<String, String> getHeaderMap(final ApiBusinessIn apiBusinessIn) {
-    final var map = new HashMap<String, String>();
-    map.put(X_NAME, apiBusinessIn.name);
-    map.put(ApiConstants.X_LEN, Long.toString(apiBusinessIn.len));
-    map.put(ApiConstants.X_CREATION_DATE, Instant.now().toString());
     return map;
   }
 

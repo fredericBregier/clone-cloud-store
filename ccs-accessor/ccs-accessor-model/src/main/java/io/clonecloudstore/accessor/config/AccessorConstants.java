@@ -20,6 +20,10 @@ package io.clonecloudstore.accessor.config;
  * Constants for Accessor Bucket and Object
  */
 public class AccessorConstants {
+  private AccessorConstants() {
+    // Empty
+  }
+
   /**
    * API Constants
    */
@@ -143,9 +147,5 @@ public class AccessorConstants {
     private HeaderFilterObject() {
       // Empty
     }
-  }
-
-  private AccessorConstants() {
-    // Empty
   }
 }

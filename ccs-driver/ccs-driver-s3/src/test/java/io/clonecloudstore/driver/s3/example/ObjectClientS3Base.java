@@ -47,17 +47,24 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestMethodOrder(MethodOrderer.MethodName.class)
 abstract class ObjectClientS3Base {
-  private static final Logger LOGGER = Logger.getLogger(ObjectClientS3Base.class);
   protected static final long bigLen = 100 * 1024 * 1024L;
+  private static final Logger LOGGER = Logger.getLogger(ObjectClientS3Base.class);
   private static final int len1 = 10 * 1024;
   private static final int len2 = 100 * 1024;
   protected static boolean old;
+  protected static String sha256 = null;
   @Inject
   ApiClientFactory factory;
   @Inject
   DriverApiFactory driverApiFactory;
 
-  protected static String sha256 = null;
+  protected static InputStream getPseudoInputStream(final long len) {
+    return new FakeInputStream(len);
+  }
+
+  protected static InputStream getPseudoInputStreamForSha(final long len) {
+    return new FakeInputStream(len, (byte) 'A');
+  }
 
   @AfterEach
   public void after() throws InterruptedException {
@@ -356,14 +363,6 @@ abstract class ObjectClientS3Base {
       LOGGER.error("Exception", e);
       fail(e);
     }
-  }
-
-  protected static InputStream getPseudoInputStream(final long len) {
-    return new FakeInputStream(len);
-  }
-
-  protected static InputStream getPseudoInputStreamForSha(final long len) {
-    return new FakeInputStream(len, (byte) 'A');
   }
 
   @Test

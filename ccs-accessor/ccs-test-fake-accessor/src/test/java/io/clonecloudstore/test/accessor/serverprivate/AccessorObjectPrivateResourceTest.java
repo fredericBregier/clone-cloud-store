@@ -53,7 +53,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @QuarkusTest
 public class AccessorObjectPrivateResourceTest {
+  public static final String BUCKET_NAME = "testbucket";
+  public static final String DIR_NAME = "dir/";
+  public static final String OBJECT = DIR_NAME + "testObject";
   private static final Logger LOG = Logger.getLogger(AccessorObjectPrivateResourceTest.class);
+  private static final String clientId = UUID.randomUUID().toString();
   @Inject
   AccessorBucketInternalApiFactory factoryBucket;
   @Inject
@@ -64,10 +68,6 @@ public class AccessorObjectPrivateResourceTest {
   AccessorObjectApiFactory factoryExternal;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static final String clientId = UUID.randomUUID().toString();
-  public static final String BUCKET_NAME = "testbucket";
-  public static final String DIR_NAME = "dir/";
-  public static final String OBJECT = DIR_NAME + "testObject";
 
   @BeforeAll
   static void beforeAll() {

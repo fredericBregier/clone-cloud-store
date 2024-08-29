@@ -41,9 +41,9 @@ import org.jboss.logging.Logger;
  * Google Driver
  */
 public class DriverGoogle implements DriverApi {
-  private static final Logger LOGGER = Logger.getLogger(DriverGoogle.class);
   static final String BUCKET_DOES_NOT_EXIST = "Bucket does not exist: ";
   static final String OBJECT_DOES_NOT_EXIST = "Object does not exist: ";
+  private static final Logger LOGGER = Logger.getLogger(DriverGoogle.class);
   private final DriverGoogleHelper driverGoogleHelper;
   private final BulkMetrics bulkMetrics;
 

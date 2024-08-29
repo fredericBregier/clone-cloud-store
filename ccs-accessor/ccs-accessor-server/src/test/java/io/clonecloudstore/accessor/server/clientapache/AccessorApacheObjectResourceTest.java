@@ -65,18 +65,18 @@ import static org.junit.jupiter.api.Assertions.fail;
 @QuarkusTest
 @TestProfile(AzureMongoKafkaProfile.class)
 class AccessorApacheObjectResourceTest {
-  private static final Logger LOG = Logger.getLogger(AccessorApacheObjectResourceTest.class);
   public static final String BUCKET_NAME = "testbucket";
   public static final String BUCKET_MULTI_NAME = "testbucketmulti";
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
+  private static final Logger LOG = Logger.getLogger(AccessorApacheObjectResourceTest.class);
+  private static String clientId = null;
   AccessorApiFactory factory;
   @Inject
   Instance<DaoAccessorObjectRepository> repositoryInstance;
   DaoAccessorObjectRepository repository;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

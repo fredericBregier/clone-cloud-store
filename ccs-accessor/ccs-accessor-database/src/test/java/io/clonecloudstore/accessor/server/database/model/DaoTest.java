@@ -41,21 +41,6 @@ class DaoTest {
   private static final String bucket = "bucket";
   private static final String object = "object";
 
-  static class TestDaoAccessorBucket extends DaoAccessorBucket {
-    private String id;
-
-    @Override
-    public String getId() {
-      return id;
-    }
-
-    @Override
-    public DaoAccessorBucket setId(final String guid) {
-      this.id = guid;
-      return this;
-    }
-  }
-
   @Test
   void testBucket() {
     final var accessorBucket =
@@ -119,45 +104,6 @@ class DaoTest {
     accessorBucket2.setExpires(accessorBucket.getExpires());
     assertTrue(accessorBucket.equals(accessorBucket2));
     assertEquals(accessorBucket.hashCode(), accessorBucket2.hashCode());
-  }
-
-  static class TestDaoAccessorObject extends DaoAccessorObject {
-    private String id;
-    private final Map<String, String> map = new HashMap<>();
-
-    @Override
-    public String getId() {
-      return id;
-    }
-
-    @Override
-    public DaoAccessorObject setId(final String id) {
-      this.id = id;
-      return this;
-    }
-
-    @Override
-    public Map<String, String> getMetadata() {
-      return map;
-    }
-
-    @Override
-    public String getMetadata(final String key) {
-      return map.get(key);
-    }
-
-    @Override
-    public DaoAccessorObject addMetadata(final String key, final String value) {
-      map.put(key, value);
-      return this;
-    }
-
-    @Override
-    public DaoAccessorObject setMetadata(final Map<String, String> metadata) {
-      map.clear();
-      map.putAll(metadata);
-      return this;
-    }
   }
 
   @Test
@@ -263,5 +209,59 @@ class DaoTest {
   void testProperties() {
     assertEquals("Pékin", AccessorProperties.getAccessorSite());
     assertTrue(AccessorProperties.isRemoteRead());
+  }
+
+  static class TestDaoAccessorBucket extends DaoAccessorBucket {
+    private String id;
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public DaoAccessorBucket setId(final String guid) {
+      this.id = guid;
+      return this;
+    }
+  }
+
+  static class TestDaoAccessorObject extends DaoAccessorObject {
+    private final Map<String, String> map = new HashMap<>();
+    private String id;
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public DaoAccessorObject setId(final String id) {
+      this.id = id;
+      return this;
+    }
+
+    @Override
+    public Map<String, String> getMetadata() {
+      return map;
+    }
+
+    @Override
+    public String getMetadata(final String key) {
+      return map.get(key);
+    }
+
+    @Override
+    public DaoAccessorObject addMetadata(final String key, final String value) {
+      map.put(key, value);
+      return this;
+    }
+
+    @Override
+    public DaoAccessorObject setMetadata(final Map<String, String> metadata) {
+      map.clear();
+      map.putAll(metadata);
+      return this;
+    }
   }
 }

@@ -32,13 +32,13 @@ public class ReconciliationConstants {
   public static final String WAY_OUT = "-out";
   public static final String WAY_IN = "-in";
 
+  private ReconciliationConstants() {
+    // Empty
+  }
+
   public static DbQuery subsetForOneSite(final DaoRequest daoRequest, final String remote) {
     return new DbQuery(RestQuery.CONJUNCTION.AND, new DbQuery(RestQuery.QUERY.EQ, REQUESTID, daoRequest.getId()),
         new DbQuery(RestQuery.QUERY.EQ, BUCKET, daoRequest.getBucket()),
         new DbQuery(RestQuery.QUERY.REVERSE_IN, SITES, remote));
-  }
-
-  private ReconciliationConstants() {
-    // Empty
   }
 }

@@ -32,6 +32,10 @@ import static io.clonecloudstore.common.standard.system.ParametersChecker.BUCKET
 
 @MongoEntity(collection = TABLE_NAME)
 public class MgDaoOwnership extends DaoOwnership {
+  @BsonId
+  @Column(nullable = false, length = BUCKET_LENGTH)
+  private String id;
+
   public MgDaoOwnership() {
     //Empty
   }
@@ -39,10 +43,6 @@ public class MgDaoOwnership extends DaoOwnership {
   public MgDaoOwnership(final ClientBucketAccess dto) {
     fromDto(dto);
   }
-
-  @BsonId
-  @Column(nullable = false, length = BUCKET_LENGTH)
-  private String id;
 
   @Transient
   @BsonIgnore

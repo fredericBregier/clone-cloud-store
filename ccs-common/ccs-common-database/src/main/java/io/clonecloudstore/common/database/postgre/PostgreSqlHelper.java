@@ -26,8 +26,8 @@ import io.clonecloudstore.common.database.utils.DbUpdate;
  * Postgre Sql Helper
  */
 public final class PostgreSqlHelper {
-  private static final String WHERE = " WHERE ";
   public static final String JSON_TYPE = "jsonb";
+  private static final String WHERE = " WHERE ";
 
   private PostgreSqlHelper() {
   }

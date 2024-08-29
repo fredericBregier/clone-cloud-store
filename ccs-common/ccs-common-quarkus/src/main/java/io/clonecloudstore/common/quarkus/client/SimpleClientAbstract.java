@@ -36,17 +36,17 @@ import org.jboss.logmanager.MDC;
  * @param <S> the type for the Rest Service as Quarkus definition
  */
 public abstract class SimpleClientAbstract<S extends Closeable> implements Closeable {
-  private static final Logger LOGGER = Logger.getLogger(SimpleClientAbstract.class);
   public static final String MDC_COMPRESSED_CONTENT = "mdc-compressed-content";
   public static final String MDC_COMPRESSED_RESPONSE = "mdc-compressed-response";
   public static final String MDC_QUERY_HEADERS = "mdc-query-headers";
   protected static final ClientResponseExceptionMapper exceptionMapper = new ClientResponseExceptionMapper();
+  private static final Logger LOGGER = Logger.getLogger(SimpleClientAbstract.class);
   private static final Map<String, Object> INPUTSTREAM_OBJECT_MAP = new ConcurrentHashMap<>();
   private static final Map<String, Boolean> INPUTSTREAM_COMPRESSED_MAP = new ConcurrentHashMap<>();
-  private S service;
   private final SimpleClientFactoryAbstract<S> factory;
   private final URI uri;
   private final AtomicReference<String> opId = new AtomicReference<>();
+  private S service;
 
   /**
    * Constructor used by the Factory
@@ -55,43 +55,6 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
     this.factory = factory;
     this.uri = uri;
     service = factory.getService(uri);
-  }
-
-  /**
-   * @return the Factory used by this client
-   */
-  protected SimpleClientFactoryAbstract<S> getFactory() {
-    return factory;
-  }
-
-  /**
-   * Close and reopens Quarkus Rest client
-   */
-  public void reopen() {
-    try {
-      service.close();
-      service = factory.getService(uri);
-    } catch (final Exception ignore) {
-      // Ignore
-    }
-  }
-
-  @Override
-  public void close() {
-    resetQueryContext();
-    resetMdcOpId();
-    try {
-      service.close();
-    } catch (final Exception ignore) {
-      // Ignore
-    }
-  }
-
-  /**
-   * Set the current Operation Id
-   */
-  public void setOpId(final String opId) {
-    this.opId.set(setMdcOpId(opId));
   }
 
   /**
@@ -137,6 +100,15 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
+   * @return True if the client requires compressed response
+   */
+  public static Map<String, String> getHeadersMap() {
+    var queryHeaders = MDC.getObject(MDC_QUERY_HEADERS);
+    LOGGER.debugf("HeadersMap: %s", queryHeaders);
+    return (Map<String, String>) queryHeaders;
+  }
+
+  /**
    * @param headersMap the apiBusinessIn as map to setup as headers
    */
   public static void setHeadersMap(final Map<String, String> headersMap) {
@@ -145,12 +117,11 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
-   * @return True if the client requires compressed response
+   * @return received Object from Headers
    */
-  public static Map<String, String> getHeadersMap() {
-    var queryHeaders = MDC.getObject(MDC_QUERY_HEADERS);
-    LOGGER.debugf("HeadersMap: %s", queryHeaders);
-    return (Map<String, String>) queryHeaders;
+  public static Object getDtoFromHeaders() {
+    LOGGER.debugf("Status Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
+    return INPUTSTREAM_OBJECT_MAP.remove(getMdcOpId());
   }
 
   /**
@@ -161,24 +132,6 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
     if (result != null) {
       INPUTSTREAM_OBJECT_MAP.put(getMdcOpId(), result);
     }
-  }
-
-  /**
-   * Set Compression status received from headers
-   */
-  public static void setCompressionStatusFromHeaders(final Boolean compressed) {
-    LOGGER.debugf("Set Compression %s %b", getMdcOpId(), compressed);
-    if (compressed != null) {
-      INPUTSTREAM_COMPRESSED_MAP.put(getMdcOpId(), compressed);
-    }
-  }
-
-  /**
-   * @return received Object from Headers
-   */
-  public static Object getDtoFromHeaders() {
-    LOGGER.debugf("Status Contains DTO %s %b", getMdcOpId(), INPUTSTREAM_OBJECT_MAP.containsKey(getMdcOpId()));
-    return INPUTSTREAM_OBJECT_MAP.remove(getMdcOpId());
   }
 
   /**
@@ -195,18 +148,13 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
-   * Clean all Query context
+   * Set Compression status received from headers
    */
-  public void resetQueryContext() {
-    LOGGER.debugf("Clear Query Status and Context (%s)", INPUTSTREAM_COMPRESSED_MAP);
-    MDC.remove(MDC_COMPRESSED_CONTENT);
-    MDC.remove(MDC_COMPRESSED_RESPONSE);
-    MDC.removeObject(MDC_QUERY_HEADERS);
-    if (opId.get() != null) {
-      INPUTSTREAM_OBJECT_MAP.remove(opId.get());
-      INPUTSTREAM_COMPRESSED_MAP.remove(opId.get());
+  public static void setCompressionStatusFromHeaders(final Boolean compressed) {
+    LOGGER.debugf("Set Compression %s %b", getMdcOpId(), compressed);
+    if (compressed != null) {
+      INPUTSTREAM_COMPRESSED_MAP.put(getMdcOpId(), compressed);
     }
-    MDC.remove(ApiConstants.X_OP_ID);
   }
 
   /**
@@ -236,6 +184,51 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
   }
 
   /**
+   * @return the Factory used by this client
+   */
+  protected SimpleClientFactoryAbstract<S> getFactory() {
+    return factory;
+  }
+
+  /**
+   * Close and reopens Quarkus Rest client
+   */
+  public void reopen() {
+    try {
+      service.close();
+      service = factory.getService(uri);
+    } catch (final Exception ignore) {
+      // Ignore
+    }
+  }
+
+  @Override
+  public void close() {
+    resetQueryContext();
+    resetMdcOpId();
+    try {
+      service.close();
+    } catch (final Exception ignore) {
+      // Ignore
+    }
+  }
+
+  /**
+   * Clean all Query context
+   */
+  public void resetQueryContext() {
+    LOGGER.debugf("Clear Query Status and Context (%s)", INPUTSTREAM_COMPRESSED_MAP);
+    MDC.remove(MDC_COMPRESSED_CONTENT);
+    MDC.remove(MDC_COMPRESSED_RESPONSE);
+    MDC.removeObject(MDC_QUERY_HEADERS);
+    if (opId.get() != null) {
+      INPUTSTREAM_OBJECT_MAP.remove(opId.get());
+      INPUTSTREAM_COMPRESSED_MAP.remove(opId.get());
+    }
+    MDC.remove(ApiConstants.X_OP_ID);
+  }
+
+  /**
    * Get the current Operation Id
    */
   public String getOpId() {
@@ -245,6 +238,13 @@ public abstract class SimpleClientAbstract<S extends Closeable> implements Close
       this.setOpId(opIdGet);
     }
     return opIdGet;
+  }
+
+  /**
+   * Set the current Operation Id
+   */
+  public void setOpId(final String opId) {
+    this.opId.set(setMdcOpId(opId));
   }
 
   /**

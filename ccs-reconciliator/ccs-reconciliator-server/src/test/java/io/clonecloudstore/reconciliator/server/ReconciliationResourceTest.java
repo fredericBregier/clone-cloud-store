@@ -80,12 +80,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 class ReconciliationResourceTest {
   private static final Logger LOGGER = Logger.getLogger(ReconciliationResourceTest.class);
-  @Inject
-  ReconciliatorApiFactory factory;
   private static final String BUCKET = "mybucket";
   private static final String CLIENT_ID = "client-id";
   private static final String OBJECT_NAME = "dir/object_";
   private static final String SITE2 = "site2";
+  static AtomicBoolean init = new AtomicBoolean(false);
+  static String requestId = null;
+  static MockLocalReplicatorApiClient mock;
+  static LocalReplicatorApiClientFactory customMock;
+  @Inject
+  ReconciliatorApiFactory factory;
   @Inject
   Instance<DaoAccessorObjectRepository> objectRepositoryInstance;
   DaoAccessorObjectRepository objectRepository;
@@ -106,11 +110,6 @@ class ReconciliationResourceTest {
   DaoSitesActionRepository sitesActionRepository;
   @Inject
   DriverApiFactory storageDriverFactory;
-  static AtomicBoolean init = new AtomicBoolean(false);
-  static String requestId = null;
-
-  static MockLocalReplicatorApiClient mock;
-  static LocalReplicatorApiClientFactory customMock;
 
   @BeforeEach
   void beforeEach() throws CcsDbException {

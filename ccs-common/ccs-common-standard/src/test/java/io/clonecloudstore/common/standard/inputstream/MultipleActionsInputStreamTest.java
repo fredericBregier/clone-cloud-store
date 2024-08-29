@@ -54,6 +54,7 @@ class MultipleActionsInputStreamTest {
   private static final Logger LOGGER = Logger.getLogger(MultipleActionsInputStreamTest.class.getName());
   private static final int LEN = 1024 * 1024;
   private static final int BIG_LEN = 100 * 1024 * 1024;
+  Runtime runtime = Runtime.getRuntime();
 
   @Test
   void testDigestAlgo() {
@@ -640,8 +641,6 @@ class MultipleActionsInputStreamTest {
     System.gc();
     return (LENGB / 1024 / 1024.0 / ((stop - start) / 1000000000.0));
   }
-
-  Runtime runtime = Runtime.getRuntime();
 
   private long getCurrentlyAllocatedMemory() {
     return (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024);

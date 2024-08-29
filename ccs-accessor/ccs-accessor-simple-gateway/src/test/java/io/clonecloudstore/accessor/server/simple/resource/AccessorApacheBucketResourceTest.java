@@ -44,10 +44,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(AzureProfile.class)
 class AccessorApacheBucketResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorApacheBucketResourceTest.class);
+  private static String clientId = null;
   AccessorApiFactory factory;
   @Inject
   DriverApiFactory driverApiFactory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

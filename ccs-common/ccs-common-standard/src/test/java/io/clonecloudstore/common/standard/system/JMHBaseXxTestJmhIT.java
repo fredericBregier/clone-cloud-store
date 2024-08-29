@@ -50,18 +50,11 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @BenchmarkMode(Mode.Throughput)
 @Disabled("Bench only")
 public class JMHBaseXxTestJmhIT {
-  @State(Scope.Benchmark)
-  public static class MyState {
-    public byte[] bytes = RandomUtil.getRandom(1024);
-    public Base32 base32 = new Base32(true);
-    public Base16 base16 = new Base16(true);
-    public org.apache.commons.codec.binary.Base64 base64 = new org.apache.commons.codec.binary.Base64();
-    public BaseEncoding base32Guuava = BaseEncoding.base32Hex().lowerCase().omitPadding();
-    public BaseEncoding base16Guuava = BaseEncoding.base16().lowerCase().omitPadding();
-    public BaseEncoding base64Guava = BaseEncoding.base64().omitPadding();
-    public Base64.Encoder base64Native = Base64.getEncoder().withoutPadding();
-    public Base64.Encoder base64NativePadding = Base64.getEncoder();
-    public Base64.Encoder base64NativeUrl = Base64.getUrlEncoder().withoutPadding();
+  public static void main(String[] args) throws Exception {
+    Options opt = new OptionsBuilder().include(JMHBaseXxTestJmhIT.class.getSimpleName())
+        //.addProfiler(StackProfiler.class)
+        .addProfiler(GCProfiler.class).build();
+    new Runner(opt).run();
   }
 
   @Benchmark
@@ -134,13 +127,6 @@ public class JMHBaseXxTestJmhIT {
     blackhole.consume(myState.base64NativeUrl.encodeToString(myState.bytes));
   }
 
-  public static void main(String[] args) throws Exception {
-    Options opt = new OptionsBuilder().include(JMHBaseXxTestJmhIT.class.getSimpleName())
-        //.addProfiler(StackProfiler.class)
-        .addProfiler(GCProfiler.class).build();
-    new Runner(opt).run();
-  }
-
   @Test
   void runBenchmark() throws Exception {
     final var optionsBuilder = new OptionsBuilder().include(this.getClass().getName() + ".*").mode(Mode.Throughput)
@@ -150,5 +136,19 @@ public class JMHBaseXxTestJmhIT {
         .shouldDoGC(true);
     final var options = optionsBuilder.build();
     new Runner(options).run();
+  }
+
+  @State(Scope.Benchmark)
+  public static class MyState {
+    public byte[] bytes = RandomUtil.getRandom(1024);
+    public Base32 base32 = new Base32(true);
+    public Base16 base16 = new Base16(true);
+    public org.apache.commons.codec.binary.Base64 base64 = new org.apache.commons.codec.binary.Base64();
+    public BaseEncoding base32Guuava = BaseEncoding.base32Hex().lowerCase().omitPadding();
+    public BaseEncoding base16Guuava = BaseEncoding.base16().lowerCase().omitPadding();
+    public BaseEncoding base64Guava = BaseEncoding.base64().omitPadding();
+    public Base64.Encoder base64Native = Base64.getEncoder().withoutPadding();
+    public Base64.Encoder base64NativePadding = Base64.getEncoder();
+    public Base64.Encoder base64NativeUrl = Base64.getUrlEncoder().withoutPadding();
   }
 }

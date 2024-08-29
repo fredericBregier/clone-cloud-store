@@ -51,13 +51,6 @@ public class StreamIteratorUtils {
   private static final byte[] END_OF_LINE = {'\n'};
 
   /**
-   * Transform interface
-   */
-  public interface Transform {
-    Object transform(Object source);
-  }
-
-  /**
    * @param stream   The Stream to transform to InputStream of Json serialized Objects
    * @param forClass the object Class
    * @return the InputStream usable in REST API
@@ -225,6 +218,64 @@ public class StreamIteratorUtils {
         objectReader);
   }
 
+  /**
+   * Transform Iterator to List (all in memory)
+   */
+  public static <E> List<E> getListFromIterator(final Iterator<E> iterator) {
+    final List<E> list = new ArrayList<>();
+    if (iterator != null) {
+      while (iterator.hasNext()) {
+        final var item = iterator.next();
+        list.add(item);
+      }
+    }
+    return list;
+  }
+
+  /**
+   * Transform Iterator to Stream
+   */
+  public static <E> Stream<E> getStreamFromIterator(final Iterator<E> iterator) {
+    final var spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
+    return StreamSupport.stream(spliterator, false).onClose(() -> closeSilently(iterator));
+  }
+
+  private static <E> void closeSilently(final Iterator<E> iterator) {
+    try {
+      if (iterator instanceof Closeable closeable) {
+        closeable.close();
+      }
+    } catch (final IOException ignore) { // NOSONAR intentional
+      // Empty
+    }
+  }
+
+  /**
+   * Transform interface
+   */
+  public interface Transform {
+    Object transform(Object source);
+  }
+
+  /**
+   * Map interface to re-trow exception
+   */
+  @FunctionalInterface
+  private interface ThrowingMap<T, R> extends Function<T, R> {
+    @Override
+    default R apply(T t) {
+      try {
+        return applyThrows(t);
+      } catch (final Throwable e) {
+        Throwing.sneakyThrow(e);
+        // Return but not really
+        return null;
+      }
+    }
+
+    R applyThrows(T t) throws Throwable; // NOSONAR intentional
+  }
+
   private static class LineIterator<E> implements ClosingIterator<E> {
     private final BufferedReader reader;
     private final ObjectReader objectReader;
@@ -288,38 +339,6 @@ public class StreamIteratorUtils {
   }
 
   /**
-   * Transform Iterator to List (all in memory)
-   */
-  public static <E> List<E> getListFromIterator(final Iterator<E> iterator) {
-    final List<E> list = new ArrayList<>();
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        final var item = iterator.next();
-        list.add(item);
-      }
-    }
-    return list;
-  }
-
-  /**
-   * Transform Iterator to Stream
-   */
-  public static <E> Stream<E> getStreamFromIterator(final Iterator<E> iterator) {
-    final var spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
-    return StreamSupport.stream(spliterator, false).onClose(() -> closeSilently(iterator));
-  }
-
-  private static <E> void closeSilently(final Iterator<E> iterator) {
-    try {
-      if (iterator instanceof Closeable closeable) {
-        closeable.close();
-      }
-    } catch (final IOException ignore) { // NOSONAR intentional
-      // Empty
-    }
-  }
-
-  /**
    * To capture Exception from Stream
    */
   private static class InternalPipedInputOutputStream extends PipedInputOutputStream {
@@ -365,25 +384,6 @@ public class StreamIteratorUtils {
       super.close();
       checkException();
     }
-  }
-
-  /**
-   * Map interface to re-trow exception
-   */
-  @FunctionalInterface
-  private interface ThrowingMap<T, R> extends Function<T, R> {
-    @Override
-    default R apply(T t) {
-      try {
-        return applyThrows(t);
-      } catch (final Throwable e) {
-        Throwing.sneakyThrow(e);
-        // Return but not really
-        return null;
-      }
-    }
-
-    R applyThrows(T t) throws Throwable; // NOSONAR intentional
   }
 
   /**

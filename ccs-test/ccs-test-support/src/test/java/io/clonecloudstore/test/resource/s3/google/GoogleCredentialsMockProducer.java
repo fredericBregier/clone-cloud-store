@@ -14,10 +14,11 @@
  *  limitations under the License.
  */
 
-package io.clonecloudstore.test.resource.google;
+package io.clonecloudstore.test.resource.s3.google;
 
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.auth.Credentials;
 import com.google.cloud.NoCredentials;
 import io.quarkus.test.Mock;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,7 +33,7 @@ public class GoogleCredentialsMockProducer {
   @Produces
   @Singleton
   @Default
-  public NoCredentials googleCredential() {
+  public Credentials googleCredential() {
     return NoCredentials.getInstance();
   }
 

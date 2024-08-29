@@ -54,12 +54,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DriverS3Test {
   private static final int chunk = 5 * 1024 * 1024;
   private static final int lenBig = 20 * 1024 * 1024;
+  static int status = 200;
+  static int uploadStatus = 0;
   @InjectSpy
   DriverS3Helper driverS3Helper;
   @Inject
   DriverS3ApiFactory factory;
-  static int status = 200;
-  static int uploadStatus = 0;
 
   @Test
   void checkSpecialErrorCases() throws DriverException, NoSuchAlgorithmException, IOException {

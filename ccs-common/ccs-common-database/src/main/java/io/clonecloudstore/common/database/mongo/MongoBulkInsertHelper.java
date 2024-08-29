@@ -37,8 +37,8 @@ import org.jboss.logging.Logger;
  * @param <E> the DTO type to use
  */
 public class MongoBulkInsertHelper<F, E extends F> {
-  private static final Logger LOGGER = Logger.getLogger(MongoBulkInsertHelper.class);
   public static final int MAX_BATCH = 1000;
+  private static final Logger LOGGER = Logger.getLogger(MongoBulkInsertHelper.class);
   protected final ExtendedPanacheMongoRepositoryBase<F, E> repositoryBase;
   protected final List<E> listInsert = new ArrayList<>();
   protected final List<Document> listFindQuery = new ArrayList<>();

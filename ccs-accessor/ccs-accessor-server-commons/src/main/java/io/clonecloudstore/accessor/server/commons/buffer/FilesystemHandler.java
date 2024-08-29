@@ -50,9 +50,9 @@ import static io.clonecloudstore.accessor.server.commons.buffer.CcsBufferService
 @ApplicationScoped
 @Unremovable
 public class FilesystemHandler {
-  private static final Logger LOGGER = Logger.getLogger(FilesystemHandler.class);
   public static final String X_HASH = "x-hash";
   public static final String X_EXPIRES = "x-expires";
+  private static final Logger LOGGER = Logger.getLogger(FilesystemHandler.class);
   private static final TypeReference<Map<String, String>> typeReferenceMapStringString = new TypeReference<>() {
   };
   private static final String EXT_METADATA = ".md";
@@ -60,8 +60,8 @@ public class FilesystemHandler {
   private static final double GB = 1024.0 * 1024 * 1024;
   private final List<BufferedItem> activeJobs = Collections.synchronizedList(new ArrayList<>());
   private final File root = new File(AccessorProperties.getStorePath());
-  private boolean hasDatabase = QuarkusProperties.hasDatabase();
   private final BulkMetrics bulkMetrics;
+  private boolean hasDatabase = QuarkusProperties.hasDatabase();
 
   protected FilesystemHandler() {
     root.mkdirs(); // NOSONAR intentional

@@ -39,8 +39,8 @@ import static io.clonecloudstore.accessor.config.AccessorConstants.Api.COLL_TOPO
 
 @Path(ADMINISTRATION_ROOT + COLL_TOPOLOGIES)
 public class FakeTopologyResource implements TopologyApi {
-  private final Map<String, Topology> repository = new HashMap<>();
   public static int errorCode = 0;
+  private final Map<String, Topology> repository = new HashMap<>();
 
   @Override
   public Uni<Collection<Topology>> listAll(@QueryParam("status") @DefaultValue("UNKNOWN") final TopologyStatus status) {

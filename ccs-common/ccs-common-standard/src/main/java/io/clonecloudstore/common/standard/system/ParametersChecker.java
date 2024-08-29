@@ -37,14 +37,17 @@ import org.apache.commons.lang3.StringUtils;
  */
 public final class ParametersChecker {
 
+  public static final int BUCKET_LENGTH = 63;
+  public static final int OBJECT_LENGTH = 1024;
+  public static final int SITE_LENGTH = 256;
+  public static final String INVALID_INPUT = "Invalid input";
+  public static final String INVALID_URI = "Invalid uri [%s]";
   // Default ASCII for Param check
   private static final Pattern UNPRINTABLE_PATTERN = Pattern.compile("[\\p{Cntrl}]");
   private static final Pattern INVALID_CHAR_PATTERN = Pattern.compile("[^a-zA-Z0-9/_ .\\-]");
   private static final Pattern SPACE_UNDERSCORE_PATTERN = Pattern.compile("[\\s_]+");
   private static final Pattern MINUS_PATTERN = Pattern.compile("\\-+");
-
   private static final List<String> RULES = new ArrayList<>();
-
   // default parameters for XML check
   private static final String CDATA_TAG_UNESCAPED = "<![CDATA[";
   private static final String CDATA_TAG_ESCAPED = "&lt;![CDATA[";
@@ -54,14 +57,9 @@ public final class ParametersChecker {
   private static final String SCRIPT_TAG_UNESCAPED = "<script>";
   private static final String SCRIPT_TAG_ESCAPED = "&lt;script&gt;";
   private static final String SQL_COMMA_ESCAPED = ";";
-  public static final int BUCKET_LENGTH = 63;
-  public static final int OBJECT_LENGTH = 1024;
-  public static final int SITE_LENGTH = 256;
   private static final Pattern METADATA_KEY_PATTERN = Pattern.compile("^([a-zA-Z_])([0-9a-zA-Z_]*)$");
   private static final Pattern BUCKET_NAME_PATTERN = Pattern.compile("^[0-9a-z\\-]{3," + BUCKET_LENGTH + "}$");
   private static final Pattern OBJECT_NAME_PATTERN = Pattern.compile("^[0-9a-zA-Z_./\\-]{1," + OBJECT_LENGTH + "}$");
-  public static final String INVALID_INPUT = "Invalid input";
-  public static final String INVALID_URI = "Invalid uri [%s]";
 
   static {
     RULES.add(CDATA_TAG_UNESCAPED);

@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestProfile(AzureMongoKafkaProfile.class)
 class AccessorBucketInternalResourceTest {
   private static final Logger LOG = Logger.getLogger(AccessorBucketInternalResourceTest.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketInternalApiFactory factory;
   @Inject
@@ -56,7 +57,6 @@ class AccessorBucketInternalResourceTest {
   @Inject
   Instance<DaoAccessorBucketRepository> bucketRepositoryInstance;
   DaoAccessorBucketRepository bucketRepository;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

@@ -55,10 +55,10 @@ import static io.clonecloudstore.common.standard.properties.ApiConstants.X_OP_ID
 @Dependent
 public abstract class NativeStreamHandlerAbstract<I, O> {
   private static final Logger LOG = Logger.getLogger(NativeStreamHandlerAbstract.class);
-  private HttpServerRequest request;
-  private boolean keepAlive;
   //@Inject
   Vertx vertx;
+  private HttpServerRequest request;
+  private boolean keepAlive;
   private String opId;
   private boolean shallCompress;
   private boolean alreadyCompressed;

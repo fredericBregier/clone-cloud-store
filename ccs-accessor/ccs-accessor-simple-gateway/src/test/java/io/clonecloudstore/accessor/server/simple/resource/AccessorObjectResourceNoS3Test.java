@@ -38,16 +38,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @QuarkusTest
 @TestProfile(NoResourceProfile.class)
 class AccessorObjectResourceNoS3Test {
-  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceNoS3Test.class);
   public static final String BUCKET_NAME = "testbucketnos3";
   public static final String DIR_NAME = "dir/";
   public static final String OBJECT = DIR_NAME + "testObject";
-
+  private static final Logger LOG = Logger.getLogger(AccessorObjectResourceNoS3Test.class);
+  private static String clientId = null;
   @Inject
   AccessorBucketApiFactory factoryBucket;
   @Inject
   AccessorObjectApiFactory factory;
-  private static String clientId = null;
 
   @BeforeAll
   static void setup() {

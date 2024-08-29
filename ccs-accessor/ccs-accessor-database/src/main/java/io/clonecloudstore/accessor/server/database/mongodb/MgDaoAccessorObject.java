@@ -36,10 +36,10 @@ import static io.clonecloudstore.accessor.server.database.model.DaoAccessorObjec
  */
 @MongoEntity(collection = TABLE_NAME)
 public class MgDaoAccessorObject extends DaoAccessorObject {
-  @BsonId
-  private String id;
   @Column(name = METADATA)
   private final UberMap metadata = new UberMap();
+  @BsonId
+  private String id;
 
   public MgDaoAccessorObject() {
   }
@@ -81,6 +81,13 @@ public class MgDaoAccessorObject extends DaoAccessorObject {
     return metadata.getMap();
   }
 
+  @Override
+  public MgDaoAccessorObject setMetadata(final Map<String, String> metadata) {
+    ParametersChecker.checkSanityMap(metadata);
+    this.metadata.setMap(metadata);
+    return this;
+  }
+
   @Transient
   @BsonIgnore
   @JsonIgnore
@@ -97,13 +104,6 @@ public class MgDaoAccessorObject extends DaoAccessorObject {
     ParametersChecker.checkSanityString(key, value);
     ParametersChecker.checkSanityMapKey(key);
     metadata.getMap().put(key, value);
-    return this;
-  }
-
-  @Override
-  public MgDaoAccessorObject setMetadata(final Map<String, String> metadata) {
-    ParametersChecker.checkSanityMap(metadata);
-    this.metadata.setMap(metadata);
     return this;
   }
 }

@@ -42,38 +42,38 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.11.0</quarkus.platform.version>
-    <zstd-jni.version>1.5.6-3</zstd-jni.version>
-    <testcontainers.version>1.19.8</testcontainers.version>
-    <guava.version>33.2.1-jre</guava.version>
+    <quarkus.platform.version>3.13.3</quarkus.platform.version>
+    <zstd-jni.version>1.5.6-4</zstd-jni.version>
+    <testcontainers.version>1.20.1</testcontainers.version>
+    <guava.version>33.3.0-jre</guava.version>
     <jmh-core.version>1.37</jmh-core.version>
-    <azure-version>1.0.4</azure-version>
-    <google-version>2.9.0</google-version>
-    <google-bom-version>26.40.0</google-bom-version>
+    <azure-version>1.0.7</azure-version>
+    <google-version>2.11.0</google-version>
+    <google-bom-version>26.45.0</google-bom-version>
     <apache-httpclient.version>5.3.1</apache-httpclient.version>
     <skipITs>true</skipITs>
     <root.directory>${maven.multiModuleProjectDirectory}</root.directory>
     <!-- Plugins -->
-    <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
-    <compiler-plugin.version>3.12.1</compiler-plugin.version>
-    <surefire-plugin.version>3.2.5</surefire-plugin.version>
-    <jandex.version>3.1.6</jandex.version>
-    <maven-javadoc.version>3.6.3</maven-javadoc.version>
-    <maven-site.version>4.0.0-M13</maven-site.version>
-    <maven-source.version>3.3.0</maven-source.version>
+    <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+    <compiler-plugin.version>3.13.0</compiler-plugin.version>
+    <surefire-plugin.version>3.5.0</surefire-plugin.version>
+    <jandex.version>3.2.2</jandex.version>
+    <maven-javadoc.version>3.10.0</maven-javadoc.version>
+    <maven-site.version>4.0.0-M16</maven-site.version>
+    <maven-source.version>3.3.1</maven-source.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <maven-resources.version>3.3.1</maven-resources.version>
-    <exec-maven.version>3.2.0</exec-maven.version>
+    <exec-maven.version>3.4.1</exec-maven.version>
     <maven-antrun.version>3.1.0</maven-antrun.version>
-    <maven-clean.version>3.3.2</maven-clean.version>
-    <dependency-check.version>9.0.9</dependency-check.version>
+    <maven-clean.version>3.4.0</maven-clean.version>
+    <dependency-check.version>10.0.3</dependency-check.version>
     <properties-maven.version>1.2.1</properties-maven.version>
-    <maven-reports.version>3.5.0</maven-reports.version>
-    <maven-surefire-reports.version>3.2.5</maven-surefire-reports.version>
-    <maven-jxr.version>3.3.2</maven-jxr.version>
+    <maven-reports.version>3.7.0</maven-reports.version>
+    <maven-surefire-reports.version>3.5.0</maven-surefire-reports.version>
+    <maven-jxr.version>3.5.0</maven-jxr.version>
     <!-- JaCoCo Properties -->
-    <jacoco.version>0.8.11</jacoco.version>
-    <sonar.version>3.10.0.2594</sonar.version>
+    <jacoco.version>0.8.12</jacoco.version>
+    <sonar.version>3.11.0.3922</sonar.version>
     <!-- Sonar Configuration -->
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar.coverage.jacoco.xmlReportPaths>
@@ -131,12 +131,6 @@
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
       </dependency>
-      <!-- Quick workarkoud for https://github.com/quarkusio/quarkus/issues/38510 (affecting Quarkus 3.7.0 and 3.7.1) -->
-      <dependency>
-        <groupId>org.mvnpm</groupId>
-        <artifactId>lit-element</artifactId>
-        <version>4.0.3</version>
-      </dependency>
       <!-- Storage support -->
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
@@ -154,13 +148,6 @@
         <groupId>io.quarkiverse.googlecloudservices</groupId>
         <artifactId>quarkus-google-cloud-storage</artifactId>
         <version>${google-version}</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>libraries-bom</artifactId>
-        <version>${google-bom-version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
@@ -573,7 +560,7 @@
                   <version>[1.21.0,)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <version>[3.9.1,)</version>
+                  <version>[3.9.9,)</version>
                 </requireMavenVersion>
               </rules>
             </configuration>

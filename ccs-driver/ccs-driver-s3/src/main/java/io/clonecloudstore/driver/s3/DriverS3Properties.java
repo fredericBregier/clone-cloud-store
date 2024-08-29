@@ -28,7 +28,6 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 @Unremovable
 public class DriverS3Properties {
-  private static final Logger LOGGER = Logger.getLogger(DriverS3Properties.class);
   public static final int MAX_ITEMS = 1000;
   public static final String SHA_256 = "sha256";
   public static final String CLIENT_ID = "clientid";
@@ -51,6 +50,7 @@ public class DriverS3Properties {
    */
   public static final String CCS_DRIVER_S3_MAX_PART_SIZE_FOR_UNKNOWN_LENGTH =
       "ccs.driver.s3.maxPartSizeForUnknownLength";
+  private static final Logger LOGGER = Logger.getLogger(DriverS3Properties.class);
   private static String s3Host = QuarkusSystemPropertyUtil.getStringConfig(CCS_DRIVER_S3_HOST, "");
   private static String s3KeyId = QuarkusSystemPropertyUtil.getStringConfig(CCS_DRIVER_S3_KEY_ID, "");
   private static String s3Key = QuarkusSystemPropertyUtil.getStringConfig(CCS_DRIVER_S3_KEY, "");
